@@ -3,10 +3,16 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "bun --bun run --filter '*' dev",
+    "dev:web": "bun run --filter @kyte/web dev",
+    "dev:server": "bun run --filter @kyte/server dev",
+    "db:generate": "bun run --filter @kyte/server db:generate",
+    "db:migrate": "bun run --filter @kyte/server db:migrate",
+    "db:push": "bun run --filter @kyte/server db:push",
+    "db:studio": "bun run --filter @kyte/server db:studio",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
   }
 }

@@ -1,0 +1,26 @@
+{
+  "name": "@kyte/server",
+  "version": "1.0.50",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.4.0",
+    "drizzle-orm": "^0.45.0",
+    "drizzle-typebox": "^0.3.3",
+    "elysia": "latest"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "drizzle-kit": "^0.31.8",
+    "tsx": "^4.21.0"
+  },
+  "overrides": {
+    "@sinclair/typebox": "0.34.0"
+  },
+  "module": "src/index.ts"
+}

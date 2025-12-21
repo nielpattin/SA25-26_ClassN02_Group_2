@@ -1,15 +1,27 @@
-# Kyte - A Kanban Board Web App
+# Kyte
 
-To install dependencies:
+A Kanban board purpose-driven project task management application.
+
+## Setup
 
 ```bash
 bun install
+docker compose up -d
+bun run db:push
 ```
 
-To run:
+## Run
 
 ```bash
-bun run index.ts
+bun run dev
 ```
 
-This project was created using `bun init` in bun v1.3.3. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+## Tech Stack
+
+| Layer    | Technology                          |
+| -------- | ----------------------------------- |
+| Runtime  | Bun                                 |
+| Server   | Elysia, Drizzle ORM, PostgreSQL     |
+| Web      | React 19, TanStack Router/Query     |
+| API      | Eden Treaty (type-safe)             |
+| Realtime | WebSocket                           |
