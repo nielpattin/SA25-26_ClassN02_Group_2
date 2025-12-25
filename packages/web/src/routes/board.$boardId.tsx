@@ -1,8 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useState } from 'react'
 import { useBoardSocket } from '../hooks/useBoardSocket'
+import './board.$boardId.css'
 
 export const Route = createFileRoute('/board/$boardId')({
   component: BoardComponent,
@@ -49,42 +50,46 @@ function BoardComponent() {
     }
   })
 
-  if (boardLoading || columnsLoading) return <div>Loading board...</div>
-  if (!board) return <div>Board not found</div>
+  if (boardLoading || columnsLoading) return <div className="loading-state">// Loading board_core...</div>
+  if (!board) return <div className="loading-state">// Error: Board not found</div>
 
   return (
-    <div className="board-view" style={{ padding: '2rem', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ margin: 0 }}>{board.name}</h2>
+    <div className="board-container">
+      <header className="board-header">
+        <div className="header-title-container">
+          <Link to="/dashboard" className="back-link">← Dashboard</Link>
+          <h1 className="board-title">
+            <span className="board-title-prefix">//</span> {board.name}
+          </h1>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div className="board-input-group">
           <input
             type="text"
             placeholder="New Column"
             value={newColumnName}
             onChange={(e) => setNewColumnName(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
+            className="board-input"
+            onKeyDown={(e) => e.key === 'Enter' && newColumnName && createColumn.mutate(newColumnName)}
           />
           <button 
             onClick={() => newColumnName && createColumn.mutate(newColumnName)}
-            style={{ padding: '0.5rem 1rem', background: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            className="btn-kyte-primary"
           >
-            Add Column
+            {createColumn.isPending ? 'Adding...' : 'Add Column'}
           </button>
         </div>
       </header>
 
-      <div className="columns-container" style={{ display: 'flex', gap: '1.5rem', overflowX: 'auto', flex: 1, paddingBottom: '1rem' }}>
+      <div className="board-columns">
         {columns?.map((column) => (
-          <ColumnItem key={column.id} column={column} boardId={boardId} />
+          <ColumnItem key={column.id} column={column} />
         ))}
       </div>
     </div>
   )
 }
 
-function ColumnItem({ column, boardId }: { column: any, boardId: string }) {
+function ColumnItem({ column }: { column: { id: string; name: string } }) {
   const queryClient = useQueryClient()
   const [newCardTitle, setNewCardTitle] = useState('')
 
@@ -115,52 +120,34 @@ function ColumnItem({ column, boardId }: { column: any, boardId: string }) {
   })
 
   return (
-    <div
-      className="column"
-      style={{
-        width: '300px',
-        minWidth: '300px',
-        background: '#f4f5f7',
-        borderRadius: '8px',
-        padding: '1rem',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1rem'
-      }}
-    >
-      <h4 style={{ margin: 0 }}>{column.name}</h4>
-      <div className="cards-list" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <div className="board-column">
+      <h4 className="column-header">
+        <span className="column-header-prefix">&gt;</span> {column.name}
+      </h4>
+      <div className="cards-list">
         {cardsLoading ? (
-          <div style={{ fontSize: '0.8rem', color: '#888' }}>Loading cards...</div>
+          <div className="loading-state" style={{ fontSize: '11px', padding: '8px 0' }}>// Loading cards...</div>
         ) : (
           cards?.map((card) => (
-            <div
-              key={card.id}
-              style={{
-                background: 'white',
-                padding: '0.8rem',
-                borderRadius: '4px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                fontSize: '0.9rem'
-              }}
-            >
-              {card.title}
+            <div key={card.id} className="card-item">
+              <span className="card-prefix">//</span> {card.title}
             </div>
           ))
         )}
-        <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="add-card-container">
           <input
             type="text"
             placeholder="Card title..."
             value={newCardTitle}
             onChange={(e) => setNewCardTitle(e.target.value)}
-            style={{ padding: '0.4rem', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
+            className="card-input"
+            onKeyDown={(e) => e.key === 'Enter' && newCardTitle && createCard.mutate(newCardTitle)}
           />
           <button 
             onClick={() => newCardTitle && createCard.mutate(newCardTitle)}
-            style={{ padding: '0.4rem', background: '#e2e4e6', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}
+            className="btn-add-card"
           >
-            + Add Card
+            {createCard.isPending ? 'Adding...' : '+ Add Card'}
           </button>
         </div>
       </div>

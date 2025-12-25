@@ -10,10 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@kyte/server": "workspace:*",
     "@elysiajs/eden": "^1.4.5",
+    "@kyte/server": "workspace:*",
     "@tanstack/react-query": "^5.90.12",
     "@tanstack/react-router": "^1.140.0",
+
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

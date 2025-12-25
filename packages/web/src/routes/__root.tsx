@@ -8,6 +8,10 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <>
+      <div className="viewfinder-corner top-left"></div>
+      <div className="viewfinder-corner top-right"></div>
+      <div className="viewfinder-corner bottom-left"></div>
+      <div className="viewfinder-corner bottom-right"></div>
       <Outlet />
       <TanStackRouterDevtools />
     </>
