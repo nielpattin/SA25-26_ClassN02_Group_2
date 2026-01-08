@@ -11,9 +11,9 @@ function Index() {
       <main className="hero-section">
         <div className="hero-content">
           <div className="hero-logo">KYTE</div>
-          <h1>See How Your Tasks Connect.</h1>
+          <h1>Organize your work, simply.</h1>
           <p className="hero-subtitle">
-            Organize tasks. Visualize relationships.
+            A clean, minimalist Kanban board for personal and team productivity.
           </p>
           <div className="cta-group">
             <Link to="/dashboard" className="btn-primary">
@@ -44,7 +44,7 @@ function Index() {
       </section>
 
       <section className="tech-section">
-        <p className="tech-label">// BUILT WITH</p>
+        <p className="tech-label">BUILT WITH</p>
         <div className="tech-grid">
           <span className="tech-badge">Bun</span>
           <span className="tech-badge">Elysia</span>
@@ -55,7 +55,7 @@ function Index() {
       </section>
 
       <footer className="footer-badge">
-        <span className="accent">v0.1.0</span> — dark
+        <span className="accent">v0.1.0</span>
         <span className="footer-divider">•</span>
         <a href="https://github.com/nielpattin/SA25-26_ClassN02_Group_2" className="footer-link">Star on GitHub</a>
       </footer>

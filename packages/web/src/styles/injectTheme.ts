@@ -22,6 +22,7 @@ function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string
 
 export function injectTheme(styleId = 'dark'): void {
   const style = appStyles.find(s => s.id === styleId) ?? appStyles[0]
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id, name, description, layout, density, ...tokens } = style
   
   const cssVars = flattenObject(tokens)

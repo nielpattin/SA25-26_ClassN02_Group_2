@@ -1,0 +1,650 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--colors-bg);
+  border: 1px solid var(--colors-border);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--colors-border);
+}
+
+.modal-title-input {
+  background: transparent;
+  border: none;
+  color: var(--colors-text);
+  font-family: var(--fonts-body);
+  font-size: 18px;
+  font-weight: 600;
+  flex: 1;
+  outline: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.modal-title-input:focus {
+  border-bottom-color: var(--colors-primary);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--colors-text-muted);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 8px;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: var(--colors-text);
+}
+
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--colors-accent);
+}
+
+/* Labels */
+.labels-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.label-pill {
+  padding: 4px 12px;
+  border-radius: 2px;
+  border: 1px solid var(--label-color);
+  background: transparent;
+  color: var(--label-color);
+  font-family: var(--fonts-body);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.label-pill:hover {
+  background: var(--label-color);
+  color: #000;
+}
+
+.label-pill.active {
+  background: var(--label-color);
+  color: #000;
+}
+
+.add-label-btn {
+  padding: 4px 12px;
+  border: 1px dashed var(--colors-border);
+  background: transparent;
+  color: var(--colors-text-muted);
+  font-family: var(--fonts-body);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-label-btn:hover {
+  border-color: var(--colors-text-muted);
+  color: var(--colors-text);
+}
+
+.label-creator {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--colors-surface);
+  border: 1px solid var(--colors-border);
+}
+
+.label-name-input {
+  background: var(--colors-bg);
+  border: 1px solid var(--colors-border);
+  color: var(--colors-text);
+  padding: 8px;
+  font-family: var(--fonts-body);
+  font-size: 12px;
+  outline: none;
+}
+
+.label-name-input:focus {
+  border-color: var(--colors-primary);
+}
+
+.color-picker {
+  display: flex;
+  gap: 6px;
+}
+
+.color-option {
+  width: 24px;
+  height: 24px;
+  border: 2px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.selected {
+  border-color: var(--colors-text);
+}
+
+.label-creator-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Due Date */
+.due-date-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.due-date-input {
+  background: var(--colors-surface);
+  border: 1px solid var(--colors-border);
+  color: var(--colors-text);
+  padding: 8px 12px;
+  font-family: var(--fonts-body);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.due-date-input:focus {
+  border-color: var(--colors-primary);
+}
+
+.due-date-input.overdue {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.due-date-input.due-soon {
+  border-color: #f1c40f;
+  color: #f1c40f;
+}
+
+.clear-date-btn {
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--colors-border);
+  color: var(--colors-text-muted);
+  font-family: var(--fonts-body);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-date-btn:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+/* Description */
+.description-input {
+  background: var(--colors-surface);
+  border: 1px solid var(--colors-border);
+  color: var(--colors-text);
+  padding: 12px;
+  font-family: var(--fonts-body);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100px;
+  resize: vertical;
+  outline: none;
+}
+
+.description-input:focus {
+  border-color: var(--colors-primary);
+}
+
+/* Checklists */
+.checklist {
+  background: var(--colors-surface);
+  border: 1px solid var(--colors-border);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.checklist-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--colors-text);
+}
+
+.checklist-title-edit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--colors-text);
+  background: var(--colors-bg);
+  border: 1px solid var(--colors-primary);
+  padding: 2px 6px;
+  font-family: var(--fonts-body);
+  outline: none;
+  flex: 1;
+}
+
+.checklist-progress {
+  font-size: 11px;
+  color: var(--colors-text-muted);
+  font-family: var(--fonts-body);
+}
+
+.delete-checklist-btn {
+  background: transparent;
+  border: none;
+  color: var(--colors-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+  padding: 0 4px;
+  margin-left: 8px;
+}
+
+.checklist:hover .delete-checklist-btn {
+  opacity: 1;
+}
+
+.delete-checklist-btn:hover {
+  color: #e74c3c;
+}
+
+.progress-bar {
+  height: 4px;
+  background: var(--colors-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--colors-accent);
+  transition: width 0.3s ease;
+}
+
+.checklist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.checklist-item:hover {
+  background: var(--colors-surface);
+  margin: 0 -8px;
+  padding: 6px 8px;
+}
+
+.checklist-item.completed .checklist-item-content {
+  text-decoration: line-through;
+  color: var(--colors-text-muted);
+}
+
+.checklist-checkbox {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--colors-border);
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.checklist-checkbox:checked {
+  background: var(--colors-accent);
+  border-color: var(--colors-accent);
+}
+
+.checklist-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #000;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.checklist-item-content {
+  flex: 1;
+  font-size: 13px;
+  color: var(--colors-text);
+  cursor: pointer;
+}
+
+.checklist-item-content:hover {
+  color: var(--colors-accent);
+}
+
+.checklist-item-edit {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--colors-primary);
+  color: var(--colors-text);
+  font-family: var(--fonts-body);
+  font-size: 13px;
+  padding: 0;
+  outline: none;
+}
+
+.delete-item-btn {
+  background: transparent;
+  border: none;
+  color: var(--colors-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.checklist-item:hover .delete-item-btn {
+  opacity: 1;
+}
+
+.delete-item-btn:hover {
+  color: #e74c3c;
+}
+
+.add-item-container {
+  margin-top: 4px;
+}
+
+.add-item-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--colors-border);
+  color: var(--colors-text);
+  padding: 8px 0;
+  font-family: var(--fonts-body);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.add-item-input:focus {
+  border-bottom-color: var(--colors-primary);
+}
+
+.add-item-input::placeholder {
+  color: var(--colors-text-subtle);
+}
+
+.add-item-trigger {
+  padding: 6px 0;
+  background: transparent;
+  border: none;
+  color: var(--colors-text-subtle);
+  font-family: var(--fonts-body);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.15s;
+  text-align: left;
+}
+
+.add-item-trigger:hover {
+  color: var(--colors-accent);
+}
+
+.add-checklist-btn {
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  color: var(--colors-text-subtle);
+  font-family: var(--fonts-body);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.15s;
+  text-align: left;
+}
+
+.add-checklist-btn:hover {
+  color: var(--colors-accent);
+}
+
+.checklist-creator {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checklist-title-input {
+  background: var(--colors-surface);
+  border: 1px solid var(--colors-border);
+  color: var(--colors-text);
+  padding: 8px;
+  font-family: var(--fonts-body);
+  font-size: 12px;
+  outline: none;
+}
+
+.checklist-title-input:focus {
+  border-color: var(--colors-primary);
+}
+
+.checklist-creator-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Shared buttons */
+.btn-save {
+  padding: 6px 12px;
+  background: var(--colors-secondary);
+  border: 1px solid var(--colors-secondary);
+  color: #000;
+  font-family: var(--fonts-body);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 2px 2px 0 #000;
+}
+
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--colors-border);
+  color: var(--colors-text-muted);
+  font-family: var(--fonts-body);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  border-color: var(--colors-text-muted);
+  color: var(--colors-text);
+}
+
+/* Attachments */
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: var(--colors-surface);
+  border: 1px solid var(--colors-border);
+  transition: all 0.2s;
+}
+
+.attachment-item:hover {
+  border-color: var(--colors-accent);
+}
+
+.attachment-icon {
+  color: var(--colors-text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.attachment-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.attachment-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--colors-text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-name:hover {
+  text-decoration: underline;
+}
+
+.attachment-meta {
+  font-size: 11px;
+  color: var(--colors-text-muted);
+}
+
+.delete-attachment-btn {
+  background: transparent;
+  border: none;
+  color: var(--colors-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.attachment-item:hover .delete-attachment-btn {
+  opacity: 1;
+}
+
+.delete-attachment-btn:hover {
+  color: #e74c3c;
+}
+
+.attachment-creator {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--colors-surface);
+  border: 1px solid var(--colors-border);
+  padding: 12px;
+}
+
+.attachment-input {
+  background: var(--colors-bg);
+  border: 1px solid var(--colors-border);
+  color: var(--colors-text);
+  padding: 8px;
+  font-family: var(--fonts-body);
+  font-size: 12px;
+  outline: none;
+}
+
+.attachment-input:focus {
+  border-color: var(--colors-primary);
+}
+
+.add-attachment-btn {
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  color: var(--colors-text-subtle);
+  font-family: var(--fonts-body);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.15s;
+  text-align: left;
+}
+
+.add-attachment-btn:hover {
+  color: var(--colors-accent);
+}

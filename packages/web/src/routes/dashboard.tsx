@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useState } from 'react'
+import { ThemeToggle } from '../components/ThemeToggle'
 import './dashboard.css'
 
 export const Route = createFileRoute('/dashboard')({
@@ -47,40 +48,41 @@ function DashboardComponent() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <div className="title-group">
-          <Link to="/" className="home-link">← Home</Link>
-          <h1 className="dashboard-title">
-            <span className="title-prefix">//</span> MY BOARDS
-          </h1>
+        <div className="header-left">
+          <div className="title-group">
+            <Link to="/" className="home-link">← Home</Link>
+            <h1 className="dashboard-title">MY BOARDS</h1>
+          </div>
         </div>
-        <div className="input-group">
-          <input
-            type="text"
-            placeholder="New board name..."
-            value={newBoardName}
-            onChange={(e) => setNewBoardName(e.target.value)}
-            className="dashboard-input"
-            onKeyDown={(e) => e.key === 'Enter' && newBoardName && createBoard.mutate(newBoardName)}
-          />
-          <button
-            onClick={() => newBoardName && createBoard.mutate(newBoardName)}
-            disabled={createBoard.isPending}
-            className="btn-kyte-primary"
-          >
-            {createBoard.isPending ? 'Creating...' : '+ Create'}
-          </button>
+        <div className="header-right">
+          <div className="input-group">
+            <input
+              type="text"
+              placeholder="New board name..."
+              value={newBoardName}
+              onChange={(e) => setNewBoardName(e.target.value)}
+              className="dashboard-input"
+              onKeyDown={(e) => e.key === 'Enter' && newBoardName && createBoard.mutate(newBoardName)}
+            />
+            <button
+              onClick={() => newBoardName && createBoard.mutate(newBoardName)}
+              disabled={createBoard.isPending}
+              className="btn-kyte-primary"
+            >
+              {createBoard.isPending ? 'Creating...' : '+ Create'}
+            </button>
+          </div>
+          <ThemeToggle />
         </div>
       </header>
 
       {isLoading ? (
-        <div className="loading-state">// Loading board_registry...</div>
+        <div className="loading-state">Loading boards...</div>
       ) : (
         <div className="dashboard-grid">
           {boards?.map((board) => (
             <div key={board.id} className="board-card">
-              <h3>
-                <span className="card-title-prefix">&gt;</span> {board.name}
-              </h3>
+              <h3>{board.name}</h3>
               <div className="card-actions">
                 <Link
                   to="/board/$boardId"
@@ -100,9 +102,9 @@ function DashboardComponent() {
           ))}
           {boards?.length === 0 && (
             <div className="empty-state">
-              <span className="empty-prefix">//</span> No boards detected in current session.
+              No boards found.
               <br />
-              <span className="empty-hint">&gt; Use the input above to initialize a new board.</span>
+              <span className="empty-hint">Use the input above to create a new board.</span>
             </div>
           )}
         </div>

@@ -8,53 +8,93 @@ type WsMessage = {
   columnId?: string
 }
 
+// Global flag to pause invalidation during drag operations
+let isDragging = false
+
+export function setDragging(value: boolean) {
+  isDragging = value
+}
+
 export function useBoardSocket(boardId: string) {
   const queryClient = useQueryClient()
   const wsRef = useRef<WebSocket | null>(null)
-  const mountedRef = useRef(true)
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isCleaningUpRef = useRef(false)
+  const boardIdRef = useRef(boardId)
+
+  // Keep boardId ref up to date
+  useEffect(() => {
+    boardIdRef.current = boardId
+  }, [boardId])
 
   useEffect(() => {
-    mountedRef.current = true
-    
-    const ws = new WebSocket('ws://localhost:3000/ws')
-    wsRef.current = ws
+    isCleaningUpRef.current = false
 
-    ws.onopen = () => {
-      if (mountedRef.current) {
-        ws.send(JSON.stringify({ type: 'subscribe', boardId }))
+    function connect() {
+      if (isCleaningUpRef.current) return
+      if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) {
+        return
       }
-    }
 
-    ws.onmessage = (event) => {
-      if (!mountedRef.current) return
-      try {
-        const message: WsMessage = JSON.parse(event.data)
+      const ws = new WebSocket('ws://localhost:3000/ws')
+      wsRef.current = ws
 
-        switch (message.type) {
-          case 'board:updated':
-          case 'board:deleted':
-            queryClient.invalidateQueries({ queryKey: ['board', boardId] })
-            break
-          case 'columns:updated':
-            queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
-            break
-          case 'cards:updated':
-            if (message.columnId) {
-              queryClient.invalidateQueries({ queryKey: ['cards', message.columnId] })
-            }
-            break
+      ws.onopen = () => {
+        if (!isCleaningUpRef.current) {
+          ws.send(JSON.stringify({ type: 'subscribe', boardId: boardIdRef.current }))
         }
-      } catch {
-        // ignore parse errors
+      }
+
+      ws.onmessage = (event) => {
+        if (isCleaningUpRef.current || isDragging) return
+        try {
+          const message: WsMessage = JSON.parse(event.data)
+
+          switch (message.type) {
+            case 'board:updated':
+            case 'board:deleted':
+              queryClient.invalidateQueries({ queryKey: ['board', boardIdRef.current] })
+              break
+            case 'columns:updated':
+              queryClient.invalidateQueries({ queryKey: ['columns', boardIdRef.current] })
+              break
+            case 'cards:updated':
+              queryClient.invalidateQueries({ queryKey: ['cards', boardIdRef.current] })
+              break
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+
+      ws.onerror = () => {}
+
+      ws.onclose = () => {
+        if (!isCleaningUpRef.current) {
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect()
+          }, 2000)
+        }
       }
     }
 
-    ws.onerror = () => {}
+    connect()
 
     return () => {
-      mountedRef.current = false
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-        ws.close()
+      isCleaningUpRef.current = true
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+        reconnectTimeoutRef.current = null
+      }
+      if (wsRef.current) {
+        wsRef.current.onclose = null
+        wsRef.current.onerror = null
+        wsRef.current.onmessage = null
+        wsRef.current.onopen = null
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.close()
+        }
+        wsRef.current = null
       }
     }
   }, [boardId, queryClient])
