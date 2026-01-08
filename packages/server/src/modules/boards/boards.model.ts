@@ -7,6 +7,8 @@ export const BoardSchema = {
 
 export const CreateBoardBody = t.Object({
   name: BoardSchema.name,
+  organizationId: t.Optional(t.String({ format: 'uuid' })),
+  ownerId: t.Optional(t.String()),
 })
 
 export const UpdateBoardBody = t.Object({

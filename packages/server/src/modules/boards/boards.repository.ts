@@ -10,12 +10,12 @@ export const boardRepository = {
     return board
   },
 
-  create: async (data: { name: string }) => {
+  create: async (data: { name: string; organizationId?: string; ownerId?: string }) => {
     const [board] = await db.insert(boards).values(data).returning()
     return board
   },
 
-  update: async (id: string, data: { name?: string }) => {
+  update: async (id: string, data: { name?: string; organizationId?: string; ownerId?: string }) => {
     const [board] = await db.update(boards).set(data).where(eq(boards.id, id)).returning()
     return board
   },

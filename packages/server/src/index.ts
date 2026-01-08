@@ -3,13 +3,23 @@ import { cors } from '@elysiajs/cors'
 import { boardController } from './modules/boards'
 import { columnController } from './modules/columns'
 import { cardController } from './modules/cards'
+import { labelController } from './modules/labels'
+import { checklistController } from './modules/checklists'
+import { attachmentController } from './modules/attachments'
+import { userController } from './modules/users'
+import { organizationController } from './modules/organizations'
 import { wsManager } from './websocket/manager'
 
-const app = new Elysia()
+export const app = new Elysia()
   .use(cors())
   .use(boardController)
   .use(columnController)
   .use(cardController)
+  .use(labelController)
+  .use(checklistController)
+  .use(attachmentController)
+  .use(userController)
+  .use(organizationController)
   .ws('/ws', {
     body: t.Object({
       type: t.String(),

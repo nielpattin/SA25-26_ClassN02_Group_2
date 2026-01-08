@@ -1,9 +1,9 @@
-import type { Server } from 'bun'
+import type { Server, WebSocketHandler } from 'bun'
 
-let server: Server | null = null
+let server: Server<unknown> | null = null
 
 export const wsManager = {
-  setServer(s: Server) {
+  setServer(s: Server<unknown>) {
     server = s
   },
   broadcast(topic: string, data: object) {
