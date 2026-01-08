@@ -38,3 +38,5 @@ Design/*.bkp
 Design/*.drawio
 
 Documents/*.docx
+.loop*
+tmp/

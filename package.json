@@ -5,7 +5,7 @@
   "private": true,
   "workspaces": ["packages/*"],
   "scripts": {
-    "dev": "bun --bun run --filter '*' dev",
+    "dev": "bun run --filter '*' dev",
     "dev:web": "bun run --filter @kyte/web dev",
     "dev:server": "bun run --filter @kyte/server dev",
     "db:generate": "bun run --filter @kyte/server db:generate",
@@ -14,5 +14,8 @@
     "db:studio": "bun run --filter @kyte/server db:studio",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }
