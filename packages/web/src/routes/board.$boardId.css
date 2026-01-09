@@ -102,6 +102,7 @@
 .board-column {
   width: var(--board-column-width);
   min-width: var(--board-column-width);
+  max-height: calc(100vh - 180px);
   background: var(--colors-surface-elevated);
   border-radius: var(--column-border-radius);
   padding: var(--column-padding);
@@ -134,6 +135,7 @@
   gap: var(--column-gap);
   min-height: 20px;
   flex: 1;
+  overflow-y: auto;
 }
 
 .empty-column-placeholder {

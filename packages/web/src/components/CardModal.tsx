@@ -8,7 +8,7 @@ type Card = {
   id: string
   title: string
   description: string | null
-  dueDate: string | null
+  dueDate: string | Date | null
   columnId: string
 }
 
@@ -182,7 +182,10 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   if (card && !isInitialized) {
     setTitle(card.title)
     setDescription(card.description || '')
-    setDueDate(card.dueDate?.split('T')[0] || '')
+    const dueDateStr = card.dueDate
+      ? (typeof card.dueDate === 'string' ? card.dueDate : card.dueDate.toISOString()).split('T')[0]
+      : ''
+    setDueDate(dueDateStr)
     setIsInitialized(true)
   }
 
