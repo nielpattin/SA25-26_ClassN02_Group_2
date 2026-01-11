@@ -3,10 +3,10 @@ import { checklistService } from './checklists.service'
 import { CreateChecklistBody, UpdateChecklistBody, CreateChecklistItemBody, UpdateChecklistItemBody } from './checklists.model'
 
 export const checklistController = new Elysia({ prefix: '/checklists' })
-  .get('/card/:cardId', async ({ params }) => {
-    return checklistService.getByCardId(params.cardId)
+  .get('/task/:taskId', async ({ params }) => {
+    return checklistService.getByTaskId(params.taskId)
   }, {
-    params: t.Object({ cardId: t.String() })
+    params: t.Object({ taskId: t.String() })
   })
 
   .get('/:id', async ({ params }) => {

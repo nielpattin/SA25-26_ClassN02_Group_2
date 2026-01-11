@@ -1,11 +1,11 @@
 import { attachmentRepository } from './attachments.repository'
 import type { CreateAttachmentInput } from './attachments.model'
-import { cardRepository } from '../cards/cards.repository'
+import { taskRepository } from '../tasks/tasks.repository'
 import { wsManager } from '../../websocket/manager'
 
 export const attachmentService = {
-  getByCardId: async (cardId: string) => {
-    return attachmentRepository.findByCardId(cardId)
+  getByTaskId: async (taskId: string) => {
+    return attachmentRepository.findByTaskId(taskId)
   },
 
   getById: async (id: string) => {
@@ -14,17 +14,17 @@ export const attachmentService = {
 
   create: async (data: CreateAttachmentInput) => {
     const attachment = await attachmentRepository.create(data)
-    const boardId = await cardRepository.getBoardIdFromCard(data.cardId)
-    if (boardId) wsManager.broadcast(`board:${boardId}`, { type: 'cards:updated' })
+    const boardId = await taskRepository.getBoardIdFromTask(data.taskId)
+    if (boardId) wsManager.broadcast(`board:${boardId}`, { type: 'task:updated' })
     return attachment
   },
 
   delete: async (id: string) => {
     const attachment = await attachmentRepository.getById(id)
     if (!attachment) return null
-    const boardId = await cardRepository.getBoardIdFromCard(attachment.cardId)
+    const boardId = await taskRepository.getBoardIdFromTask(attachment.taskId)
     const result = await attachmentRepository.delete(id)
-    if (boardId) wsManager.broadcast(`board:${boardId}`, { type: 'cards:updated' })
+    if (boardId) wsManager.broadcast(`board:${boardId}`, { type: 'task:updated' })
     return result
   },
 }

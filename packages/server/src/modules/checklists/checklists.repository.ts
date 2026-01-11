@@ -1,11 +1,11 @@
 import { db } from '../../db'
 import { checklists, checklistItems } from '../../db/schema'
-import { eq, max, asc } from 'drizzle-orm'
+import { eq, asc, sql } from 'drizzle-orm'
 import type { CreateChecklistInput, UpdateChecklistInput, CreateChecklistItemInput, UpdateChecklistItemInput } from './checklists.model'
 
 export const checklistRepository = {
-  findByCardId: async (cardId: string) => {
-    return db.select().from(checklists).where(eq(checklists.cardId, cardId)).orderBy(asc(checklists.order))
+  findByTaskId: async (taskId: string) => {
+    return db.select().from(checklists).where(eq(checklists.taskId, taskId)).orderBy(asc(checklists.position))
   },
 
   findById: async (id: string) => {
@@ -14,15 +14,16 @@ export const checklistRepository = {
   },
 
   create: async (data: CreateChecklistInput) => {
-    const maxOrderResult = await db
-      .select({ maxOrder: max(checklists.order) })
+    // Get next position using fractional indexing
+    const [maxPos] = await db
+      .select({ maxPos: sql<string>`COALESCE(MAX(${checklists.position}), '0')` })
       .from(checklists)
-      .where(eq(checklists.cardId, data.cardId))
-    const nextOrder = (maxOrderResult[0]?.maxOrder ?? -1) + 1
+      .where(eq(checklists.taskId, data.taskId))
+    const nextPosition = String(Number(maxPos?.maxPos || '0') + 1)
 
     const result = await db.insert(checklists).values({
       ...data,
-      order: nextOrder
+      position: nextPosition
     }).returning()
     return result[0]
   },
@@ -40,7 +41,7 @@ export const checklistRepository = {
 
   // Checklist Items
   findItemsByChecklistId: async (checklistId: string) => {
-    return db.select().from(checklistItems).where(eq(checklistItems.checklistId, checklistId)).orderBy(asc(checklistItems.order))
+    return db.select().from(checklistItems).where(eq(checklistItems.checklistId, checklistId)).orderBy(asc(checklistItems.position))
   },
 
   findItemById: async (id: string) => {
@@ -49,15 +50,16 @@ export const checklistRepository = {
   },
 
   createItem: async (data: CreateChecklistItemInput) => {
-    const maxOrderResult = await db
-      .select({ maxOrder: max(checklistItems.order) })
+    // Get next position using fractional indexing
+    const [maxPos] = await db
+      .select({ maxPos: sql<string>`COALESCE(MAX(${checklistItems.position}), '0')` })
       .from(checklistItems)
       .where(eq(checklistItems.checklistId, data.checklistId))
-    const nextOrder = (maxOrderResult[0]?.maxOrder ?? -1) + 1
+    const nextPosition = String(Number(maxPos?.maxPos || '0') + 1)
 
     const result = await db.insert(checklistItems).values({
       ...data,
-      order: nextOrder,
+      position: nextPosition,
       isCompleted: false
     }).returning()
     return result[0]

@@ -4,8 +4,8 @@ import { eq } from 'drizzle-orm'
 import type { CreateAttachmentInput } from './attachments.model'
 
 export const attachmentRepository = {
-  findByCardId: async (cardId: string) => {
-    return db.select().from(attachments).where(eq(attachments.cardId, cardId)).orderBy(attachments.createdAt)
+  findByTaskId: async (taskId: string) => {
+    return db.select().from(attachments).where(eq(attachments.taskId, taskId)).orderBy(attachments.createdAt)
   },
 
   create: async (data: CreateAttachmentInput) => {

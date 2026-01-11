@@ -34,20 +34,21 @@ export const labelController = new Elysia({ prefix: '/labels' })
     params: t.Object({ id: t.String() })
   })
 
+  // Note: API uses 'card' for Kanban convention, but internally uses 'task'
   .post('/card/:cardId/label/:labelId', async ({ params }) => {
-    return labelService.addToCard(params.cardId, params.labelId)
+    return labelService.addToTask(params.cardId, params.labelId)
   }, {
     params: t.Object({ cardId: t.String(), labelId: t.String() })
   })
 
   .delete('/card/:cardId/label/:labelId', async ({ params }) => {
-    return labelService.removeFromCard(params.cardId, params.labelId)
+    return labelService.removeFromTask(params.cardId, params.labelId)
   }, {
     params: t.Object({ cardId: t.String(), labelId: t.String() })
   })
 
   .get('/card/:cardId', async ({ params }) => {
-    return labelService.getCardLabels(params.cardId)
+    return labelService.getTaskLabels(params.cardId)
   }, {
     params: t.Object({ cardId: t.String() })
   })

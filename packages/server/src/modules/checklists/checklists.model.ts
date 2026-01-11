@@ -2,9 +2,9 @@ import { t } from 'elysia'
 
 export const ChecklistSchema = t.Object({
   id: t.String({ format: 'uuid' }),
-  cardId: t.String({ format: 'uuid' }),
+  taskId: t.String({ format: 'uuid' }),
   title: t.String({ minLength: 1 }),
-  order: t.Number(),
+  position: t.String(),
   createdAt: t.Date()
 })
 
@@ -13,18 +13,18 @@ export const ChecklistItemSchema = t.Object({
   checklistId: t.String({ format: 'uuid' }),
   content: t.String({ minLength: 1 }),
   isCompleted: t.Boolean(),
-  order: t.Number(),
+  position: t.String(),
   createdAt: t.Date()
 })
 
 export const CreateChecklistBody = t.Object({
-  cardId: t.String({ format: 'uuid' }),
+  taskId: t.String({ format: 'uuid' }),
   title: t.String({ minLength: 1 })
 })
 
 export const UpdateChecklistBody = t.Object({
   title: t.Optional(t.String({ minLength: 1 })),
-  order: t.Optional(t.Number())
+  position: t.Optional(t.String())
 })
 
 export const CreateChecklistItemBody = t.Object({
@@ -35,7 +35,7 @@ export const CreateChecklistItemBody = t.Object({
 export const UpdateChecklistItemBody = t.Object({
   content: t.Optional(t.String({ minLength: 1 })),
   isCompleted: t.Optional(t.Boolean()),
-  order: t.Optional(t.Number())
+  position: t.Optional(t.String())
 })
 
 export type Checklist = typeof ChecklistSchema.static

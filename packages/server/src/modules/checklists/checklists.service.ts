@@ -2,8 +2,8 @@ import { checklistRepository } from './checklists.repository'
 import type { CreateChecklistInput, UpdateChecklistInput, CreateChecklistItemInput, UpdateChecklistItemInput } from './checklists.model'
 
 export const checklistService = {
-  getByCardId: async (cardId: string) => {
-    const lists = await checklistRepository.findByCardId(cardId)
+  getByTaskId: async (taskId: string) => {
+    const lists = await checklistRepository.findByTaskId(taskId)
     const listsWithItems = await Promise.all(
       lists.map(async (list) => ({
         ...list,

@@ -1,5 +1,13 @@
 import { t } from 'elysia'
 
+// Enum types matching PostgreSQL enums
+export const OrgRoleSchema = t.Union([
+  t.Literal('owner'),
+  t.Literal('admin'),
+  t.Literal('member'),
+  t.Literal('viewer')
+])
+
 export const OrganizationSchema = t.Object({
   id: t.String({ format: 'uuid' }),
   name: t.String({ minLength: 1 }),
@@ -24,13 +32,13 @@ export const MemberSchema = t.Object({
   id: t.String({ format: 'uuid' }),
   organizationId: t.String({ format: 'uuid' }),
   userId: t.String(),
-  role: t.String(),
+  role: OrgRoleSchema,
   createdAt: t.Date()
 })
 
 export const AddMemberBody = t.Object({
   userId: t.String(),
-  role: t.String()
+  role: OrgRoleSchema
 })
 
 export type Organization = typeof OrganizationSchema.static

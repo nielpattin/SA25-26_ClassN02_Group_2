@@ -22,16 +22,16 @@ export const labelService = {
     return labelRepository.delete(id)
   },
 
-  addToCard: async (cardId: string, labelId: string) => {
-    return labelRepository.addToCard(cardId, labelId)
+  addToTask: async (taskId: string, labelId: string) => {
+    return labelRepository.addToTask(taskId, labelId)
   },
 
-  removeFromCard: async (cardId: string, labelId: string) => {
-    return labelRepository.removeFromCard(cardId, labelId)
+  removeFromTask: async (taskId: string, labelId: string) => {
+    return labelRepository.removeFromTask(taskId, labelId)
   },
 
-  getCardLabels: async (cardId: string) => {
-    const result = await labelRepository.getCardLabels(cardId)
-    return result.map(r => r.label)
+  getTaskLabels: async (taskId: string) => {
+    const result = await labelRepository.getTaskLabels(taskId)
+    return result.map((r: { label: typeof result[0]['label'] }) => r.label)
   }
 }

@@ -3,8 +3,12 @@ import { attachmentService } from './attachments.service'
 import { CreateAttachmentSchema } from './attachments.model'
 
 export const attachmentController = new Elysia({ prefix: '/attachments' })
-  .get('/card/:cardId', ({ params: { cardId } }) => attachmentService.getByCardId(cardId))
+  .get('/task/:taskId', ({ params: { taskId } }) => attachmentService.getByTaskId(taskId), {
+    params: t.Object({ taskId: t.String() })
+  })
   .post('/', ({ body }) => attachmentService.create(body), {
     body: CreateAttachmentSchema
   })
-  .delete('/:id', ({ params: { id } }) => attachmentService.delete(id))
+  .delete('/:id', ({ params: { id } }) => attachmentService.delete(id), {
+    params: t.Object({ id: t.String() })
+  })

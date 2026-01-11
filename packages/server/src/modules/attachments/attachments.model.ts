@@ -1,8 +1,8 @@
 import { t } from 'elysia'
 
 export const CreateAttachmentSchema = t.Object({
-  cardId: t.String(),
-  type: t.String(), // 'link' or 'file'
+  taskId: t.String(),
+  type: t.Union([t.Literal('link'), t.Literal('file')]),
   url: t.String(),
   name: t.String(),
   mimeType: t.Optional(t.String()),

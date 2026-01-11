@@ -1,5 +1,5 @@
 import { db } from '../../db'
-import { labels, cardLabels } from '../../db/schema'
+import { labels, taskLabels } from '../../db/schema'
 import { eq, and } from 'drizzle-orm'
 import type { CreateLabelInput, UpdateLabelInput } from './labels.model'
 
@@ -24,27 +24,27 @@ export const labelRepository = {
   },
 
   delete: async (id: string) => {
-    await db.delete(cardLabels).where(eq(cardLabels.labelId, id))
+    await db.delete(taskLabels).where(eq(taskLabels.labelId, id))
     const result = await db.delete(labels).where(eq(labels.id, id)).returning()
     return result[0]
   },
 
-  addToCard: async (cardId: string, labelId: string) => {
-    const result = await db.insert(cardLabels).values({ cardId, labelId }).returning()
+  addToTask: async (taskId: string, labelId: string) => {
+    const result = await db.insert(taskLabels).values({ taskId, labelId }).returning()
     return result[0]
   },
 
-  removeFromCard: async (cardId: string, labelId: string) => {
-    const result = await db.delete(cardLabels)
-      .where(and(eq(cardLabels.cardId, cardId), eq(cardLabels.labelId, labelId)))
+  removeFromTask: async (taskId: string, labelId: string) => {
+    const result = await db.delete(taskLabels)
+      .where(and(eq(taskLabels.taskId, taskId), eq(taskLabels.labelId, labelId)))
       .returning()
     return result[0]
   },
 
-  getCardLabels: async (cardId: string) => {
+  getTaskLabels: async (taskId: string) => {
     return db.select({ label: labels })
-      .from(cardLabels)
-      .innerJoin(labels, eq(cardLabels.labelId, labels.id))
-      .where(eq(cardLabels.cardId, cardId))
+      .from(taskLabels)
+      .innerJoin(labels, eq(taskLabels.labelId, labels.id))
+      .where(eq(taskLabels.taskId, taskId))
   }
 }

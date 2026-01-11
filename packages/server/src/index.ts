@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia'
 import { cors } from '@elysiajs/cors'
 import { boardController } from './modules/boards'
 import { columnController } from './modules/columns'
-import { cardController } from './modules/cards'
+import { taskController } from './modules/tasks'
 import { labelController } from './modules/labels'
 import { checklistController } from './modules/checklists'
 import { attachmentController } from './modules/attachments'
@@ -14,7 +14,7 @@ export const app = new Elysia()
   .use(cors())
   .use(boardController)
   .use(columnController)
-  .use(cardController)
+  .use(taskController)
   .use(labelController)
   .use(checklistController)
   .use(attachmentController)

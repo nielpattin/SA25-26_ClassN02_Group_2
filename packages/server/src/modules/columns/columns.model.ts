@@ -3,19 +3,19 @@ import { t } from 'elysia'
 export const ColumnSchema = {
   id: t.String({ format: 'uuid' }),
   name: t.String({ minLength: 1 }),
-  order: t.Number(),
+  position: t.String(), // Fractional indexing
   boardId: t.String({ format: 'uuid' }),
 }
 
 export const CreateColumnBody = t.Object({
   name: ColumnSchema.name,
-  order: ColumnSchema.order,
+  position: ColumnSchema.position,
   boardId: ColumnSchema.boardId,
 })
 
 export const UpdateColumnBody = t.Object({
   name: t.Optional(ColumnSchema.name),
-  order: t.Optional(ColumnSchema.order),
+  position: t.Optional(ColumnSchema.position),
 })
 
 export const ColumnParams = t.Object({

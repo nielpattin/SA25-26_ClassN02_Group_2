@@ -1,7 +1,7 @@
 import { db } from '../../db'
 import { users } from '../../db/schema'
 import { eq } from 'drizzle-orm'
-import type { CreateUserInput, UpdateUserInput } from './users.model'
+import type { CreateUserInput, UpdateUserInput, UpdateUserPreferencesInput } from './users.model'
 
 export const userRepository = {
   async getAll() {
@@ -30,7 +30,21 @@ export const userRepository = {
 
   async update(id: string, data: UpdateUserInput) {
     const [user] = await db.update(users)
-      .set(data)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning()
+    return user
+  },
+
+  async updatePreferences(id: string, data: UpdateUserPreferencesInput) {
+    const [user] = await db.update(users)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
       .where(eq(users.id, id))
       .returning()
     return user
@@ -39,5 +53,5 @@ export const userRepository = {
   async delete(id: string) {
     const [user] = await db.delete(users).where(eq(users.id, id)).returning()
     return user
-  }
+  },
 }
