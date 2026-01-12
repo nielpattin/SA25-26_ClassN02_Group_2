@@ -8,6 +8,7 @@ import {
   TaskBoardParams,
   TaskAssigneeParams,
   AddAssigneeBody,
+  MoveTaskBody,
 } from './tasks.model'
 
 export const taskController = new Elysia({ prefix: '/tasks' })
@@ -42,6 +43,11 @@ export const taskController = new Elysia({ prefix: '/tasks' })
   })
   .delete('/:id', ({ params: { id } }) => taskService.deleteTask(id), {
     params: TaskParams,
+  })
+  .patch('/:id/move', ({ params: { id }, body }) =>
+    taskService.moveTask(id, body.columnId, body.beforeTaskId, body.afterTaskId), {
+    params: TaskParams,
+    body: MoveTaskBody,
   })
 
   // Archive/Restore

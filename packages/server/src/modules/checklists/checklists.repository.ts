@@ -1,7 +1,8 @@
 import { db } from '../../db'
 import { checklists, checklistItems } from '../../db/schema'
-import { eq, asc, sql } from 'drizzle-orm'
+import { eq, asc, desc } from 'drizzle-orm'
 import type { CreateChecklistInput, UpdateChecklistInput, CreateChecklistItemInput, UpdateChecklistItemInput } from './checklists.model'
+import { generatePosition } from '../../shared/position'
 
 export const checklistRepository = {
   findByTaskId: async (taskId: string) => {
@@ -13,17 +14,33 @@ export const checklistRepository = {
     return result[0] || null
   },
 
-  create: async (data: CreateChecklistInput) => {
-    // Get next position using fractional indexing
-    const [maxPos] = await db
-      .select({ maxPos: sql<string>`COALESCE(MAX(${checklists.position}), '0')` })
+  // Position helpers
+  getLastChecklistPosition: async (taskId: string): Promise<string | null> => {
+    const [last] = await db.select({ position: checklists.position })
       .from(checklists)
-      .where(eq(checklists.taskId, data.taskId))
-    const nextPosition = String(Number(maxPos?.maxPos || '0') + 1)
+      .where(eq(checklists.taskId, taskId))
+      .orderBy(desc(checklists.position))
+      .limit(1)
+    return last?.position ?? null
+  },
+
+  getLastItemPosition: async (checklistId: string): Promise<string | null> => {
+    const [last] = await db.select({ position: checklistItems.position })
+      .from(checklistItems)
+      .where(eq(checklistItems.checklistId, checklistId))
+      .orderBy(desc(checklistItems.position))
+      .limit(1)
+    return last?.position ?? null
+  },
+
+  create: async (data: CreateChecklistInput) => {
+    // Get last position and generate next using fractional indexing
+    const lastPosition = await checklistRepository.getLastChecklistPosition(data.taskId)
+    const position = generatePosition(lastPosition, null)
 
     const result = await db.insert(checklists).values({
       ...data,
-      position: nextPosition
+      position
     }).returning()
     return result[0]
   },
@@ -50,16 +67,13 @@ export const checklistRepository = {
   },
 
   createItem: async (data: CreateChecklistItemInput) => {
-    // Get next position using fractional indexing
-    const [maxPos] = await db
-      .select({ maxPos: sql<string>`COALESCE(MAX(${checklistItems.position}), '0')` })
-      .from(checklistItems)
-      .where(eq(checklistItems.checklistId, data.checklistId))
-    const nextPosition = String(Number(maxPos?.maxPos || '0') + 1)
+    // Get last position and generate next using fractional indexing
+    const lastPosition = await checklistRepository.getLastItemPosition(data.checklistId)
+    const position = generatePosition(lastPosition, null)
 
     const result = await db.insert(checklistItems).values({
       ...data,
-      position: nextPosition,
+      position,
       isCompleted: false
     }).returning()
     return result[0]

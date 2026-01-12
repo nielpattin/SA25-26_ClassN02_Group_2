@@ -35,14 +35,14 @@ type ChecklistItem = {
   content: string
   isCompleted: boolean
   checklistId: string
-  order: number
+  position: string
 }
 
 type Checklist = {
   id: string
   title: string
-  cardId: string
-  order: number
+  taskId: string
+  position: string
   items: ChecklistItem[]
 }
 
@@ -63,7 +63,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   const { data: card, isLoading: cardLoading } = useQuery({
     queryKey: ['card', cardId],
     queryFn: async () => {
-      const { data, error } = await api.cards({ id: cardId }).get()
+      const { data, error } = await api.tasks({ id: cardId }).get()
       if (error) throw error
       return data as Card
     },
@@ -111,7 +111,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   // Mutations
   const updateCard = useMutation({
     mutationFn: async (updates: { title?: string; description?: string; dueDate?: string | null }) => {
-      const { data, error } = await api.cards({ id: cardId }).patch(updates)
+      const { data, error } = await api.tasks({ id: cardId }).patch(updates)
       if (error) throw error
       return data
     },

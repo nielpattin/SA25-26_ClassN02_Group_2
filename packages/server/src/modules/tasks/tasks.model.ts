@@ -19,7 +19,7 @@ export const TaskSchema = {
 export const CreateTaskBody = t.Object({
   title: TaskSchema.title,
   description: t.Optional(TaskSchema.description),
-  position: TaskSchema.position,
+  position: t.Optional(TaskSchema.position),
   columnId: TaskSchema.columnId,
   dueDate: t.Optional(TaskSchema.dueDate),
   priority: t.Optional(TaskSchema.priority),
@@ -56,4 +56,10 @@ export const TaskAssigneeParams = t.Object({
 
 export const AddAssigneeBody = t.Object({
   userId: t.String(),
+})
+
+export const MoveTaskBody = t.Object({
+  columnId: t.Optional(TaskSchema.columnId),
+  beforeTaskId: t.Optional(t.String({ format: 'uuid' })),
+  afterTaskId: t.Optional(t.String({ format: 'uuid' })),
 })

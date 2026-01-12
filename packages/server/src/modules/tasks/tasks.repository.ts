@@ -1,6 +1,7 @@
 import { db } from '../../db'
 import { tasks, columns, labels, taskLabels, taskAssignees, checklists, checklistItems, attachments, users } from '../../db/schema'
-import { eq, asc, sql, and, isNull } from 'drizzle-orm'
+import { eq, asc, desc, sql, and, isNull } from 'drizzle-orm'
+import { generatePosition, generatePositions } from '../../shared/position'
 
 export const taskRepository = {
   findById: async (id: string) => {
@@ -196,5 +197,57 @@ export const taskRepository = {
       checklistProgress: progressMap[task.id] || null,
       attachmentsCount: attachmentsMap[task.id] || 0,
     }))
+  },
+
+  // Position helpers for fractional indexing
+  getLastPositionInColumn: async (columnId: string): Promise<string | null> => {
+    const [lastTask] = await db.select({ position: tasks.position })
+      .from(tasks)
+      .where(and(eq(tasks.columnId, columnId), isNull(tasks.archivedAt)))
+      .orderBy(desc(tasks.position))
+      .limit(1)
+    return lastTask?.position ?? null
+  },
+
+  getPositionBetween: async (
+    columnId: string,
+    beforeTaskId?: string,
+    afterTaskId?: string
+  ): Promise<{ before: string | null; after: string | null }> => {
+    let before: string | null = null
+    let after: string | null = null
+
+    if (beforeTaskId) {
+      const [beforeTask] = await db.select({ position: tasks.position })
+        .from(tasks)
+        .where(eq(tasks.id, beforeTaskId))
+      before = beforeTask?.position ?? null
+    }
+
+    if (afterTaskId) {
+      const [afterTask] = await db.select({ position: tasks.position })
+        .from(tasks)
+        .where(eq(tasks.id, afterTaskId))
+      after = afterTask?.position ?? null
+    }
+
+    return { before, after }
+  },
+
+  rebalanceColumn: async (columnId: string): Promise<void> => {
+    const columnTasks = await db.select({ id: tasks.id })
+      .from(tasks)
+      .where(and(eq(tasks.columnId, columnId), isNull(tasks.archivedAt)))
+      .orderBy(asc(tasks.position))
+
+    if (columnTasks.length === 0) return
+
+    const newPositions = generatePositions(null, null, columnTasks.length)
+
+    for (let i = 0; i < columnTasks.length; i++) {
+      await db.update(tasks)
+        .set({ position: newPositions[i], updatedAt: new Date() })
+        .where(eq(tasks.id, columnTasks[i].id))
+    }
   },
 }

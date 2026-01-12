@@ -1,5 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { cors } from '@elysiajs/cors'
+import { authPlugin } from './modules/auth'
 import { boardController } from './modules/boards'
 import { columnController } from './modules/columns'
 import { taskController } from './modules/tasks'
@@ -12,6 +13,7 @@ import { wsManager } from './websocket/manager'
 
 export const app = new Elysia()
   .use(cors())
+  .use(authPlugin)
   .use(boardController)
   .use(columnController)
   .use(taskController)

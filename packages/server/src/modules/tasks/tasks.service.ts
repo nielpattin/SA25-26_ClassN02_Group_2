@@ -1,5 +1,6 @@
 import { taskRepository } from './tasks.repository'
 import { wsManager } from '../../websocket/manager'
+import { generatePosition, needsRebalancing } from '../../shared/position'
 
 export const taskService = {
   getTaskById: (id: string) => taskRepository.findById(id),
@@ -11,13 +12,19 @@ export const taskService = {
   createTask: async (data: {
     title: string
     description?: string
-    position: string
+    position?: string
     columnId: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none'
     dueDate?: Date | null
     coverImageUrl?: string
   }) => {
-    const task = await taskRepository.create(data)
+    let position = data.position
+    if (!position) {
+      const lastPosition = await taskRepository.getLastPositionInColumn(data.columnId)
+      position = generatePosition(lastPosition, null)
+    }
+
+    const task = await taskRepository.create({ ...data, position })
     const boardId = await taskRepository.getBoardIdFromColumn(data.columnId)
     if (boardId) wsManager.broadcast(`board:${boardId}`, { type: 'task:created', columnId: data.columnId })
     return task
@@ -65,6 +72,44 @@ export const taskService = {
       if (boardId) wsManager.broadcast(`board:${boardId}`, { type: 'task:deleted', columnId: task.columnId })
     }
     return task
+  },
+
+  moveTask: async (
+    taskId: string,
+    targetColumnId?: string,
+    beforeTaskId?: string,
+    afterTaskId?: string
+  ) => {
+    const task = await taskRepository.findById(taskId)
+    if (!task) throw new Error('Task not found')
+
+    const columnId = targetColumnId ?? task.columnId
+    if (!columnId) throw new Error('No target column')
+
+    // Get positions of adjacent tasks
+    const { before, after } = await taskRepository.getPositionBetween(columnId, beforeTaskId, afterTaskId)
+
+    // Generate new position between the two
+    const newPosition = generatePosition(before, after)
+
+    // Update task with new position and column
+    const updatedTask = await taskRepository.update(taskId, {
+      position: newPosition,
+      columnId,
+    })
+
+    // Check if rebalancing is needed
+    if (needsRebalancing(newPosition)) {
+      await taskRepository.rebalanceColumn(columnId)
+    }
+
+    // Broadcast update
+    const boardId = await taskRepository.getBoardIdFromColumn(columnId)
+    if (boardId) {
+      wsManager.broadcast(`board:${boardId}`, { type: 'task:moved', data: updatedTask })
+    }
+
+    return updatedTask
   },
 
   // Assignees

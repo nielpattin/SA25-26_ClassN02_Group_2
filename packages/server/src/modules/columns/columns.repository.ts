@@ -1,10 +1,18 @@
 import { db } from '../../db'
 import { columns } from '../../db/schema'
-import { eq, asc, sql } from 'drizzle-orm'
+import { eq, asc, desc, and, isNull } from 'drizzle-orm'
+import { generatePositions } from '../../shared/position'
 
 export const columnRepository = {
+  findById: async (id: string) => {
+    const [column] = await db.select().from(columns).where(eq(columns.id, id))
+    return column
+  },
+
   findByBoardId: (boardId: string) =>
-    db.select().from(columns).where(eq(columns.boardId, boardId)).orderBy(asc(columns.position)),
+    db.select().from(columns)
+      .where(and(eq(columns.boardId, boardId), isNull(columns.archivedAt)))
+      .orderBy(asc(columns.position)),
 
   create: async (data: { name: string; position: string; boardId: string }) => {
     const [column] = await db.insert(columns).values(data).returning()
@@ -21,11 +29,55 @@ export const columnRepository = {
     return column
   },
 
-  getNextPosition: async (boardId: string) => {
-    const [maxPos] = await db
-      .select({ maxPos: sql<string>`COALESCE(MAX(${columns.position}), '0')` })
+  // Position helpers for fractional indexing
+  getLastPositionInBoard: async (boardId: string): Promise<string | null> => {
+    const [lastColumn] = await db.select({ position: columns.position })
       .from(columns)
-      .where(eq(columns.boardId, boardId))
-    return String(Number(maxPos?.maxPos || '0') + 1)
+      .where(and(eq(columns.boardId, boardId), isNull(columns.archivedAt)))
+      .orderBy(desc(columns.position))
+      .limit(1)
+    return lastColumn?.position ?? null
+  },
+
+  getPositionBetween: async (
+    boardId: string,
+    beforeColumnId?: string,
+    afterColumnId?: string
+  ): Promise<{ before: string | null; after: string | null }> => {
+    let before: string | null = null
+    let after: string | null = null
+
+    if (beforeColumnId) {
+      const [beforeColumn] = await db.select({ position: columns.position })
+        .from(columns)
+        .where(eq(columns.id, beforeColumnId))
+      before = beforeColumn?.position ?? null
+    }
+
+    if (afterColumnId) {
+      const [afterColumn] = await db.select({ position: columns.position })
+        .from(columns)
+        .where(eq(columns.id, afterColumnId))
+      after = afterColumn?.position ?? null
+    }
+
+    return { before, after }
+  },
+
+  rebalanceBoard: async (boardId: string): Promise<void> => {
+    const boardColumns = await db.select({ id: columns.id })
+      .from(columns)
+      .where(and(eq(columns.boardId, boardId), isNull(columns.archivedAt)))
+      .orderBy(asc(columns.position))
+
+    if (boardColumns.length === 0) return
+
+    const newPositions = generatePositions(null, null, boardColumns.length)
+
+    for (let i = 0; i < boardColumns.length; i++) {
+      await db.update(columns)
+        .set({ position: newPositions[i] })
+        .where(eq(columns.id, boardColumns[i].id))
+    }
   },
 }
