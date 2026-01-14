@@ -19,8 +19,16 @@ export const columnRepository = {
     return column
   },
 
-  update: async (id: string, data: { name?: string; position?: string }) => {
+  update: async (id: string, data: { name?: string; position?: string; boardId?: string; archivedAt?: Date | null }) => {
     const [column] = await db.update(columns).set(data).where(eq(columns.id, id)).returning()
+    return column
+  },
+
+  archive: async (id: string) => {
+    const [column] = await db.update(columns)
+      .set({ archivedAt: new Date() })
+      .where(eq(columns.id, id))
+      .returning()
     return column
   },
 

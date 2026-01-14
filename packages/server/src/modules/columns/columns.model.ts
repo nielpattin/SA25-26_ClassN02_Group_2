@@ -23,6 +23,10 @@ export const MoveColumnBody = t.Object({
   afterColumnId: t.Optional(t.String({ format: 'uuid' })),
 })
 
+export const MoveToBoardBody = t.Object({
+  targetBoardId: t.String({ format: 'uuid' }),
+})
+
 export const ColumnParams = t.Object({
   id: ColumnSchema.id,
 })

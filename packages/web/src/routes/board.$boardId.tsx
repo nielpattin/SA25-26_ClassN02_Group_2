@@ -2,18 +2,20 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useState, useRef, useLayoutEffect, useMemo, useCallback, memo } from 'react'
-import { Plus, MoreHorizontal, ChevronRight, CheckSquare } from 'lucide-react'
+import { Plus, MoreHorizontal, ChevronRight, CheckSquare, Copy, ExternalLink, Archive, Pencil } from 'lucide-react'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
 import { CardModal } from '../components/CardModal'
+import { Dropdown } from '../components/Dropdown'
 import './board.$boardId.css'
 
 export const Route = createFileRoute('/board/$boardId')({
   component: BoardComponent,
 })
 
-type Column = { id: string; name: string; position: string }
+type Column = { id: string; name: string; position: string; boardId: string }
 type CardLabel = { id: string; name: string; color: string }
 type ChecklistProgress = { completed: number; total: number }
+type Board = { id: string; name: string }
 type Card = {
   id: string
   title: string
@@ -50,7 +52,7 @@ function BoardComponent() {
     queryFn: async () => {
       const { data, error } = await api.columns.board({ boardId }).get()
       if (error) throw error
-      return (data || []).sort((a, b) => a.position.localeCompare(b.position))
+      return (data || []).sort((a, b) => a.position < b.position ? -1 : a.position > b.position ? 1 : 0)
     },
   })
 
@@ -59,7 +61,16 @@ function BoardComponent() {
     queryFn: async () => {
       const { data, error } = await api.tasks.board({ boardId }).enriched.get()
       if (error) throw error
-      return (data || []).sort((a, b) => a.position.localeCompare(b.position)) as Card[]
+      return (data || []).sort((a, b) => a.position < b.position ? -1 : a.position > b.position ? 1 : 0) as Card[]
+    },
+  })
+
+  const { data: allBoards = [] } = useQuery({
+    queryKey: ['boards'],
+    queryFn: async () => {
+      const { data, error } = await api.boards.get()
+      if (error) throw error
+      return (data || []) as Board[]
     },
   })
 
@@ -70,8 +81,6 @@ function BoardComponent() {
 
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null)
   const [draggedCardData, setDraggedCardData] = useState<Card | null>(null)
-  const [placeholderCardIndex, setPlaceholderCardIndex] = useState<number | null>(null)
-  const [placeholderColumnId, setPlaceholderColumnId] = useState<string | null>(null)
   const [localCards, setLocalCards] = useState<Card[]>([])
 
   // Derived State
@@ -96,11 +105,11 @@ function BoardComponent() {
   const ghostRef = useRef<HTMLDivElement>(null)
   const cardGhostRef = useRef<HTMLDivElement>(null)
   const lastMousePos = useRef({ x: 0, y: 0 })
-  const columnRects = useRef<{ id: string, left: number, width: number }[]>([])
   const cardRects = useRef<{ id: string, columnId: string, top: number, height: number }[]>([])
   const columnRectsForCards = useRef<{ id: string, left: number, right: number, top: number, bottom: number }[]>([])
   const isDraggingCard = useRef(false)
   const pendingCardDrag = useRef<{ card: Card, x: number, y: number, rect: DOMRect } | null>(null)
+  const pendingColumnDrag = useRef<{ columnId: string, x: number, y: number, rect: DOMRect } | null>(null)
 
   const [isScrolling, setIsScrolling] = useState(false)
   const [startX, setStartX] = useState(0)
@@ -134,68 +143,6 @@ function BoardComponent() {
     setStartX(e.pageX - scrollContainerRef.current.offsetLeft)
     setScrollLeft(scrollContainerRef.current.scrollLeft)
   }, [])
-
-  const handleCardHover = useCallback((targetCardId: string, targetColId: string) => {
-    if (!draggedCardId || targetCardId === draggedCardId) return
-
-    setLocalCards(prev => {
-      const updated = [...prev]
-      const currentIdx = updated.findIndex(c => c.id === draggedCardId)
-      if (currentIdx === -1) return prev
-
-      const targetIdx = updated.findIndex(c => c.id === targetCardId)
-      if (targetIdx === -1) return prev
-
-      const [movedCard] = updated.splice(currentIdx, 1)
-      const updatedCard = { ...movedCard, columnId: targetColId }
-      
-      const finalTargetIdx = updated.findIndex(c => c.id === targetCardId)
-      
-      if (currentIdx < targetIdx) {
-        updated.splice(finalTargetIdx + 1, 0, updatedCard)
-      } else {
-        updated.splice(finalTargetIdx, 0, updatedCard)
-      }
-      
-      return updated
-    })
-    
-    setPlaceholderColumnId(targetColId)
-  }, [draggedCardId])
-
-  const handleColumnHover = useCallback((targetColId: string) => {
-    if (!draggedCardId) return
-
-    setLocalCards(prev => {
-      const updated = [...prev]
-      const currentIdx = updated.findIndex(c => c.id === draggedCardId)
-      if (currentIdx === -1) return prev
-
-      const card = updated[currentIdx]
-      if (card.columnId === targetColId) return prev
-
-      const [movedCard] = updated.splice(currentIdx, 1)
-      const updatedCard = { ...movedCard, columnId: targetColId }
-      
-      let lastInTarget = -1
-      for (let i = updated.length - 1; i >= 0; i--) {
-        if (updated[i].columnId === targetColId) {
-          lastInTarget = i
-          break
-        }
-      }
-
-      if (lastInTarget === -1) {
-        updated.push(updatedCard)
-      } else {
-        updated.splice(lastInTarget + 1, 0, updatedCard)
-      }
-      
-      return updated
-    })
-    
-    setPlaceholderColumnId(targetColId)
-  }, [draggedCardId])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     lastMousePos.current = { x: e.clientX, y: e.clientY }
@@ -235,10 +182,6 @@ function BoardComponent() {
         setLocalCards(allCards)
         setDraggedCardId(card.id)
         setDraggedCardData(card)
-        setPlaceholderColumnId(card.columnId)
-        
-        const colCards = allCards.filter(c => c.columnId === card.columnId)
-        setPlaceholderCardIndex(colCards.findIndex(c => c.id === card.id))
         
         setDragOffset({
           x: x - rect.left,
@@ -250,32 +193,58 @@ function BoardComponent() {
       }
     }
 
+    if (pendingColumnDrag.current) {
+      const { x, y, columnId, rect } = pendingColumnDrag.current
+      const dist = Math.sqrt(Math.pow(e.clientX - x, 2) + Math.pow(e.clientY - y, 2))
+      
+      if (dist > 5) {
+        setLocalColumns(serverColumns)
+        setDraggedColumnId(columnId)
+        setDragOffset({
+          x: x - rect.left,
+          y: y - rect.top
+        })
+        setGlobalDragging(true)
+        
+        const index = serverColumns.findIndex(c => c.id === columnId)
+        setPlaceholderIndex(index)
+        pendingColumnDrag.current = null
+      }
+    }
+
     if (draggedColumnId) {
       if (ghostRef.current) {
         ghostRef.current.style.transform = `translate3d(${e.clientX - dragOffset.x}px, ${e.clientY - dragOffset.y}px, 0) rotate(2deg)`
       }
       
-      let newIndex = columnRects.current.length
-      for (let i = 0; i < columnRects.current.length; i++) {
-        const rect = columnRects.current[i]
-        const colMid = rect.left + rect.width / 2
-        if (e.clientX < colMid) {
-          newIndex = i
-          break
-        }
-      }
-      
-      if (newIndex !== placeholderIndex) {
-        setPlaceholderIndex(newIndex)
-        
-        setLocalColumns(prev => {
-          const filtered = prev.filter(c => c.id !== draggedColumnId)
-          const draggedCol = prev.find(c => c.id === draggedColumnId)
-          if (!draggedCol) return prev
-          const updated = [...filtered]
-          updated.splice(newIndex, 0, draggedCol)
-          return updated
+      if (scrollContainerRef.current) {
+        const colElements = Array.from(scrollContainerRef.current.querySelectorAll('.board-column:not(.is-dragging)'))
+        const rects = colElements.map(col => {
+          const r = col.getBoundingClientRect()
+          return { mid: r.left + r.width / 2 }
         })
+
+        let newIndex = 0
+        for (let i = 0; i < rects.length; i++) {
+          if (e.clientX > rects[i].mid) {
+            newIndex = i + 1
+          } else {
+            break
+          }
+        }
+        
+        if (newIndex !== placeholderIndex) {
+          setPlaceholderIndex(newIndex)
+          
+          setLocalColumns(prev => {
+            const filtered = prev.filter(c => c.id !== draggedColumnId)
+            const draggedCol = prev.find(c => c.id === draggedColumnId)
+            if (!draggedCol) return prev
+            const updated = [...filtered]
+            updated.splice(newIndex, 0, draggedCol)
+            return updated
+          })
+        }
       }
       return
     }
@@ -283,6 +252,74 @@ function BoardComponent() {
     if (draggedCardId) {
       if (cardGhostRef.current) {
         cardGhostRef.current.style.transform = `translate3d(${e.clientX - dragOffset.x}px, ${e.clientY - dragOffset.y}px, 0)`
+      }
+
+      if (scrollContainerRef.current) {
+        const colElements = Array.from(scrollContainerRef.current.querySelectorAll('.board-column'))
+        const colRects = colElements.map((el, i) => {
+          const r = el.getBoundingClientRect()
+          return { id: displayColumns[i].id, left: r.left, right: r.right }
+        })
+
+        const hoveredCol = colRects.find(r => e.clientX >= r.left && e.clientX <= r.right)
+        if (hoveredCol) {
+          const targetColId = hoveredCol.id
+          const cardElements = Array.from(scrollContainerRef.current.querySelectorAll(`.card-wrapper[data-column-id="${targetColId}"]:not(.is-placeholder)`))
+          const rects = cardElements.map(el => {
+            const r = el.getBoundingClientRect()
+            return { id: (el as HTMLElement).dataset.cardId!, mid: r.top + r.height / 2 }
+          })
+
+          let insertIdxInCol = 0
+          for (let i = 0; i < rects.length; i++) {
+            if (e.clientY > rects[i].mid) {
+              insertIdxInCol = i + 1
+            } else {
+              break
+            }
+          }
+
+          setLocalCards(prev => {
+            const updated = prev.filter(c => c.id !== draggedCardId)
+            const card = prev.find(c => c.id === draggedCardId)
+            if (!card) return prev
+            
+            const updatedCard = { ...card, columnId: targetColId }
+            const cardsInTarget = updated.filter(c => c.columnId === targetColId)
+            
+            let finalGlobalIdx
+            if (insertIdxInCol >= cardsInTarget.length) {
+              const lastCardInTarget = cardsInTarget[cardsInTarget.length - 1]
+              if (lastCardInTarget) {
+                finalGlobalIdx = updated.indexOf(lastCardInTarget) + 1
+              } else {
+                const colIdx = displayColumns.findIndex(c => c.id === targetColId)
+                let foundIdx = -1
+                for (let i = colIdx + 1; i < displayColumns.length; i++) {
+                  const firstInNext = updated.find(c => c.columnId === displayColumns[i].id)
+                  if (firstInNext) {
+                    foundIdx = updated.indexOf(firstInNext)
+                    break
+                  }
+                }
+                finalGlobalIdx = foundIdx !== -1 ? foundIdx : updated.length
+              }
+            } else {
+              finalGlobalIdx = updated.indexOf(cardsInTarget[insertIdxInCol])
+            }
+
+            const currentIdx = prev.findIndex(c => c.id === draggedCardId)
+            const cardsInPrevTarget = prev.filter(c => c.columnId === targetColId)
+            const currentIdxInCol = cardsInPrevTarget.indexOf(prev[currentIdx])
+            
+            if (prev[currentIdx]?.columnId === targetColId && currentIdxInCol === insertIdxInCol) {
+              return prev
+            }
+
+            updated.splice(finalGlobalIdx, 0, updatedCard)
+            return updated
+          })
+        }
       }
       return
     }
@@ -292,9 +329,12 @@ function BoardComponent() {
     const x = e.pageX - scrollContainerRef.current.offsetLeft
     const walk = (x - startX) * 1.5
     scrollContainerRef.current.scrollLeft = scrollLeft - walk
-  }, [draggedColumnId, draggedCardId, dragOffset, placeholderIndex, isScrolling, startX, scrollLeft, allCards, displayColumns])
+  }, [draggedColumnId, draggedCardId, dragOffset, placeholderIndex, isScrolling, startX, scrollLeft, allCards, displayColumns, serverColumns])
 
   const handleMouseUpOrLeave = useCallback(() => {
+    pendingCardDrag.current = null
+    pendingColumnDrag.current = null
+
     if (draggedColumnId) {
       const finalIndex = placeholderIndex
       const finalColumns = [...localColumns]
@@ -323,73 +363,55 @@ function BoardComponent() {
     }
 
     if (draggedCardId) {
-      if (placeholderColumnId !== null && placeholderCardIndex !== null) {
-        const finalCards = [...localCards]
-        const cardIdx = finalCards.findIndex(c => c.id === draggedCardId)
+      const finalCards = [...localCards]
+      const cardIdx = finalCards.findIndex(c => c.id === draggedCardId)
+      
+      if (cardIdx !== -1) {
+        queryClient.setQueryData(['cards', boardId], finalCards)
+
+        const droppedCard = finalCards[cardIdx]
+        const colId = droppedCard.columnId
+        const colCards = finalCards.filter(c => c.columnId === colId)
+        const inColIdx = colCards.indexOf(droppedCard)
         
-        if (cardIdx !== -1) {
-          queryClient.setQueryData(['cards', boardId], finalCards)
+        const beforeCard = colCards[inColIdx - 1]
+        const afterCard = colCards[inColIdx + 1]
 
-          const colCards = finalCards.filter(c => c.columnId === placeholderColumnId)
-          const inColIdx = colCards.findIndex(c => c.id === draggedCardId)
-          
-          const beforeCard = colCards[inColIdx - 1]
-          const afterCard = colCards[inColIdx + 1]
-
-          api.tasks({ id: draggedCardId }).move.patch({
-            columnId: placeholderColumnId,
-            beforeTaskId: beforeCard?.id,
-            afterTaskId: afterCard?.id
-          }).then(({ error }) => {
-            if (error) {
-              queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-            }
-          }).catch(() => {
+        api.tasks({ id: draggedCardId }).move.patch({
+          columnId: colId,
+          beforeTaskId: beforeCard?.id,
+          afterTaskId: afterCard?.id
+        }).then(({ error }) => {
+          if (error) {
             queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-          })
-        }
+          }
+        }).catch(() => {
+          queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+        })
       }
 
       setDraggedCardId(null)
       setDraggedCardData(null)
-      setPlaceholderCardIndex(null)
-      setPlaceholderColumnId(null)
       setGlobalDragging(false)
       isDraggingCard.current = false
     }
 
     pendingCardDrag.current = null
     setIsScrolling(false)
-  }, [draggedColumnId, draggedCardId, placeholderIndex, placeholderColumnId, placeholderCardIndex, localColumns, localCards, boardId, queryClient])
+  }, [draggedColumnId, draggedCardId, placeholderIndex, localColumns, localCards, boardId, queryClient])
 
   const handleColumnDragStart = useCallback((columnId: string, e: React.MouseEvent) => {
+    if (e.button !== 0) return
     const header = e.currentTarget as HTMLElement
     const rect = header.getBoundingClientRect()
     
-    if (scrollContainerRef.current) {
-      const cols = Array.from(scrollContainerRef.current.querySelectorAll('.board-column'))
-      columnRects.current = cols.map((col, i) => {
-        const r = col.getBoundingClientRect()
-        return {
-          id: serverColumns[i].id,
-          left: r.left,
-          width: r.width
-        }
-      })
+    pendingColumnDrag.current = {
+      columnId,
+      x: e.clientX,
+      y: e.clientY,
+      rect
     }
-
-    setLocalColumns(serverColumns)
-    setDraggedColumnId(columnId)
-    lastMousePos.current = { x: e.clientX, y: e.clientY }
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    })
-    setGlobalDragging(true)
-    
-    const index = serverColumns.findIndex(c => c.id === columnId)
-    setPlaceholderIndex(index)
-  }, [serverColumns])
+  }, [])
 
   const handleCardDragStart = useCallback((card: Card, e: React.MouseEvent) => {
     if (e.button !== 0) return
@@ -406,8 +428,40 @@ function BoardComponent() {
   }, [])
 
   const handleAddTask = useCallback(async (columnId: string, title: string) => {
+
     const { error } = await api.tasks.post({ title, columnId })
     if (!error) {
+      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+    }
+  }, [boardId, queryClient])
+
+  const handleRenameColumn = useCallback(async (columnId: string, newName: string) => {
+    const { error } = await api.columns({ id: columnId }).patch({ name: newName })
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
+    }
+  }, [boardId, queryClient])
+
+  const handleArchiveColumn = useCallback(async (columnId: string) => {
+    const { error } = await api.columns({ id: columnId }).archive.post()
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
+      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+    }
+  }, [boardId, queryClient])
+
+  const handleCopyColumn = useCallback(async (columnId: string) => {
+    const { error } = await api.columns({ id: columnId }).copy.post()
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
+      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+    }
+  }, [boardId, queryClient])
+
+  const handleMoveColumnToBoard = useCallback(async (columnId: string, targetBoardId: string) => {
+    const { error } = await api.columns({ id: columnId })['move-to-board'].patch({ targetBoardId })
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
     }
   }, [boardId, queryClient])
@@ -445,9 +499,12 @@ function BoardComponent() {
             onCardClick={setSelectedCardId}
             onDragStart={(e) => handleColumnDragStart(column.id, e)}
             onCardDragStart={handleCardDragStart}
-            onCardHover={handleCardHover}
-            onColumnHover={handleColumnHover}
             onAddTask={handleAddTask}
+            onRenameColumn={handleRenameColumn}
+            onArchiveColumn={handleArchiveColumn}
+            onCopyColumn={handleCopyColumn}
+            onMoveColumnToBoard={handleMoveColumnToBoard}
+            boards={allBoards}
             isDragging={column.id === draggedColumnId}
             draggedCardId={draggedCardId}
           />
@@ -476,7 +533,7 @@ function BoardComponent() {
           ref={ghostRef}
         >
           <h4 className="column-header">
-            {draggedColumn.name}
+            <span className="column-name-text">{draggedColumn.name}</span>
             <span className="column-count">{cardsByColumn[draggedColumn.id]?.length || 0}</span>
             <MoreHorizontal size={14} style={{ cursor: 'pointer', color: 'var(--colors-text-muted)' }} />
           </h4>
@@ -506,9 +563,12 @@ const BoardColumn = memo(({
   onCardClick,
   onDragStart,
   onCardDragStart,
-  onCardHover,
-  onColumnHover,
   onAddTask,
+  onRenameColumn,
+  onArchiveColumn,
+  onCopyColumn,
+  onMoveColumnToBoard,
+  boards,
   isDragging,
   draggedCardId
 }: { 
@@ -517,21 +577,34 @@ const BoardColumn = memo(({
   onCardClick: (id: string) => void
   onDragStart: (e: React.MouseEvent) => void
   onCardDragStart: (card: Card, e: React.MouseEvent) => void
-  onCardHover: (targetCardId: string, targetColId: string) => void
-  onColumnHover: (targetColId: string) => void
   onAddTask: (columnId: string, title: string) => Promise<void>
+  onRenameColumn: (columnId: string, newName: string) => Promise<void>
+  onArchiveColumn: (columnId: string) => Promise<void>
+  onCopyColumn: (columnId: string) => Promise<void>
+  onMoveColumnToBoard: (columnId: string, targetBoardId: string) => Promise<void>
+  boards: Board[]
   isDragging?: boolean
   draggedCardId: string | null
 }) => {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [nameValue, setNameValue] = useState(column.name)
   const inputRef = useRef<HTMLInputElement>(null)
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   useLayoutEffect(() => {
     if (isAddingTask) {
       inputRef.current?.focus()
     }
   }, [isAddingTask])
+
+  useLayoutEffect(() => {
+    if (isEditingName) {
+      nameInputRef.current?.focus()
+      nameInputRef.current?.select()
+    }
+  }, [isEditingName])
 
   const handleSubmit = async () => {
     if (newTaskTitle.trim()) {
@@ -541,26 +614,91 @@ const BoardColumn = memo(({
     setIsAddingTask(false)
   }
 
+  const handleRenameSubmit = async () => {
+    if (nameValue.trim() && nameValue.trim() !== column.name) {
+      await onRenameColumn(column.id, nameValue.trim())
+    } else {
+      setNameValue(column.name)
+    }
+    setIsEditingName(false)
+  }
+
+  const menuItems = [
+    { label: 'Add Card', icon: <Plus size={14} />, onClick: () => setIsAddingTask(true) },
+    { label: 'Rename List', icon: <Pencil size={14} />, onClick: () => setIsEditingName(true) },
+    { label: 'Copy List', icon: <Copy size={14} />, onClick: () => onCopyColumn(column.id) },
+    { label: 'Archive', icon: <Archive size={14} />, onClick: () => onArchiveColumn(column.id), variant: 'danger' as const },
+  ]
+
+  // Add Move options
+  const otherBoards = boards.filter(b => b.id !== column.boardId)
+  if (otherBoards.length > 0) {
+    otherBoards.forEach(board => {
+      menuItems.push({
+        label: `Move to ${board.name}`,
+        icon: <ExternalLink size={14} />,
+        onClick: () => onMoveColumnToBoard(column.id, board.id)
+      })
+    })
+  }
+
   return (
     <div 
       className={`board-column ${isDragging ? 'is-dragging' : ''}`}
-      onMouseEnter={() => onColumnHover(column.id)}
+      data-column-id={column.id}
     >
-      <h4 className="column-header" onMouseDown={onDragStart} style={{ cursor: 'grab' }}>
-        {column.name}
-        <span className="column-count">{cards.length}</span>
-        <MoreHorizontal size={14} style={{ cursor: 'pointer', color: 'var(--colors-text-muted)' }} />
-      </h4>
+      <div className="column-header-container">
+        <h4 
+          className="column-header" 
+          onMouseDown={onDragStart} 
+          style={{ cursor: 'grab' }}
+        >
+          {isEditingName ? (
+            <input
+              ref={nameInputRef}
+              className="column-name-input"
+              value={nameValue}
+              onChange={e => setNameValue(e.target.value)}
+              onBlur={handleRenameSubmit}
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleRenameSubmit()
+                if (e.key === 'Escape') {
+                  setNameValue(column.name)
+                  setIsEditingName(false)
+                }
+              }}
+              onMouseDown={e => e.stopPropagation()}
+            />
+          ) : (
+            <span 
+              className="column-name-text" 
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsEditingName(true)
+              }}
+            >
+              {column.name}
+            </span>
+          )}
+          <span className="column-count">{cards.length}</span>
+          <div onMouseDown={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
+            <Dropdown 
+              trigger={<MoreHorizontal size={14} style={{ cursor: 'pointer', color: 'var(--colors-text-muted)' }} />}
+              items={menuItems}
+            />
+          </div>
+        </h4>
+      </div>
       <div className="cards-list">
         {cards.map((card) => (
-          <CardItem 
-            key={card.id} 
-            card={card} 
-            onClick={() => onCardClick(card.id)} 
-            onDragStart={(e) => onCardDragStart(card, e)}
-            onHover={() => onCardHover(card.id, column.id)}
-            isDragging={card.id === draggedCardId}
-          />
+            <CardItem 
+              key={card.id} 
+              card={card} 
+              onClick={() => onCardClick(card.id)} 
+              onDragStart={(e) => onCardDragStart(card, e)}
+              isDragging={card.id === draggedCardId}
+            />
+
         ))}
         {cards.length === 0 && (
           <div className="empty-column-placeholder">No items</div>
@@ -594,13 +732,11 @@ const CardItem = memo(({
   card, 
   onClick, 
   onDragStart,
-  onHover,
   isDragging 
 }: { 
   card: Card
   onClick: () => void
   onDragStart?: (e: React.MouseEvent) => void
-  onHover?: () => void
   isDragging?: boolean
 }) => {
   const now = new Date()
@@ -612,7 +748,6 @@ const CardItem = memo(({
     <div 
       className={`card-wrapper ${isDragging ? 'is-placeholder' : ''}`}
       onMouseDown={onDragStart}
-      onMouseEnter={onHover}
       data-card-id={card.id}
       data-column-id={card.columnId}
     >
