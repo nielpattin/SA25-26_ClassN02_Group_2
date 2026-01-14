@@ -87,6 +87,8 @@ function BoardComponent() {
   const displayColumns = draggedColumnId ? localColumns : serverColumns
   const displayCards = draggedCardId ? localCards : allCards
 
+  const prevCardsByColumn = useRef<Record<string, Card[]>>({})
+
   const cardsByColumn = useMemo(() => {
     const map: Record<string, Card[]> = {}
     displayColumns.forEach(col => {
@@ -97,7 +99,22 @@ function BoardComponent() {
         map[card.columnId].push(card)
       }
     })
-    return map
+
+    // Stability optimization: keep references if content is same
+    const stableMap: Record<string, Card[]> = {}
+    Object.keys(map).forEach(colId => {
+      const currentCards = map[colId]
+      const prevCards = prevCardsByColumn.current[colId]
+      
+      if (prevCards && currentCards.length === prevCards.length && currentCards.every((c, i) => c.id === prevCards[i].id)) {
+        stableMap[colId] = prevCards
+      } else {
+        stableMap[colId] = currentCards
+      }
+    })
+    
+    prevCardsByColumn.current = stableMap
+    return stableMap
   }, [displayColumns, displayCards])
 
   // Refs
@@ -107,6 +124,7 @@ function BoardComponent() {
   const lastMousePos = useRef({ x: 0, y: 0 })
   const cardRects = useRef<{ id: string, columnId: string, top: number, height: number }[]>([])
   const columnRectsForCards = useRef<{ id: string, left: number, right: number, top: number, bottom: number }[]>([])
+  const columnMidpoints = useRef<{ mid: number }[]>([])
   const isDraggingCard = useRef(false)
   const pendingCardDrag = useRef<{ card: Card, x: number, y: number, rect: DOMRect } | null>(null)
   const pendingColumnDrag = useRef<{ columnId: string, x: number, y: number, rect: DOMRect } | null>(null)
@@ -200,6 +218,17 @@ function BoardComponent() {
       if (dist > 5) {
         setLocalColumns(serverColumns)
         setDraggedColumnId(columnId)
+        
+        if (scrollContainerRef.current) {
+          const colElements = Array.from(scrollContainerRef.current.querySelectorAll('.board-column'))
+          columnMidpoints.current = colElements
+            .filter(col => (col as HTMLElement).dataset.columnId !== columnId)
+            .map(col => {
+              const r = col.getBoundingClientRect()
+              return { mid: r.left + r.width / 2 }
+            })
+        }
+
         setDragOffset({
           x: x - rect.left,
           y: y - rect.top
@@ -217,23 +246,17 @@ function BoardComponent() {
         ghostRef.current.style.transform = `translate3d(${e.clientX - dragOffset.x}px, ${e.clientY - dragOffset.y}px, 0) rotate(2deg)`
       }
       
-      if (scrollContainerRef.current) {
-        const colElements = Array.from(scrollContainerRef.current.querySelectorAll('.board-column:not(.is-dragging)'))
-        const rects = colElements.map(col => {
-          const r = col.getBoundingClientRect()
-          return { mid: r.left + r.width / 2 }
-        })
-
-        let newIndex = 0
-        for (let i = 0; i < rects.length; i++) {
-          if (e.clientX > rects[i].mid) {
-            newIndex = i + 1
-          } else {
-            break
-          }
+      const midpoints = columnMidpoints.current
+      let newIndex = 0
+      for (let i = 0; i < midpoints.length; i++) {
+        if (e.clientX > midpoints[i].mid) {
+          newIndex = i + 1
+        } else {
+          break
         }
-        
-        if (newIndex !== placeholderIndex) {
+      }
+      
+      if (newIndex !== placeholderIndex) {
           setPlaceholderIndex(newIndex)
           
           setLocalColumns(prev => {
@@ -245,7 +268,6 @@ function BoardComponent() {
             return updated
           })
         }
-      }
       return
     }
 
@@ -360,6 +382,7 @@ function BoardComponent() {
       setDraggedColumnId(null)
       setPlaceholderIndex(null)
       setGlobalDragging(false)
+      columnMidpoints.current = []
     }
 
     if (draggedCardId) {
@@ -400,9 +423,12 @@ function BoardComponent() {
     setIsScrolling(false)
   }, [draggedColumnId, draggedCardId, placeholderIndex, localColumns, localCards, boardId, queryClient])
 
-  const handleColumnDragStart = useCallback((columnId: string, e: React.MouseEvent) => {
+  const handleColumnDragStart = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return
     const header = e.currentTarget as HTMLElement
+    const columnId = header.closest('.board-column')?.getAttribute('data-column-id')
+    if (!columnId) return
+
     const rect = header.getBoundingClientRect()
     
     pendingColumnDrag.current = {
@@ -497,7 +523,7 @@ function BoardComponent() {
             column={column}
             cards={cardsByColumn[column.id] || []}
             onCardClick={setSelectedCardId}
-            onDragStart={(e) => handleColumnDragStart(column.id, e)}
+            onDragStart={handleColumnDragStart}
             onCardDragStart={handleCardDragStart}
             onAddTask={handleAddTask}
             onRenameColumn={handleRenameColumn}
@@ -542,7 +568,7 @@ function BoardComponent() {
 
       {draggedCardData && (
         <div className="card-ghost" ref={cardGhostRef}>
-          <CardItem card={draggedCardData} onClick={() => {}} />
+          <CardItem card={draggedCardData} onCardClick={() => {}} />
         </div>
       )}
 
@@ -694,11 +720,10 @@ const BoardColumn = memo(({
             <CardItem 
               key={card.id} 
               card={card} 
-              onClick={() => onCardClick(card.id)} 
-              onDragStart={(e) => onCardDragStart(card, e)}
+              onCardClick={onCardClick} 
+              onCardDragStart={onCardDragStart}
               isDragging={card.id === draggedCardId}
             />
-
         ))}
         {cards.length === 0 && (
           <div className="empty-column-placeholder">No items</div>
@@ -730,13 +755,13 @@ const BoardColumn = memo(({
 
 const CardItem = memo(({ 
   card, 
-  onClick, 
-  onDragStart,
+  onCardClick, 
+  onCardDragStart,
   isDragging 
 }: { 
   card: Card
-  onClick: () => void
-  onDragStart?: (e: React.MouseEvent) => void
+  onCardClick: (id: string) => void
+  onCardDragStart?: (card: Card, e: React.MouseEvent) => void
   isDragging?: boolean
 }) => {
   const now = new Date()
@@ -744,14 +769,22 @@ const CardItem = memo(({
   const isOverdue = card.dueDate && new Date(card.dueDate) < now
   const isDueSoon = card.dueDate && !isOverdue && new Date(card.dueDate) <= twoDaysFromNow
 
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    onCardDragStart?.(card, e)
+  }, [card, onCardDragStart])
+
+  const handleClick = useCallback(() => {
+    onCardClick(card.id)
+  }, [card, onCardClick])
+
   return (
     <div 
       className={`card-wrapper ${isDragging ? 'is-placeholder' : ''}`}
-      onMouseDown={onDragStart}
+      onMouseDown={handleMouseDown}
       data-card-id={card.id}
       data-column-id={card.columnId}
     >
-      <div className="card-item" onClick={onClick}>
+      <div className="card-item" onClick={handleClick}>
         {card.labels && card.labels.length > 0 && (
           <div className="card-labels">
             {card.labels.map(l => (
