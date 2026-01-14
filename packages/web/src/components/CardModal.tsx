@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link2, File, Trash2, ExternalLink, X, ChevronRight, CheckSquare, Square, CalendarClock, AlertTriangle } from 'lucide-react'
+import { Link2, File, Trash2, ExternalLink, X, ChevronRight, CheckSquare, Square, CalendarClock, AlertTriangle, MoreHorizontal } from 'lucide-react'
 import { api } from '../api/client'
 import { useSession } from '../api/auth'
+import { Dropdown } from './Dropdown'
 import './CardModal.css'
 
 type Card = {
@@ -10,6 +12,7 @@ type Card = {
   title: string
   description: string | null
   dueDate: string | Date | null
+  priority: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
   columnId: string
 }
 
@@ -35,7 +38,6 @@ type Comment = {
   updatedAt: string | Date
 }
 
-
 type Label = {
   id: string
   name: string
@@ -60,7 +62,6 @@ type Checklist = {
 }
 
 type CardModalProps = {
-
   cardId: string
   boardId: string
   onClose: () => void
@@ -71,7 +72,11 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState('')
+  const [priority, setPriority] = useState<'urgent' | 'high' | 'medium' | 'low' | 'none' | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
+  const [deletingLabel, setDeletingLabel] = useState<Label | null>(null)
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
   const isMouseDownOnOverlay = useRef(false)
 
   // Fetch card data
@@ -137,7 +142,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
 
   // Mutations
   const updateCard = useMutation({
-    mutationFn: async (updates: { title?: string; description?: string; dueDate?: string | null }) => {
+    mutationFn: async (updates: { title?: string; description?: string; dueDate?: string | null; priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null }) => {
       const { data, error } = await api.tasks({ id: cardId }).patch(updates)
       if (error) throw error
       return data
@@ -145,6 +150,17 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
       queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+    },
+  })
+
+  const archiveCard = useMutation({
+    mutationFn: async () => {
+      const { error } = await api.tasks({ id: cardId }).archive.post({})
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+      onClose()
     },
   })
 
@@ -160,6 +176,18 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cardLabels', cardId] })
+      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+    },
+  })
+
+  const deleteLabel = useMutation({
+    mutationFn: async (labelId: string) => {
+      const { error } = await api.labels({ id: labelId }).delete()
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
+      queryClient.invalidateQueries({ queryKey: ['cardLabels'] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
     },
   })
@@ -234,6 +262,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
       ? (typeof card.dueDate === 'string' ? card.dueDate : card.dueDate.toISOString()).split('T')[0]
       : ''
     setDueDate(dueDateStr)
+    setPriority(card.priority)
     setIsInitialized(true)
   }
 
@@ -248,6 +277,14 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
     isMouseDownOnOverlay.current = false
   }
 
+  const handleSave = () => {
+    updateCard.mutate({
+      title,
+      description,
+      dueDate: dueDate || null,
+    })
+  }
+
   if (cardLoading || !card) {
     return (
       <div className="modal-overlay" onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
@@ -256,14 +293,6 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
         </div>
       </div>
     )
-  }
-
-  const handleSave = () => {
-    updateCard.mutate({
-      title,
-      description,
-      dueDate: dueDate || null,
-    })
   }
 
   const now = new Date()
@@ -282,15 +311,31 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
             className="modal-title-input"
             onBlur={handleSave}
             onFocus={(e) => {
-              // Fix for "selectext" issue: prevent browser from selecting all text on focus
               const val = e.target.value
               e.target.value = ''
               e.target.value = val
             }}
           />
-          <button onClick={onClose} className="modal-close">
-            <X size={20} />
-          </button>
+          <div className="modal-actions-header">
+            <Dropdown
+              trigger={
+                <button className="modal-header-btn" title="More actions">
+                  <MoreHorizontal size={20} />
+                </button>
+              }
+              items={[
+                {
+                  label: 'Archive Task',
+                  icon: <Trash2 size={16} />,
+                  variant: 'danger',
+                  onClick: () => setShowArchiveConfirm(true),
+                },
+              ]}
+            />
+            <button onClick={onClose} className="modal-header-btn close" title="Close">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="modal-body">
@@ -302,17 +347,46 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                 {boardLabels?.map((label) => {
                   const isAttached = cardLabels?.some((cl) => cl.id === label.id)
                   return (
-                    <button
-                      key={label.id}
-                      className={`label-pill ${isAttached ? 'active' : ''}`}
-                      style={{ '--label-color': label.color } as React.CSSProperties}
-                      onClick={() => toggleLabel.mutate({ labelId: label.id, attached: !!isAttached })}
-                    >
-                      {label.name}
-                    </button>
+                    <div key={label.id} className="label-wrapper">
+                      <button
+                        className={`label-pill ${isAttached ? 'active' : ''}`}
+                        style={{ '--label-color': label.color } as React.CSSProperties}
+                        onClick={() => toggleLabel.mutate({ labelId: label.id, attached: !!isAttached })}
+                      >
+                        {label.name}
+                      </button>
+                      <button 
+                        className="delete-label-pill-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeletingLabel(label)
+                        }}
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
                   )
                 })}
                 <LabelCreator boardId={boardId} />
+              </div>
+            </div>
+
+            {/* Priority Section */}
+            <div className="modal-section">
+              <h4 className="section-title"><ChevronRight size={14} /> Priority</h4>
+              <div className="priority-container">
+                {(['urgent', 'high', 'medium', 'low', 'none'] as const).map((p) => (
+                  <button
+                    key={p}
+                    className={`priority-pill ${priority === p ? 'active' : ''} ${p}`}
+                    onClick={() => {
+                      setPriority(p)
+                      updateCard.mutate({ priority: p })
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -430,22 +504,23 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                     </div>
                     <div className="comment-content-container">
                       <div className="comment-author-info">
-                        <span className="comment-author-name">{comment.userName}</span>
-                        <span className="comment-date">
-                          {new Date(comment.createdAt).toLocaleString()}
-                        </span>
+                        <div className="comment-author-meta">
+                          <span className="comment-author-name">{comment.userName}</span>
+                          <span className="comment-date">
+                            {new Date(comment.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        {session?.user.id === comment.userId && (
+                          <button
+                            className="comment-delete-btn"
+                            onClick={() => setDeletingCommentId(comment.id)}
+                            title="Delete comment"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                       <div className="comment-content">{comment.content}</div>
-                      {session?.user.id === comment.userId && (
-                        <div className="comment-actions">
-                          <button
-                            className="comment-action-btn delete"
-                            onClick={() => deleteComment.mutate(comment.id)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -455,7 +530,93 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showArchiveConfirm}
+        title="Archive Task"
+        message="Are you sure you want to archive this task? It will be removed from the board but can be restored later."
+        confirmText="Archive"
+        variant="danger"
+        onConfirm={() => archiveCard.mutate()}
+        onCancel={() => setShowArchiveConfirm(false)}
+      />
+
+      <ConfirmModal
+        isOpen={!!deletingLabel}
+        title="Delete Label"
+        message={`Are you sure you want to delete label "${deletingLabel?.name}" from the board? This will remove it from all tasks.`}
+        confirmText="Delete"
+        variant="danger"
+        onConfirm={() => {
+          if (deletingLabel) {
+            deleteLabel.mutate(deletingLabel.id)
+            setDeletingLabel(null)
+          }
+        }}
+        onCancel={() => setDeletingLabel(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!deletingCommentId}
+        title="Delete Comment"
+        message="Are you sure you want to delete this comment? This action cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+        onConfirm={() => {
+          if (deletingCommentId) {
+            deleteComment.mutate(deletingCommentId)
+            setDeletingCommentId(null)
+          }
+        }}
+        onCancel={() => setDeletingCommentId(null)}
+      />
     </div>
+  )
+}
+
+function ConfirmModal({ 
+  isOpen, 
+  title, 
+  message, 
+  onConfirm, 
+  onCancel, 
+  confirmText = 'Confirm', 
+  cancelText = 'Cancel',
+  variant = 'default' 
+}: {
+  isOpen: boolean
+  title: string
+  message: string
+  onConfirm: () => void
+  onCancel: () => void
+  confirmText?: string
+  cancelText?: string
+  variant?: 'default' | 'danger'
+}) {
+  if (!isOpen) return null
+
+  return createPortal(
+    <div className="modal-overlay confirm-overlay" onClick={onCancel}>
+      <div className="modal-content confirm-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="confirm-title">{title}</h3>
+          <button onClick={onCancel} className="modal-header-btn close"><X size={20} /></button>
+        </div>
+        <div className="modal-body confirm-body">
+          <p className="confirm-message">{message}</p>
+          <div className="confirm-actions">
+            <button onClick={onCancel} className="btn-cancel">{cancelText}</button>
+            <button 
+              onClick={onConfirm} 
+              className={`btn-save ${variant === 'danger' ? 'danger' : ''}`}
+            >
+              {confirmText}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
   )
 }
 
@@ -501,7 +662,7 @@ function LabelCreator({ boardId }: { boardId: string }) {
   const [name, setName] = useState('')
   const [color, setColor] = useState('#e74c3c')
 
-  const colors = ['#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#3498db', '#2ecc71', '#000000', '#ffffff']
+  const colors = ['#FFA07A', '#E74C3C', '#F7DC6F', '#BB8FCE', '#3498db', '#2ecc71', '#000000', '#FF69B4']
 
   const createLabel = useMutation({
     mutationFn: async () => {
@@ -620,21 +781,7 @@ function ChecklistComponent({ checklist, cardId }: { checklist: Checklist; cardI
   const [isAddingItem, setIsAddingItem] = useState(false)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editedItemContent, setEditedItemContent] = useState('')
-  // Using boardId from props or context if needed, but invalidating 'checklists' for cardId is enough
-  // and we also invalidate 'cards' for the board to update progress.
-  // We can get boardId from query cache or pass it down, but let's just invalidate 'checklists' for now
-  // and 'cards' if we can access the key.
-  // Actually, in onSuccess of parent we invalidate 'cards', 'boardId'.
-  // Here we only have cardId.
-  // But wait, the previous code used Route.useParams() to get boardId.
-  // I will keep that if possible, or pass boardId.
-  // Since this component is inside CardModal, let's pass boardId to ChecklistComponent too?
-  // Or just use the hook.
   
-  // Note: boardId is needed to update the board view (checklist progress)
-  // Let's use the hook again as it was there.
-  
-  // Items are now passed via checklist prop
   const items = checklist.items
 
   const addItem = useMutation({
@@ -648,7 +795,7 @@ function ChecklistComponent({ checklist, cardId }: { checklist: Checklist; cardI
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      queryClient.invalidateQueries({ queryKey: ['cards'] }) // Invalidate all cards queries to be safe
+      queryClient.invalidateQueries({ queryKey: ['cards'] })
       setNewItemContent('')
       setIsAddingItem(false)
     },
@@ -712,7 +859,7 @@ function ChecklistComponent({ checklist, cardId }: { checklist: Checklist; cardI
     },
   })
 
-  const completedCount = items?.filter((i) => i.isCompleted).length || 0
+  const completedCount = items?.filter((i: ChecklistItem) => i.isCompleted).length || 0
   const totalCount = items?.length || 0
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
@@ -766,7 +913,7 @@ function ChecklistComponent({ checklist, cardId }: { checklist: Checklist; cardI
         <div className="progress-fill" style={{ width: `${progress}%` }} />
       </div>
       <div className="checklist-items">
-        {items?.map((item) => (
+        {items?.map((item: ChecklistItem) => (
           <div
             key={item.id}
             className={`checklist-item ${item.isCompleted ? 'completed' : ''}`}

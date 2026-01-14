@@ -18,44 +18,44 @@ const TEST_USER = {
   name: 'Test User',
 }
 
-async function seed() {
-  console.log('--- Seeding database ---')
+const SECOND_TEST_USER = {
+  email: 'test2@kyte.dev',
+  password: 'password123',
+  name: 'Second Test User',
+}
 
-  let userId: string
-
+async function ensureUserExists(userData: typeof TEST_USER) {
   try {
-    console.log('Ensuring test user exists...')
     const signUpResult = await auth.api.signUpEmail({
       body: {
-        email: TEST_USER.email,
-        password: TEST_USER.password,
-        name: TEST_USER.name,
+        email: userData.email,
+        password: userData.password,
+        name: userData.name,
       },
     })
     
     if (signUpResult && 'user' in signUpResult) {
-      userId = signUpResult.user.id
-      console.log('Created new test user:', userId)
-    } else {
-      const existingUser = await db.query.users.findFirst({
-        where: eq(schema.users.email, TEST_USER.email),
-      })
-      if (!existingUser) throw new Error('Failed to create or find test user')
-      userId = existingUser.id
-      console.log('Found existing test user:', userId)
+      console.log(`Created new test user: ${userData.email} (${signUpResult.user.id})`)
+      return signUpResult.user.id
     }
   } catch (error) {
-    console.log('User might already exist, searching...')
-    const existingUser = await db.query.users.findFirst({
-      where: eq(schema.users.email, TEST_USER.email),
-    })
-    if (!existingUser) {
-      console.error('Failed to ensure test user:', error)
-      return
-    }
-    userId = existingUser.id
-    console.log('Found existing test user:', userId)
+    // User likely exists
   }
+
+  const existingUser = await db.query.users.findFirst({
+    where: eq(schema.users.email, userData.email),
+  })
+  
+  if (!existingUser) throw new Error(`Failed to create or find test user: ${userData.email}`)
+  console.log(`Found existing test user: ${userData.email} (${existingUser.id})`)
+  return existingUser.id
+}
+
+async function seed() {
+  console.log('--- Seeding database ---')
+
+  const userId = await ensureUserExists(TEST_USER)
+  const secondUserId = await ensureUserExists(SECOND_TEST_USER)
 
   // 1. Create Organization
   console.log('Creating organization...')
@@ -65,11 +65,18 @@ async function seed() {
     personal: true,
   }).returning()
 
-  await db.insert(schema.members).values({
-    organizationId: org.id,
-    userId: userId,
-    role: 'owner',
-  })
+  await db.insert(schema.members).values([
+    {
+      organizationId: org.id,
+      userId: userId,
+      role: 'owner',
+    },
+    {
+      organizationId: org.id,
+      userId: secondUserId,
+      role: 'member',
+    },
+  ])
 
   // --- Helper for creating a board ---
   const createBoard = async (name: string, pos: string) => {
@@ -198,8 +205,9 @@ async function seed() {
   }
 
   console.log('--- Seeding complete! ---')
-  console.log(`User: ${TEST_USER.email}`)
-  console.log(`Password: ${TEST_USER.password}`)
+  console.log('Test Users:')
+  console.log(`1. ${TEST_USER.email} / ${TEST_USER.password}`)
+  console.log(`2. ${SECOND_TEST_USER.email} / ${SECOND_TEST_USER.password}`)
 }
 
 seed()

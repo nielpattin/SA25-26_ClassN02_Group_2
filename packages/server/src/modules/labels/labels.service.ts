@@ -1,4 +1,6 @@
 import { labelRepository } from './labels.repository'
+import { taskRepository } from '../tasks/tasks.repository'
+import { wsManager } from '../../websocket/manager'
 import type { CreateLabelInput, UpdateLabelInput } from './labels.model'
 
 export const labelService = {
@@ -23,11 +25,21 @@ export const labelService = {
   },
 
   addToTask: async (taskId: string, labelId: string) => {
-    return labelRepository.addToTask(taskId, labelId)
+    const result = await labelRepository.addToTask(taskId, labelId)
+    const boardId = await taskRepository.getBoardIdFromTask(taskId)
+    if (boardId) {
+      wsManager.broadcast(`board:${boardId}`, { type: 'task:updated' })
+    }
+    return result
   },
 
   removeFromTask: async (taskId: string, labelId: string) => {
-    return labelRepository.removeFromTask(taskId, labelId)
+    const result = await labelRepository.removeFromTask(taskId, labelId)
+    const boardId = await taskRepository.getBoardIdFromTask(taskId)
+    if (boardId) {
+      wsManager.broadcast(`board:${boardId}`, { type: 'task:updated' })
+    }
+    return result
   },
 
   getTaskLabels: async (taskId: string) => {

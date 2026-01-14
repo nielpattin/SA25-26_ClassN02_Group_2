@@ -237,15 +237,21 @@
 .card-labels {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 2px;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
 .card-label-pill {
-  height: 8px;
-  width: 32px;
+  height: 6px;
+  width: 36px;
   border-radius: 0;
-  border: 1px solid #000000;
+  border: 1.5px solid #000000;
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.card-label-pill:hover {
+  transform: scaleY(1.5);
+  transform-origin: top;
 }
 
 .card-meta {

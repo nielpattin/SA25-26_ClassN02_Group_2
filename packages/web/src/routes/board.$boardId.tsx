@@ -87,8 +87,6 @@ function BoardComponent() {
   const displayColumns = draggedColumnId ? localColumns : serverColumns
   const displayCards = draggedCardId ? localCards : allCards
 
-  const prevCardsByColumn = useRef<Record<string, Card[]>>({})
-
   const cardsByColumn = useMemo(() => {
     const map: Record<string, Card[]> = {}
     displayColumns.forEach(col => {
@@ -100,21 +98,7 @@ function BoardComponent() {
       }
     })
 
-    // Stability optimization: keep references if content is same
-    const stableMap: Record<string, Card[]> = {}
-    Object.keys(map).forEach(colId => {
-      const currentCards = map[colId]
-      const prevCards = prevCardsByColumn.current[colId]
-      
-      if (prevCards && currentCards.length === prevCards.length && currentCards.every((c, i) => c.id === prevCards[i].id)) {
-        stableMap[colId] = prevCards
-      } else {
-        stableMap[colId] = currentCards
-      }
-    })
-    
-    prevCardsByColumn.current = stableMap
-    return stableMap
+    return map
   }, [displayColumns, displayCards])
 
   // Refs
