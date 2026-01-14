@@ -5,32 +5,21 @@ import { injectTheme } from '../styles/injectTheme'
 import { ThemeContext } from './ThemeContextCore'
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [themeId, setThemeId] = useState<AppStyleId>(() => {
-    const saved = localStorage.getItem('kyte-theme')
-    if (saved && appStyles.some(s => s.id === saved)) {
-      return saved as AppStyleId
-    }
-    
-    // Default to system preference
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'notion-dark'
-    }
-    return 'notion-light'
-  })
+  // Lock to the universal theme
+  const [themeId] = useState<AppStyleId>('universal')
 
   useEffect(() => {
     injectTheme(themeId)
-    localStorage.setItem('kyte-theme', themeId)
   }, [themeId])
 
-  const theme = appStyles.find(s => s.id === themeId) ?? appStyles[0]
+  const theme = appStyles[0]
 
   const toggleTheme = () => {
-    setThemeId(prev => prev === 'notion-light' ? 'notion-dark' : 'notion-light')
+    // No-op for universal theme
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: setThemeId, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme: () => {}, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   )

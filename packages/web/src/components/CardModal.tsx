@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link2, File, Trash2, ExternalLink } from 'lucide-react'
 import { api } from '../api/client'
+import { useSession } from '../api/auth'
 import './CardModal.css'
 
 type Card = {
@@ -44,6 +45,17 @@ type Checklist = {
   taskId: string
   position: string
   items: ChecklistItem[]
+}
+
+type Comment = {
+  id: string
+  taskId: string
+  userId: string
+  content: string
+  userName: string | null
+  userImage: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 type CardModalProps = {
@@ -92,7 +104,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   const { data: checklists } = useQuery({
     queryKey: ['checklists', cardId],
     queryFn: async () => {
-      const { data, error } = await api.checklists.card({ cardId }).get()
+      const { data, error } = await api.checklists.task({ taskId: cardId }).get()
       if (error) throw error
       return data as Checklist[]
     },
@@ -102,9 +114,21 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   const { data: attachments } = useQuery({
     queryKey: ['attachments', cardId],
     queryFn: async () => {
-      const { data, error } = await api.attachments.card({ cardId }).get()
+      const { data, error } = await api.attachments.task({ taskId: cardId }).get()
       if (error) throw error
       return data as Attachment[]
+    },
+  })
+
+  // Comments
+  const { data: session } = useSession()
+
+  const { data: comments } = useQuery({
+    queryKey: ['comments', cardId],
+    queryFn: async () => {
+      const { data, error } = await api.comments.task({ taskId: cardId }).get()
+      if (error) throw error
+      return data as Comment[]
     },
   })
 
@@ -141,7 +165,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
     mutationFn: async (checklistTitle: string) => {
       const { data, error } = await api.checklists.post({
         title: checklistTitle,
-        cardId,
+        taskId: cardId,
       })
       if (error) throw error
       return data
@@ -175,6 +199,27 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attachments', cardId] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+    },
+  })
+
+  const createComment = useMutation({
+    mutationFn: async (content: string) => {
+      const { data, error } = await api.comments.post({ taskId: cardId, content })
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
+    },
+  })
+
+  const deleteComment = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await api.comments({ id }).delete()
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
     },
   })
 
@@ -222,6 +267,12 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
             onChange={(e) => setTitle(e.target.value)}
             className="modal-title-input"
             onBlur={handleSave}
+            onFocus={(e) => {
+              // Fix for "selectext" issue: prevent browser from selecting all text on focus
+              const val = e.target.value
+              e.target.value = ''
+              e.target.value = val
+            }}
           />
           <button onClick={onClose} className="modal-close">×</button>
         </div>
@@ -330,7 +381,77 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
             ))}
             <ChecklistCreator onCreate={(title) => createChecklist.mutate(title)} />
           </div>
+
+          {/* Comments Section */}
+          <div className="modal-section">
+            <h4 className="section-title">&gt; Comments</h4>
+            <div className="comments-list">
+              {comments?.map((comment) => (
+                <div key={comment.id} className="comment-item">
+                  <div className="comment-avatar">
+                    {comment.userName?.charAt(0).toUpperCase() || '?'}
+                  </div>
+                  <div className="comment-content-container">
+                    <div className="comment-author-info">
+                      <span className="comment-author-name">{comment.userName}</span>
+                      <span className="comment-date">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="comment-content">{comment.content}</div>
+                    {session?.user.id === comment.userId && (
+                      <div className="comment-actions">
+                        <button
+                          className="comment-action-btn delete"
+                          onClick={() => deleteComment.mutate(comment.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <CommentCreator onCreate={(content) => createComment.mutate(content)} />
+          </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function CommentCreator({ onCreate }: { onCreate: (content: string) => void }) {
+  const [content, setContent] = useState('')
+
+  const handleSubmit = () => {
+    if (content.trim()) {
+      onCreate(content.trim())
+      setContent('')
+    }
+  }
+
+  return (
+    <div className="comment-creator">
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="Write a comment..."
+        className="comment-input"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && e.ctrlKey) {
+            handleSubmit()
+          }
+        }}
+      />
+      <div className="comment-creator-actions">
+        <button
+          onClick={handleSubmit}
+          className="btn-save"
+          disabled={!content.trim()}
+        >
+          Comment
+        </button>
       </div>
     </div>
   )
@@ -342,7 +463,7 @@ function LabelCreator({ boardId }: { boardId: string }) {
   const [name, setName] = useState('')
   const [color, setColor] = useState('#e74c3c')
 
-  const colors = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6', '#1abc9c', '#34495e']
+  const colors = ['#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#3498db', '#2ecc71', '#000000', '#ffffff']
 
   const createLabel = useMutation({
     mutationFn: async () => {

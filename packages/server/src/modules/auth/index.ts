@@ -20,7 +20,7 @@ export type Session = typeof auth.$Infer.Session
  * ```
  */
 export const authPlugin = new Elysia({ name: 'auth' })
-  .mount('/api/auth', auth.handler)
+  .all('/api/auth/*', ({ request }) => auth.handler(request))
   .derive({ as: 'global' }, async ({ request }) => {
     const session = await auth.api.getSession({
       headers: request.headers,

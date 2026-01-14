@@ -1,8 +1,11 @@
 import { boardRepository } from './boards.repository'
+import { organizationRepository } from '../organizations/organizations.repository'
 import { wsManager } from '../../websocket/manager'
 
 export const boardService = {
   getAllBoards: () => boardRepository.findAll(),
+
+  getUserBoards: (userId: string) => boardRepository.findByUserId(userId),
 
   getBoardById: (id: string) => boardRepository.findById(id),
 
@@ -13,10 +16,24 @@ export const boardService = {
     name: string
     description?: string
     organizationId?: string
-    ownerId?: string
+    ownerId: string
     visibility?: 'private' | 'organization' | 'public'
   }) => {
-    const board = await boardRepository.create(data)
+    let orgId = data.organizationId
+
+    // If no org specified, find user's personal org
+    if (!orgId) {
+      const userOrgs = await organizationRepository.getUserOrganizations(data.ownerId)
+      const personalOrg = userOrgs.find(o => o.organization.personal)
+      if (personalOrg) {
+        orgId = personalOrg.organization.id
+      }
+    }
+
+    const board = await boardRepository.create({
+      ...data,
+      organizationId: orgId,
+    })
     wsManager.broadcast(`board:${board.id}`, { type: 'board:created', data: board })
     return board
   },

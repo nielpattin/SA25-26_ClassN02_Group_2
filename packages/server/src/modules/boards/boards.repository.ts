@@ -1,9 +1,30 @@
 import { db } from '../../db'
-import { boards, boardMembers, starredBoards, users } from '../../db/schema'
-import { eq, sql, and, isNull } from 'drizzle-orm'
+import { boards, boardMembers, starredBoards, users, members, organizations } from '../../db/schema'
+import { eq, sql, and, isNull, or, inArray } from 'drizzle-orm'
 
 export const boardRepository = {
   findAll: () => db.select().from(boards).where(isNull(boards.archivedAt)),
+
+  /** Find boards accessible to user (via org membership or board membership) */
+  findByUserId: async (userId: string) => {
+    // Get user's organization IDs
+    const userOrgs = await db.select({ orgId: members.organizationId })
+      .from(members)
+      .where(eq(members.userId, userId))
+
+    const orgIds = userOrgs.map(o => o.orgId)
+
+    if (orgIds.length === 0) {
+      return []
+    }
+
+    // Get boards in user's orgs
+    return db.select().from(boards)
+      .where(and(
+        inArray(boards.organizationId, orgIds),
+        isNull(boards.archivedAt)
+      ))
+  },
 
   findById: async (id: string) => {
     const [board] = await db.select().from(boards).where(eq(boards.id, id))

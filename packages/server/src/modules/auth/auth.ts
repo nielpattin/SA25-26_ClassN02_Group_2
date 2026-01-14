@@ -4,6 +4,7 @@ import { db } from '../../db'
 import * as schema from '../../db/schema'
 
 export const auth = betterAuth({
+  basePath: '/api/auth',
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: {
@@ -26,8 +27,13 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: [
-    process.env.WEB_URL || 'http://localhost:5173',
+    'http://localhost:5173',
   ],
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: false, // Not using subdomains
+    },
+  },
   databaseHooks: {
     user: {
       create: {

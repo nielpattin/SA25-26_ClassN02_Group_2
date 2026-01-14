@@ -1,5 +1,6 @@
 import { Elysia } from 'elysia'
 import { boardService } from './boards.service'
+import { auth } from '../auth/auth'
 import {
   CreateBoardBody,
   UpdateBoardBody,
@@ -11,12 +12,32 @@ import {
 } from './boards.model'
 
 export const boardController = new Elysia({ prefix: '/boards' })
+  // Add session derive to this controller
+  .derive(async ({ request }) => {
+    const session = await auth.api.getSession({ headers: request.headers })
+    return { session }
+  })
   // Board CRUD
-  .get('/', () => boardService.getAllBoards())
+  .get('/', ({ session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.getUserBoards(session.user.id)
+  })
   .get('/:id', ({ params: { id } }) => boardService.getBoardById(id), {
     params: BoardParams,
   })
-  .post('/', ({ body }) => boardService.createBoard(body), {
+  .post('/', ({ session, set, body }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.createBoard({
+      ...body,
+      ownerId: session.user.id,
+    })
+  }, {
     body: CreateBoardBody,
   })
   .patch('/:id', ({ params: { id }, body }) => boardService.updateBoard(id, body), {

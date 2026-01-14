@@ -1,4 +1,7 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useSession } from '../api/auth'
+import { AuthModal } from '../components/auth/AuthModal'
 import './index.css'
 
 export const Route = createFileRoute('/')({
@@ -6,25 +9,48 @@ export const Route = createFileRoute('/')({
 })
 
 function Index() {
+  const { data: session } = useSession()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const navigate = useNavigate()
+
+  const handleStartClick = () => {
+    if (session) {
+      navigate({ to: '/dashboard' })
+    } else {
+      setShowAuthModal(true)
+    }
+  }
+
   return (
-    <div className="home-container">
-      <main className="hero-section">
-        <div className="hero-content">
-          <div className="hero-logo">KYTE</div>
-          <h1>Organize your work, simply.</h1>
-          <p className="hero-subtitle">
-            A clean, minimalist Kanban board for personal and team productivity.
-          </p>
-          <div className="cta-group">
-            <Link to="/dashboard" className="btn-primary">
-              <span>Start Free</span>
-            </Link>
-            <a href="https://github.com" className="btn-secondary">
-              <span>View Source</span>
-            </a>
+    <>
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false)
+          // If logged in after modal closes, go to dashboard
+          if (session) {
+            navigate({ to: '/dashboard' })
+          }
+        }}
+      />
+      <div className="home-container">
+        <main className="hero-section">
+          <div className="hero-content">
+            <div className="hero-logo">KYTE</div>
+            <h1>Organize your work, simply.</h1>
+            <p className="hero-subtitle">
+              A clean, minimalist Kanban board for personal and team productivity.
+            </p>
+            <div className="cta-group">
+              <button onClick={handleStartClick} className="btn-primary">
+                <span>Start Free</span>
+              </button>
+              <a href="https://github.com" className="btn-secondary">
+                <span>View Source</span>
+              </a>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
 
       <section className="features-section">
         <div className="features-grid">
@@ -59,6 +85,7 @@ function Index() {
         <span className="footer-divider">•</span>
         <a href="https://github.com/nielpattin/SA25-26_ClassN02_Group_2" className="footer-link">Star on GitHub</a>
       </footer>
-    </div>
+      </div>
+    </>
   )
 }

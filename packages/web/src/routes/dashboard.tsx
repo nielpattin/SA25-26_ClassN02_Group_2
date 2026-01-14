@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
+import { useSession, signOut } from '../api/auth'
 import { useState } from 'react'
-import { ThemeToggle } from '../components/ThemeToggle'
+import { Plus, Trash2 } from 'lucide-react'
+import { AuthModal } from '../components/auth/AuthModal'
 import './dashboard.css'
 
 export const Route = createFileRoute('/dashboard')({
@@ -10,6 +12,51 @@ export const Route = createFileRoute('/dashboard')({
 })
 
 function DashboardComponent() {
+  const { data: session, isPending: isSessionLoading } = useSession()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  // Derive modal state from session - show if not loading and no session
+  const shouldShowModal = showAuthModal || (!isSessionLoading && !session)
+
+  if (isSessionLoading) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading-state">Loading...</div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <AuthModal
+        isOpen={shouldShowModal}
+        onClose={() => setShowAuthModal(false)}
+      />
+      {session ? (
+        <BoardsDashboard user={session.user} />
+      ) : (
+        <div className="dashboard-container">
+          <header className="dashboard-header">
+            <div className="header-left">
+              <div className="title-group">
+                <Link to="/" className="back-link">← Home</Link>
+                <h1 className="dashboard-title">Workspace</h1>
+              </div>
+            </div>
+          </header>
+          <div className="empty-state">
+            <p>Please log in to view your boards</p>
+            <button onClick={() => setShowAuthModal(true)} className="btn-kyte-primary">
+              Login / Sign Up
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function BoardsDashboard({ user }: { user: { id: string; name: string; email: string } }) {
   const queryClient = useQueryClient()
   const [newBoardName, setNewBoardName] = useState('')
 
@@ -45,66 +92,76 @@ function DashboardComponent() {
     },
   })
 
+  const handleSignOut = async () => {
+    await signOut()
+    queryClient.clear()
+  }
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div className="header-left">
           <div className="title-group">
-            <Link to="/" className="home-link">← Home</Link>
-            <h1 className="dashboard-title">MY BOARDS</h1>
+            <Link to="/" className="back-link">← Home</Link>
+            <h1 className="dashboard-title">Workspace</h1>
           </div>
         </div>
         <div className="header-right">
-          <div className="input-group">
-            <input
-              type="text"
-              placeholder="New board name..."
-              value={newBoardName}
-              onChange={(e) => setNewBoardName(e.target.value)}
-              className="dashboard-input"
-              onKeyDown={(e) => e.key === 'Enter' && newBoardName && createBoard.mutate(newBoardName)}
-            />
-            <button
-              onClick={() => newBoardName && createBoard.mutate(newBoardName)}
-              disabled={createBoard.isPending}
-              className="btn-kyte-primary"
-            >
-              {createBoard.isPending ? 'Creating...' : '+ Create'}
-            </button>
-          </div>
-          <ThemeToggle />
+          <span className="user-name">{user.name}</span>
+          <button onClick={handleSignOut} className="btn-kyte-secondary">
+            Logout
+          </button>
         </div>
       </header>
 
+      <div className="input-group">
+        <input
+          type="text"
+          placeholder="Add a new page..."
+          value={newBoardName}
+          onChange={(e) => setNewBoardName(e.target.value)}
+          className="dashboard-input"
+          onKeyDown={(e) => e.key === 'Enter' && newBoardName && createBoard.mutate(newBoardName)}
+        />
+        <button
+          onClick={() => newBoardName && createBoard.mutate(newBoardName)}
+          disabled={createBoard.isPending}
+          className="btn-kyte-primary"
+        >
+          {createBoard.isPending ? 'Adding...' : <Plus size={16} />}
+        </button>
+      </div>
+
       {isLoading ? (
-        <div className="loading-state">Loading boards...</div>
+        <div className="loading-state">Loading workspace...</div>
       ) : (
         <div className="dashboard-grid">
-          {boards?.map((board) => (
-            <div key={board.id} className="board-card">
+          {Array.isArray(boards) && boards.map((board) => (
+            <Link
+              key={board.id}
+              to="/board/$boardId"
+              params={{ boardId: board.id.toString() }}
+              className="board-card"
+            >
               <h3>{board.name}</h3>
               <div className="card-actions">
-                <Link
-                  to="/board/$boardId"
-                  params={{ boardId: board.id.toString() }}
-                  className="btn-kyte-secondary"
-                >
-                  Open
-                </Link>
                 <button
-                  onClick={() => deleteBoard.mutate(board.id)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    deleteBoard.mutate(board.id)
+                  }}
                   className="btn-kyte-danger"
+                  title="Delete Page"
                 >
-                  Delete
+                  <Trash2 size={14} />
                 </button>
               </div>
-            </div>
+            </Link>
           ))}
-          {boards?.length === 0 && (
-            <div className="empty-state">
-              No boards found.
-              <br />
-              <span className="empty-hint">Use the input above to create a new board.</span>
+          {(!boards || (Array.isArray(boards) && boards.length === 0)) && (
+            <div className="empty-text">
+              No pages yet. Start by adding one above.
             </div>
           )}
         </div>

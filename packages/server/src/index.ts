@@ -7,12 +7,18 @@ import { taskController } from './modules/tasks'
 import { labelController } from './modules/labels'
 import { checklistController } from './modules/checklists'
 import { attachmentController } from './modules/attachments'
+import { commentController } from './modules/comments'
 import { userController } from './modules/users'
 import { organizationController } from './modules/organizations'
 import { wsManager } from './websocket/manager'
 
 export const app = new Elysia()
-  .use(cors())
+  .use(cors({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }))
   .use(authPlugin)
   .use(boardController)
   .use(columnController)
@@ -20,6 +26,7 @@ export const app = new Elysia()
   .use(labelController)
   .use(checklistController)
   .use(attachmentController)
+  .use(commentController)
   .use(userController)
   .use(organizationController)
   .ws('/ws', {
