@@ -53,8 +53,14 @@
   cursor: grabbing;
 }
 
-.board-columns.is-column-dragging * {
+.board-columns.is-column-dragging .board-column,
+.board-columns.is-card-dragging .card-item {
   pointer-events: none;
+}
+
+.board-columns.is-card-dragging .card-wrapper,
+.board-columns.is-card-dragging .board-column {
+  pointer-events: auto;
 }
 
 /* Force children to respect parent selection lock unless they are inputs */
@@ -167,9 +173,34 @@
   box-shadow: 6px 6px 0px #000000;
 }
 
-.card-item:active {
-  transform: translate(0, 0);
-  box-shadow: 2px 2px 0px #000000;
+.card-wrapper.is-placeholder {
+  border: 2px dashed #000000;
+  background: rgba(0,0,0,0.05);
+  border-radius: var(--card-border-radius);
+  min-height: 80px;
+  box-shadow: none;
+  position: relative;
+}
+
+.card-wrapper.is-placeholder .card-item {
+  display: none !important;
+}
+
+.card-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.9;
+  width: calc(var(--board-column-width) - (var(--column-padding) * 2) - 16px);
+  will-change: transform;
+}
+
+.card-ghost .card-item {
+  transform: rotate(2deg);
+  box-shadow: 12px 12px 0px rgba(0,0,0,0.2);
+  border: 2px solid #000000;
 }
 
 .card-item-title {
@@ -200,6 +231,29 @@
   font-weight: 700;
   color: #000000;
   text-transform: uppercase;
+}
+
+.checklist-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.due-date-meta {
+  padding: 2px 6px;
+  border: 1px solid transparent;
+}
+
+.due-date-meta.overdue {
+  background: #E74C3C;
+  color: #FFFFFF;
+  border-color: #000000;
+}
+
+.due-date-meta.soon {
+  background: #FFD166;
+  color: #000000;
+  border-color: #000000;
 }
 
 .add-card-container {

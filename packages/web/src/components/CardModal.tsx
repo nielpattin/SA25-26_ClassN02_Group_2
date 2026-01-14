@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link2, File, Trash2, ExternalLink } from 'lucide-react'
+import { Link2, File, Trash2, ExternalLink, X, ChevronRight, CheckSquare, Square, CalendarClock, AlertTriangle } from 'lucide-react'
 import { api } from '../api/client'
 import { useSession } from '../api/auth'
 import './CardModal.css'
@@ -15,14 +15,26 @@ type Card = {
 
 type Attachment = {
   id: string
-  cardId: string
-  type: string
+  taskId: string
+  type: 'link' | 'file'
   url: string
   name: string
   mimeType: string | null
   size: number | null
-  createdAt: string
+  createdAt: string | Date
 }
+
+type Comment = {
+  id: string
+  taskId: string
+  userId: string
+  content: string
+  userName: string | null
+  userImage: string | null
+  createdAt: string | Date
+  updatedAt: string | Date
+}
+
 
 type Label = {
   id: string
@@ -47,18 +59,8 @@ type Checklist = {
   items: ChecklistItem[]
 }
 
-type Comment = {
-  id: string
-  taskId: string
-  userId: string
-  content: string
-  userName: string | null
-  userImage: string | null
-  createdAt: string
-  updatedAt: string
-}
-
 type CardModalProps = {
+
   cardId: string
   boardId: string
   onClose: () => void
@@ -70,6 +72,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [isInitialized, setIsInitialized] = useState(false)
+  const isMouseDownOnOverlay = useRef(false)
 
   // Fetch card data
   const { data: card, isLoading: cardLoading } = useQuery({
@@ -177,10 +180,10 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   })
 
   const createAttachment = useMutation({
-    mutationFn: async (data: { type: string; url: string; name: string }) => {
+    mutationFn: async (data: { type: 'link' | 'file'; url: string; name: string }) => {
       const { data: result, error } = await api.attachments.post({
         ...data,
-        cardId,
+        taskId: cardId,
       })
       if (error) throw error
       return result
@@ -234,10 +237,21 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
     setIsInitialized(true)
   }
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isMouseDownOnOverlay.current = e.target === e.currentTarget
+  }
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (isMouseDownOnOverlay.current && e.target === e.currentTarget) {
+      onClose()
+    }
+    isMouseDownOnOverlay.current = false
+  }
+
   if (cardLoading || !card) {
     return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-overlay" onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
+        <div className="modal-content" onMouseDown={e => e.stopPropagation()} onMouseUp={e => e.stopPropagation()}>
           <div className="loading-state">// Loading card...</div>
         </div>
       </div>
@@ -258,8 +272,8 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   const isDueSoon = dueDate && !isOverdue && new Date(dueDate) <= twoDaysFromNow
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
+      <div className="modal-content" onMouseDown={e => e.stopPropagation()} onMouseUp={e => e.stopPropagation()}>
         <div className="modal-header">
           <input
             type="text"
@@ -274,146 +288,170 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
               e.target.value = val
             }}
           />
-          <button onClick={onClose} className="modal-close">×</button>
+          <button onClick={onClose} className="modal-close">
+            <X size={20} />
+          </button>
         </div>
 
         <div className="modal-body">
-          {/* Labels Section */}
-          <div className="modal-section">
-            <h4 className="section-title">&gt; Labels</h4>
-            <div className="labels-container">
-              {boardLabels?.map((label) => {
-                const isAttached = cardLabels?.some((cl) => cl.id === label.id)
-                return (
-                  <button
-                    key={label.id}
-                    className={`label-pill ${isAttached ? 'active' : ''}`}
-                    style={{ '--label-color': label.color } as React.CSSProperties}
-                    onClick={() => toggleLabel.mutate({ labelId: label.id, attached: !!isAttached })}
-                  >
-                    {label.name}
-                  </button>
-                )
-              })}
-              <LabelCreator boardId={boardId} />
-            </div>
-          </div>
-
-          {/* Due Date Section */}
-          <div className="modal-section">
-            <h4 className="section-title">&gt; Due Date</h4>
-            <div className="due-date-container">
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => {
-                  setDueDate(e.target.value)
-                  updateCard.mutate({ dueDate: e.target.value || null })
-                }}
-                className={`due-date-input ${isOverdue ? 'overdue' : ''} ${isDueSoon ? 'due-soon' : ''}`}
-              />
-              {dueDate && (
-                <button
-                  className="clear-date-btn"
-                  onClick={() => {
-                    setDueDate('')
-                    updateCard.mutate({ dueDate: null })
-                  }}
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Description Section */}
-          <div className="modal-section">
-            <h4 className="section-title">&gt; Description</h4>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onBlur={handleSave}
-              placeholder="Add a description..."
-              className="description-input"
-            />
-          </div>
-
-          {/* Attachments Section */}
-          <div className="modal-section">
-            <h4 className="section-title">&gt; Attachments</h4>
-            <div className="attachments-list">
-              {attachments?.map((attachment) => (
-                <div key={attachment.id} className="attachment-item">
-                  <div className="attachment-icon">
-                    {attachment.type === 'link' ? <Link2 size={16} /> : <File size={16} />}
-                  </div>
-                  <div className="attachment-info">
-                    <a
-                      href={attachment.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="attachment-name"
+          <div className="modal-main-content">
+            {/* Labels Section */}
+            <div className="modal-section">
+              <h4 className="section-title"><ChevronRight size={14} /> Labels</h4>
+              <div className="labels-container">
+                {boardLabels?.map((label) => {
+                  const isAttached = cardLabels?.some((cl) => cl.id === label.id)
+                  return (
+                    <button
+                      key={label.id}
+                      className={`label-pill ${isAttached ? 'active' : ''}`}
+                      style={{ '--label-color': label.color } as React.CSSProperties}
+                      onClick={() => toggleLabel.mutate({ labelId: label.id, attached: !!isAttached })}
                     >
-                      {attachment.name}
-                      <ExternalLink size={10} style={{ marginLeft: '4px', opacity: 0.5 }} />
-                    </a>
-                    <div className="attachment-meta">
-                      {attachment.type} • {new Date(attachment.createdAt).toLocaleDateString()}
-                    </div>
+                      {label.name}
+                    </button>
+                  )
+                })}
+                <LabelCreator boardId={boardId} />
+              </div>
+            </div>
+
+            {/* Due Date Section */}
+            <div className="modal-section">
+              <h4 className="section-title"><ChevronRight size={14} /> Due Date</h4>
+              <div className="brutal-date-widget">
+                <div className="widget-segment icon-segment">
+                  <CalendarClock size={16} />
+                </div>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => {
+                    setDueDate(e.target.value)
+                    updateCard.mutate({ dueDate: e.target.value || null })
+                  }}
+                  className="widget-input"
+                />
+                
+                {isOverdue && (
+                  <div className="widget-segment status-segment overdue">
+                    <AlertTriangle size={12} />
+                    OVERDUE
                   </div>
+                )}
+                {isDueSoon && (
+                  <div className="widget-segment status-segment soon">
+                    <CalendarClock size={12} />
+                    SOON
+                  </div>
+                )}
+
+                {dueDate && (
                   <button
-                    className="delete-attachment-btn"
-                    onClick={() => deleteAttachment.mutate(attachment.id)}
+                    className="widget-segment clear-segment"
+                    onClick={() => {
+                      setDueDate('')
+                      updateCard.mutate({ dueDate: null })
+                    }}
+                    title="Clear date"
                   >
-                    <Trash2 size={14} />
+                    <X size={16} />
                   </button>
-                </div>
-              ))}
+                )}
+              </div>
             </div>
-            <AttachmentCreator onCreate={(data) => createAttachment.mutate(data)} />
-          </div>
 
-          {/* Checklists Section */}
-          <div className="modal-section">
-            <h4 className="section-title">&gt; Checklists</h4>
-            {checklists?.map((checklist) => (
-              <ChecklistComponent key={checklist.id} checklist={checklist} cardId={cardId} />
-            ))}
-            <ChecklistCreator onCreate={(title) => createChecklist.mutate(title)} />
-          </div>
+            {/* Description Section */}
+            <div className="modal-section">
+              <h4 className="section-title"><ChevronRight size={14} /> Description</h4>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={handleSave}
+                placeholder="Add a description..."
+                className="description-input"
+              />
+            </div>
 
-          {/* Comments Section */}
-          <div className="modal-section">
-            <h4 className="section-title">&gt; Comments</h4>
-            <div className="comments-list">
-              {comments?.map((comment) => (
-                <div key={comment.id} className="comment-item">
-                  <div className="comment-avatar">
-                    {comment.userName?.charAt(0).toUpperCase() || '?'}
-                  </div>
-                  <div className="comment-content-container">
-                    <div className="comment-author-info">
-                      <span className="comment-author-name">{comment.userName}</span>
-                      <span className="comment-date">
-                        {new Date(comment.createdAt).toLocaleString()}
-                      </span>
+            {/* Attachments Section */}
+            <div className="modal-section">
+              <h4 className="section-title"><ChevronRight size={14} /> Attachments</h4>
+              <div className="attachments-list">
+                {attachments?.map((attachment) => (
+                  <div key={attachment.id} className="attachment-item">
+                    <div className="attachment-icon">
+                      {attachment.type === 'link' ? <Link2 size={16} /> : <File size={16} />}
                     </div>
-                    <div className="comment-content">{comment.content}</div>
-                    {session?.user.id === comment.userId && (
-                      <div className="comment-actions">
-                        <button
-                          className="comment-action-btn delete"
-                          onClick={() => deleteComment.mutate(comment.id)}
-                        >
-                          Delete
-                        </button>
+                    <div className="attachment-info">
+                      <a
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="attachment-name"
+                      >
+                        {attachment.name}
+                        <ExternalLink size={10} style={{ marginLeft: '4px', opacity: 0.5 }} />
+                      </a>
+                      <div className="attachment-meta">
+                        {attachment.type} • {new Date(attachment.createdAt).toLocaleDateString()}
                       </div>
-                    )}
+                    </div>
+                    <button
+                      className="delete-attachment-btn"
+                      onClick={() => deleteAttachment.mutate(attachment.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <AttachmentCreator onCreate={(data) => createAttachment.mutate(data)} />
             </div>
-            <CommentCreator onCreate={(content) => createComment.mutate(content)} />
+
+            {/* Checklists Section */}
+            <div className="modal-section">
+              <h4 className="section-title"><ChevronRight size={14} /> Checklists</h4>
+              {checklists?.map((checklist) => (
+                <ChecklistComponent key={checklist.id} checklist={checklist} cardId={cardId} />
+              ))}
+              <ChecklistCreator onCreate={(title) => createChecklist.mutate(title)} />
+            </div>
+          </div>
+
+          <div className="modal-sidebar">
+            {/* Comments Section */}
+            <div className="modal-section">
+              <h4 className="section-title"><ChevronRight size={14} /> Comments</h4>
+              <div className="comments-list">
+                {comments?.map((comment) => (
+                  <div key={comment.id} className="comment-item">
+                    <div className="comment-avatar">
+                      {comment.userName?.charAt(0).toUpperCase() || '?'}
+                    </div>
+                    <div className="comment-content-container">
+                      <div className="comment-author-info">
+                        <span className="comment-author-name">{comment.userName}</span>
+                        <span className="comment-date">
+                          {new Date(comment.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="comment-content">{comment.content}</div>
+                      {session?.user.id === comment.userId && (
+                        <div className="comment-actions">
+                          <button
+                            className="comment-action-btn delete"
+                            onClick={() => deleteComment.mutate(comment.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <CommentCreator onCreate={(content) => createComment.mutate(content)} />
+            </div>
           </div>
         </div>
       </div>
@@ -517,7 +555,7 @@ function LabelCreator({ boardId }: { boardId: string }) {
   )
 }
 
-function AttachmentCreator({ onCreate }: { onCreate: (data: { type: string; url: string; name: string }) => void }) {
+function AttachmentCreator({ onCreate }: { onCreate: (data: { type: 'link' | 'file'; url: string; name: string }) => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const [url, setUrl] = useState('')
   const [name, setName] = useState('')
@@ -714,15 +752,16 @@ function ChecklistComponent({ checklist, cardId }: { checklist: Checklist; cardI
             {checklist.title}
           </span>
         )}
-        <span className="checklist-progress">{completedCount}/{totalCount}</span>
-        <button
-          className="delete-checklist-btn"
-          onClick={() => deleteChecklist.mutate()}
-          title="Delete checklist"
-        >
-          ×
-        </button>
-      </div>
+            <span className="checklist-progress">{completedCount}/{totalCount}</span>
+            <button
+              className="delete-checklist-btn"
+              onClick={() => deleteChecklist.mutate()}
+              title="Delete checklist"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
       <div className="progress-bar">
         <div className="progress-fill" style={{ width: `${progress}%` }} />
       </div>
@@ -732,12 +771,12 @@ function ChecklistComponent({ checklist, cardId }: { checklist: Checklist; cardI
             key={item.id}
             className={`checklist-item ${item.isCompleted ? 'completed' : ''}`}
           >
-            <input
-              type="checkbox"
-              checked={item.isCompleted}
-              onChange={() => toggleItem.mutate(item.id)}
-              className="checklist-checkbox"
-            />
+            <button 
+              className={`checklist-checkbox-btn ${item.isCompleted ? 'completed' : ''}`}
+              onClick={() => toggleItem.mutate(item.id)}
+            >
+              {item.isCompleted ? <CheckSquare size={18} /> : <Square size={18} />}
+            </button>
             {editingItemId === item.id ? (
               <input
                 type="text"
@@ -775,7 +814,7 @@ function ChecklistComponent({ checklist, cardId }: { checklist: Checklist; cardI
               className="delete-item-btn"
               onClick={() => deleteItem.mutate(item.id)}
             >
-              ×
+              <X size={14} />
             </button>
           </div>
         ))}
