@@ -49,18 +49,54 @@
   cursor: grabbing;
 }
 
-/* Force children to respect parent selection lock unless they are inputs */
-.board-columns *:not(input):not(textarea) {
-  cursor: inherit;
-}
-
-.board-columns.is-dragging {
+.board-columns.is-column-dragging {
   cursor: grabbing;
 }
 
+.board-columns.is-column-dragging * {
+  pointer-events: none;
+}
+
 /* Force children to respect parent selection lock unless they are inputs */
 .board-columns *:not(input):not(textarea) {
   cursor: inherit;
+}
+
+.board-column.is-dragging {
+  opacity: 0.5;
+  border: 2px dashed #000000;
+  background: rgba(0,0,0,0.05);
+  box-shadow: none;
+}
+
+.board-column.is-dragging > * {
+  visibility: hidden;
+}
+
+.column-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.8;
+  width: var(--board-column-width);
+  background: var(--colors-surface-elevated);
+  border-radius: var(--column-border-radius);
+  padding: var(--column-padding);
+  border: 2px solid #000000;
+  box-shadow: 12px 12px 0px rgba(0,0,0,0.2);
+  /* Use will-change to hint at upcoming transforms */
+  will-change: transform;
+}
+
+.column-placeholder {
+  width: var(--board-column-width);
+  min-width: var(--board-column-width);
+  background: rgba(0,0,0,0.05);
+  border: 2px dashed #000000;
+  border-radius: var(--column-border-radius);
+  flex-shrink: 0;
 }
 
 .board-column {

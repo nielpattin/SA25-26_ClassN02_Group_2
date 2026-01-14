@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import { useState, useMemo, useRef } from 'react'
+import { useState, useRef, useLayoutEffect, useMemo, useCallback, memo } from 'react'
 import { Plus, MoreHorizontal, ChevronRight } from 'lucide-react'
-import { useBoardSocket } from '../hooks/useBoardSocket'
+import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
 import { CardModal } from '../components/CardModal'
 import './board.$boardId.css'
 
@@ -35,40 +35,116 @@ function BoardComponent() {
   
   // Drag to scroll logic
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
+  const [isScrolling, setIsScrolling] = useState(false)
   const [startX, setStartX] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(0)
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // Column Drag and Drop logic
+  const [draggedColumnId, setDraggedColumnId] = useState<string | null>(null)
+  const ghostRef = useRef<HTMLDivElement>(null)
+  const columnRects = useRef<{ id: string, left: number, width: number }[]>([])
+  const lastMousePos = useRef({ x: 0, y: 0 })
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [localColumns, setLocalColumns] = useState<Column[]>([])
+  const [placeholderIndex, setPlaceholderIndex] = useState<number | null>(null)
+
+  useLayoutEffect(() => {
+    if (draggedColumnId && ghostRef.current) {
+      ghostRef.current.style.transform = `translate3d(${lastMousePos.current.x - dragOffset.x}px, ${lastMousePos.current.y - dragOffset.y}px, 0) rotate(2deg)`
+    }
+  }, [draggedColumnId, dragOffset])
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!scrollContainerRef.current) return
     
-    // Only drag if clicking on the blank space (the container itself)
-    // or if the target is not a button, link, or card
     const target = e.target as HTMLElement
     if (
       target.closest('button') || 
       target.closest('a') || 
       target.closest('.card-item') || 
       target.closest('input') ||
-      target.closest('textarea')
+      target.closest('textarea') ||
+      target.closest('.column-header')
     ) return
 
-    setIsDragging(true)
+    setIsScrolling(true)
     setStartX(e.pageX - scrollContainerRef.current.offsetLeft)
     setScrollLeft(scrollContainerRef.current.scrollLeft)
-  }
+  }, [])
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !scrollContainerRef.current) return
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (draggedColumnId) {
+      lastMousePos.current = { x: e.clientX, y: e.clientY }
+      if (ghostRef.current) {
+        ghostRef.current.style.transform = `translate3d(${e.clientX - dragOffset.x}px, ${e.clientY - dragOffset.y}px, 0) rotate(2deg)`
+      }
+      
+      // Find new placeholder index using cached rects
+      let newIndex = columnRects.current.length
+      for (let i = 0; i < columnRects.current.length; i++) {
+        const rect = columnRects.current[i]
+        const colMid = rect.left + rect.width / 2
+        if (e.clientX < colMid) {
+          newIndex = i
+          break
+        }
+      }
+      
+      if (newIndex !== placeholderIndex) {
+        setPlaceholderIndex(newIndex)
+        
+        // Reorder localColumns
+        setLocalColumns(prev => {
+          const filtered = prev.filter(c => c.id !== draggedColumnId)
+          const draggedCol = prev.find(c => c.id === draggedColumnId)
+          if (!draggedCol) return prev
+          const updated = [...filtered]
+          updated.splice(newIndex, 0, draggedCol)
+          return updated
+        })
+      }
+      return
+    }
+
+    if (!isScrolling || !scrollContainerRef.current) return
     e.preventDefault()
     const x = e.pageX - scrollContainerRef.current.offsetLeft
     const walk = (x - startX) * 1.5 // multiplier for scroll speed
     scrollContainerRef.current.scrollLeft = scrollLeft - walk
-  }
+  }, [draggedColumnId, dragOffset, isScrolling, placeholderIndex, startX, scrollLeft])
 
-  const handleMouseUpOrLeave = () => {
-    setIsDragging(false)
-  }
+  const handleMouseUpOrLeave = useCallback(() => {
+    if (draggedColumnId) {
+      const finalIndex = placeholderIndex
+      const finalColumns = [...localColumns]
+      
+      if (finalIndex !== null) {
+        // Optimistically update the cache
+        queryClient.setQueryData(['columns', boardId], finalColumns)
+        
+        // Find neighbors for positioning in the new state
+        const beforeCol = finalColumns[finalIndex - 1]
+        const afterCol = finalColumns[finalIndex + 1]
+        
+        api.columns({ id: draggedColumnId }).move.patch({
+          beforeColumnId: beforeCol?.id,
+          afterColumnId: afterCol?.id
+        }).then(({ error }) => {
+          if (error) {
+            // Revert on error
+            queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
+          }
+        }).catch(() => {
+          queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
+        })
+      }
+
+      setDraggedColumnId(null)
+      setPlaceholderIndex(null)
+      setGlobalDragging(false)
+    }
+    setIsScrolling(false)
+  }, [draggedColumnId, placeholderIndex, localColumns, boardId, queryClient])
 
   useBoardSocket(boardId)
 
@@ -81,7 +157,7 @@ function BoardComponent() {
     },
   })
 
-  const { data: columns = [], isLoading: columnsLoading } = useQuery({
+  const { data: serverColumns = [], isLoading: columnsLoading } = useQuery({
     queryKey: ['columns', boardId],
     queryFn: async () => {
       const { data, error } = await api.columns.board({ boardId }).get()
@@ -89,6 +165,38 @@ function BoardComponent() {
       return (data || []).sort((a, b) => a.position.localeCompare(b.position))
     },
   })
+
+  const handleColumnDragStart = useCallback((columnId: string, e: React.MouseEvent) => {
+    const header = e.currentTarget as HTMLElement
+    const rect = header.getBoundingClientRect()
+    
+    // Cache column rects for performance
+    if (scrollContainerRef.current) {
+      const cols = Array.from(scrollContainerRef.current.querySelectorAll('.board-column'))
+      columnRects.current = cols.map((col, i) => {
+        const r = col.getBoundingClientRect()
+        return {
+          id: serverColumns[i].id,
+          left: r.left,
+          width: r.width
+        }
+      })
+    }
+
+    setLocalColumns(serverColumns)
+    setDraggedColumnId(columnId)
+    lastMousePos.current = { x: e.clientX, y: e.clientY }
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    })
+    setGlobalDragging(true)
+    
+    const index = serverColumns.findIndex(c => c.id === columnId)
+    setPlaceholderIndex(index)
+  }, [serverColumns])
+
+  const displayColumns = draggedColumnId ? localColumns : serverColumns
 
   const { data: allCards = [] } = useQuery({
     queryKey: ['cards', boardId],
@@ -101,14 +209,21 @@ function BoardComponent() {
 
   const cardsByColumn = useMemo(() => {
     const map: Record<string, Card[]> = {}
-    columns.forEach(col => {
-      map[col.id] = allCards.filter(c => c.columnId === col.id)
+    displayColumns.forEach(col => {
+      map[col.id] = []
+    })
+    allCards.forEach(card => {
+      if (map[card.columnId]) {
+        map[card.columnId].push(card)
+      }
     })
     return map
-  }, [columns, allCards])
+  }, [displayColumns, allCards])
 
   if (boardLoading || columnsLoading) return <div className="loading-state">Loading workspace...</div>
   if (!board) return <div className="loading-state">Error: Page not found</div>
+
+  const draggedColumn = draggedColumnId ? displayColumns.find(c => c.id === draggedColumnId) : null
 
   return (
     <div className="board-container">
@@ -123,19 +238,21 @@ function BoardComponent() {
       </header>
 
       <div 
-        className={`board-columns ${isDragging ? 'is-dragging' : ''}`}
+        className={`board-columns ${isScrolling ? 'is-dragging' : ''} ${draggedColumnId ? 'is-column-dragging' : ''}`}
         ref={scrollContainerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUpOrLeave}
         onMouseLeave={handleMouseUpOrLeave}
       >
-        {columns.map((column) => (
+        {displayColumns.map((column) => (
           <BoardColumn
             key={column.id}
             column={column}
             cards={cardsByColumn[column.id] || []}
             onCardClick={setSelectedCardId}
+            onDragStart={(e) => handleColumnDragStart(column.id, e)}
+            isDragging={column.id === draggedColumnId}
           />
         ))}
         <div className="add-column-section">
@@ -156,6 +273,19 @@ function BoardComponent() {
         </div>
       </div>
 
+      {draggedColumn && (
+        <div 
+          className="column-ghost"
+          ref={ghostRef}
+        >
+          <h4 className="column-header">
+            {draggedColumn.name}
+            <span className="column-count">{cardsByColumn[draggedColumn.id]?.length || 0}</span>
+            <MoreHorizontal size={14} style={{ cursor: 'pointer', color: 'var(--colors-text-muted)' }} />
+          </h4>
+        </div>
+      )}
+
       {selectedCardId && (
         <CardModal
           cardId={selectedCardId}
@@ -167,18 +297,22 @@ function BoardComponent() {
   )
 }
 
-function BoardColumn({ 
+const BoardColumn = memo(({ 
   column, 
   cards, 
-  onCardClick
+  onCardClick,
+  onDragStart,
+  isDragging
 }: { 
   column: Column
   cards: Card[]
   onCardClick: (id: string) => void
-}) {
+  onDragStart: (e: React.MouseEvent) => void
+  isDragging?: boolean
+}) => {
   return (
-    <div className="board-column">
-      <h4 className="column-header">
+    <div className={`board-column ${isDragging ? 'is-dragging' : ''}`}>
+      <h4 className="column-header" onMouseDown={onDragStart} style={{ cursor: 'grab' }}>
         {column.name}
         <span className="column-count">{cards.length}</span>
         <MoreHorizontal size={14} style={{ cursor: 'pointer', color: 'var(--colors-text-muted)' }} />
@@ -200,9 +334,9 @@ function BoardColumn({
       </div>
     </div>
   )
-}
+})
 
-function CardItem({ card, onClick }: { card: Card, onClick: () => void }) {
+const CardItem = memo(({ card, onClick }: { card: Card, onClick: () => void }) => {
   return (
     <div className="card-wrapper">
       <div className="card-item" onClick={onClick}>
@@ -227,4 +361,4 @@ function CardItem({ card, onClick }: { card: Card, onClick: () => void }) {
       </div>
     </div>
   )
-}
+})

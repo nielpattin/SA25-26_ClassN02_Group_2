@@ -2,7 +2,19 @@ import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 type WsMessage = {
-  type: 'board:created' | 'board:updated' | 'board:deleted' | 'columns:updated' | 'cards:updated'
+  type: 
+    | 'board:updated' 
+    | 'board:deleted' 
+    | 'column:created'
+    | 'column:updated'
+    | 'column:moved'
+    | 'column:deleted'
+    | 'task:created'
+    | 'task:updated'
+    | 'task:moved'
+    | 'task:deleted'
+    | 'task:archived'
+    | 'task:restored'
   data?: unknown
   boardId?: string
   columnId?: string
@@ -55,10 +67,18 @@ export function useBoardSocket(boardId: string) {
             case 'board:deleted':
               queryClient.invalidateQueries({ queryKey: ['board', boardIdRef.current] })
               break
-            case 'columns:updated':
+            case 'column:created':
+            case 'column:updated':
+            case 'column:moved':
+            case 'column:deleted':
               queryClient.invalidateQueries({ queryKey: ['columns', boardIdRef.current] })
               break
-            case 'cards:updated':
+            case 'task:created':
+            case 'task:updated':
+            case 'task:moved':
+            case 'task:deleted':
+            case 'task:archived':
+            case 'task:restored':
               queryClient.invalidateQueries({ queryKey: ['cards', boardIdRef.current] })
               break
           }
