@@ -1,0 +1,39 @@
+.brutal-popover {
+  /* Position and z-index are handled by inline styles for precise control */
+  background: white;
+  border: 2px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  min-width: 240px;
+  max-width: 320px;
+  padding: 0;
+  /* Ensure smooth transition when visibility changes */
+  transition: opacity 0.1s ease-out;
+}
+
+.popover-header {
+  padding: 8px 12px;
+  border-bottom: 2px solid #000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popover-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+
+.popover-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.popover-content {
+  padding: 12px;
+}

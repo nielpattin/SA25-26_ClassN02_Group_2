@@ -73,8 +73,13 @@ export function useBoardSocket(boardId: string) {
             case 'column:deleted':
               queryClient.invalidateQueries({ queryKey: ['columns', boardIdRef.current] })
               break
-            case 'task:created':
             case 'task:updated':
+              queryClient.invalidateQueries({ queryKey: ['cards', boardIdRef.current] })
+              if (message.data && typeof message.data === 'object' && 'id' in message.data) {
+                queryClient.invalidateQueries({ queryKey: ['card', message.data.id] })
+              }
+              break
+            case 'task:created':
             case 'task:moved':
             case 'task:deleted':
             case 'task:archived':

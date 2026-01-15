@@ -10,6 +10,7 @@ import { attachmentController } from './modules/attachments'
 import { commentController } from './modules/comments'
 import { userController } from './modules/users'
 import { organizationController } from './modules/organizations'
+import { activityController } from './modules/activities'
 import { wsManager } from './websocket/manager'
 
 export const app = new Elysia()
@@ -29,6 +30,7 @@ export const app = new Elysia()
   .use(commentController)
   .use(userController)
   .use(organizationController)
+  .use(activityController)
   .ws('/ws', {
     body: t.Object({
       type: t.String(),

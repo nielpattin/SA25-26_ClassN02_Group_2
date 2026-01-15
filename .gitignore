@@ -37,6 +37,8 @@ Design/*.docx
 Design/*.bkp
 Design/*.drawio
 Design/**/*.md
-Documents/*.docx
 .loop*
 tmp/
+
+Documents/*.docx
+Documents/Lab/

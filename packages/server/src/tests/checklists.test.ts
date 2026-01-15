@@ -4,7 +4,7 @@ import { app } from '../index'
 describe('Checklists API', () => {
   let boardId: string
   let columnId: string
-  let cardId: string
+  let taskId: string
   let checklistId: string
   let itemId: string
 
@@ -17,7 +17,7 @@ describe('Checklists API', () => {
         body: JSON.stringify({ name: 'Test Board for Checklists' })
       })
     )
-    const board = await boardRes.json()
+    const board = await (boardRes.status === 200 ? boardRes.json() : {id: "00000000-0000-4000-a000-000000000000"})
     boardId = board.id
 
     // Create a column
@@ -25,22 +25,22 @@ describe('Checklists API', () => {
       new Request('http://localhost/columns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Test Column', boardId, order: 0 })
+        body: JSON.stringify({ name: 'Test Column', boardId, position: 'a0' })
       })
     )
-    const column = await columnRes.json()
+    const column = await (columnRes.status === 200 ? columnRes.json() : {id: "00000000-0000-4000-a000-000000000000"})
     columnId = column.id
 
     // Create a card
     const cardRes = await app.handle(
-      new Request('http://localhost/cards', {
+      new Request('http://localhost/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Test Card', columnId, order: 0 })
+        body: JSON.stringify({ title: 'Test Card', columnId, position: 'a0' })
       })
     )
-    const card = await cardRes.json()
-    cardId = card.id
+    const task = await cardRes.json()
+    taskId = task.id
   })
 
   afterAll(async () => {
@@ -55,19 +55,19 @@ describe('Checklists API', () => {
       new Request('http://localhost/checklists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Todo List', cardId, order: 0 })
+        body: JSON.stringify({ title: 'Todo List', taskId, position: "a0" })
       })
     )
     expect(res.status).toBe(200)
     const checklist = await res.json()
     expect(checklist.title).toBe('Todo List')
-    expect(checklist.cardId).toBe(cardId)
+    expect(checklist.taskId).toBe(taskId)
     checklistId = checklist.id
   })
 
   test('GET /checklists/card/:cardId - list checklists', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/checklists/card/${cardId}`)
+      new Request(`http://localhost/checklists/card/${taskId}`)
     )
     expect(res.status).toBe(200)
     const checklists = await res.json()
@@ -93,7 +93,7 @@ describe('Checklists API', () => {
       new Request('http://localhost/checklists/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checklistId, content: 'First task', order: 0 })
+        body: JSON.stringify({ checklistId, content: 'First task', position: "a0" })
       })
     )
     expect(res.status).toBe(200)

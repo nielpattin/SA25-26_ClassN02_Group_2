@@ -6,7 +6,22 @@ import { generatePosition, generatePositions } from '../../shared/position'
 export const taskRepository = {
   findById: async (id: string) => {
     const [task] = await db.select().from(tasks).where(eq(tasks.id, id))
-    return task
+    if (!task) return null
+
+    const [labelResults, assigneeResults] = await Promise.all([
+      db.select({ labelId: taskLabels.labelId })
+        .from(taskLabels)
+        .where(eq(taskLabels.taskId, id)),
+      db.select({ userId: taskAssignees.userId })
+        .from(taskAssignees)
+        .where(eq(taskAssignees.taskId, id))
+    ])
+
+    return {
+      ...task,
+      labels: labelResults.map(r => r.labelId),
+      assignees: assigneeResults.map(r => r.userId)
+    }
   },
 
   findByColumnId: (columnId: string) =>

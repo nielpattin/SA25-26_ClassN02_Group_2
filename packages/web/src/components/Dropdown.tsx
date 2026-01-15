@@ -23,19 +23,29 @@ export function Dropdown({ trigger, items, position = 'bottom-right' }: Dropdown
 
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect()
-      setCoords({
-        top: rect.bottom + window.scrollY + 5,
-        left: position === 'bottom-right' ? rect.right - 200 : rect.left,
-      })
-    }
     setIsOpen(!isOpen)
   }
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.stopPropagation()
-  }
+  useEffect(() => {
+    const updatePosition = () => {
+      if (isOpen && triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect()
+        setCoords({
+          top: rect.bottom + window.scrollY + 5,
+          left: position === 'bottom-right' ? rect.right + window.scrollX - 200 : rect.left + window.scrollX,
+        })
+      }
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isOpen, position])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -62,7 +72,7 @@ export function Dropdown({ trigger, items, position = 'bottom-right' }: Dropdown
   }, [isOpen])
 
   return (
-    <div className="dropdown-container" ref={triggerRef} onMouseDown={handleMouseDown}>
+    <div className="dropdown-container" ref={triggerRef}>
       <div onClick={toggle} className="dropdown-trigger">
         {trigger}
       </div>
@@ -70,7 +80,11 @@ export function Dropdown({ trigger, items, position = 'bottom-right' }: Dropdown
         <div 
           className={`dropdown-menu ${position}`}
           ref={menuRef}
-          style={{ top: coords.top, left: coords.left }}
+          style={{ 
+            top: coords.top, 
+            left: coords.left,
+            position: 'absolute'
+          }}
           onClick={e => e.stopPropagation()}
         >
           {items.map((item, index) => (

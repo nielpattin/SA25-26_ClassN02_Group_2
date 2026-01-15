@@ -1,338 +1,240 @@
-import { useState, useRef } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useEffect, useRef } from 'react'
+import { X, Calendar, Type, Paperclip, MessageSquare, History, Tag, UserPlus, Move, Trash2, MoreHorizontal, Archive, Flag, Image, Users } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link2, File, Trash2, ExternalLink, X, ChevronRight, CheckSquare, Square, CalendarClock, AlertTriangle, MoreHorizontal } from 'lucide-react'
 import { api } from '../api/client'
-import { useSession } from '../api/auth'
+import { Button } from './ui/Button'
+import { Textarea } from './ui/Textarea'
+import { Input } from './ui/Input'
+import { Popover } from './ui/Popover'
+import { DatePicker } from './ui/DatePicker'
+import { Checkbox } from './ui/Checkbox'
 import { Dropdown } from './Dropdown'
+import { Checklist, ChecklistCreator } from './checklist'
+import { CommentSection } from './comments'
+import { LabelSection } from './Labels'
+import { AssigneeSection } from './Assignees'
+import { AttachmentSection } from './Attachments'
+import { ActivitySection } from './Activity'
+import { MoveModal } from './MoveModal'
+import { Card, Checklist as ChecklistType, Comment, Activity, Board } from './CardModalTypes'
+import { format } from 'date-fns'
 import './CardModal.css'
 
-type Card = {
-  id: string
-  title: string
-  description: string | null
-  dueDate: string | Date | null
-  priority: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
-  columnId: string
-}
-
-type Attachment = {
-  id: string
-  taskId: string
-  type: 'link' | 'file'
-  url: string
-  name: string
-  mimeType: string | null
-  size: number | null
-  createdAt: string | Date
-}
-
-type Comment = {
-  id: string
-  taskId: string
-  userId: string
-  content: string
-  userName: string | null
-  userImage: string | null
-  createdAt: string | Date
-  updatedAt: string | Date
-}
-
-type Label = {
-  id: string
-  name: string
-  color: string
-  boardId: string
-}
-
-type ChecklistItem = {
-  id: string
-  content: string
-  isCompleted: boolean
-  checklistId: string
-  position: string
-}
-
-type Checklist = {
-  id: string
-  title: string
-  taskId: string
-  position: string
-  items: ChecklistItem[]
-}
-
-type CardModalProps = {
+interface CardModalProps {
   cardId: string
   boardId: string
   onClose: () => void
 }
 
+const PRIORITIES = [
+  { id: 'urgent', name: 'Urgent', color: '#E74C3C' },
+  { id: 'high', name: 'High', color: '#E67E22' },
+  { id: 'medium', name: 'Medium', color: '#F1C40F' },
+  { id: 'low', name: 'Low', color: '#2ECC71' },
+  { id: 'none', name: 'None', color: '#95A5A6' },
+]
+
 export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   const queryClient = useQueryClient()
-  const [title, setTitle] = useState('')
+  const [isMoving, setIsMoving] = useState(false)
   const [description, setDescription] = useState('')
-  const [dueDate, setDueDate] = useState('')
-  const [priority, setPriority] = useState<'urgent' | 'high' | 'medium' | 'low' | 'none' | null>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
-  const [deletingLabel, setDeletingLabel] = useState<Label | null>(null)
-  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
-  const isMouseDownOnOverlay = useRef(false)
+  const [isEditingDescription, setIsEditingDescription] = useState(false)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const [isPriorityOpen, setIsPriorityOpen] = useState(false)
+  const [isMembersOpen, setIsMembersOpen] = useState(false)
+  const [isCoverOpen, setIsCoverOpen] = useState(false)
+  const dateTriggerRef = useRef<HTMLButtonElement>(null)
+  const mainDateTriggerRef = useRef<HTMLDivElement>(null)
+  const priorityTriggerRef = useRef<HTMLButtonElement>(null)
+  const membersTriggerRef = useRef<HTMLButtonElement>(null)
+  const coverTriggerRef = useRef<HTMLButtonElement>(null)
+  const [coverUrl, setCoverUrl] = useState('')
 
-  // Fetch card data
-  const { data: card, isLoading: cardLoading } = useQuery({
+  const { data: card, isLoading } = useQuery<Card>({
     queryKey: ['card', cardId],
     queryFn: async () => {
       const { data, error } = await api.tasks({ id: cardId }).get()
       if (error) throw error
-      return data as Card
-    },
+      return data as unknown as Card
+    }
   })
 
-  // Labels
-  const { data: boardLabels } = useQuery({
-    queryKey: ['labels', boardId],
-    queryFn: async () => {
-      const { data, error } = await api.labels.board({ boardId }).get()
-      if (error) throw error
-      return data as Label[]
-    },
-  })
-
-  const { data: cardLabels } = useQuery({
-    queryKey: ['cardLabels', cardId],
-    queryFn: async () => {
-      const { data, error } = await api.labels.card({ cardId }).get()
-      if (error) throw error
-      return data as Label[]
-    },
-  })
-
-  // Checklists
-  const { data: checklists } = useQuery({
+  const { data: checklists = [] } = useQuery<ChecklistType[]>({
     queryKey: ['checklists', cardId],
     queryFn: async () => {
       const { data, error } = await api.checklists.task({ taskId: cardId }).get()
       if (error) throw error
-      return data as Checklist[]
+      return data as unknown as ChecklistType[]
     },
+    enabled: !!card
   })
 
-  // Attachments
-  const { data: attachments } = useQuery({
-    queryKey: ['attachments', cardId],
-    queryFn: async () => {
-      const { data, error } = await api.attachments.task({ taskId: cardId }).get()
-      if (error) throw error
-      return data as Attachment[]
-    },
-  })
-
-  // Comments
-  const { data: session } = useSession()
-
-  const { data: comments } = useQuery({
+  const { data: comments = [] } = useQuery<Comment[]>({
     queryKey: ['comments', cardId],
     queryFn: async () => {
       const { data, error } = await api.comments.task({ taskId: cardId }).get()
       if (error) throw error
-      return data as Comment[]
+      return data as unknown as Comment[]
     },
+    enabled: !!card
   })
 
-  // Mutations
+  const { data: activities = [] } = useQuery<Activity[]>({
+    queryKey: ['activities', cardId],
+    queryFn: async () => {
+      const { data, error } = await api.activities.task({ taskId: cardId }).get()
+      if (error) throw error
+      return data as unknown as Activity[]
+    },
+    enabled: !!card
+  })
+
+  const { data: boardLabels = [] } = useQuery<{ id: string; name: string; color: string }[]>({
+    queryKey: ['labels', boardId],
+    queryFn: async () => {
+      const { data, error } = await api.labels.board({ boardId }).get()
+      if (error) throw error
+      return data as unknown as { id: string; name: string; color: string }[]
+    }
+  })
+
+  const { data: boards = [] } = useQuery<Board[]>({
+    queryKey: ['boards'],
+    queryFn: async () => {
+      const { data, error } = await api.boards.get()
+      if (error) throw error
+      return data as unknown as Board[]
+    }
+  })
+
+  const { data: boardMembers = [] } = useQuery<{ id: string; name: string | null; image: string | null }[]>({
+    queryKey: ['board-members', boardId],
+    queryFn: async () => {
+      const { data, error } = await api.boards({ id: boardId }).members.get()
+      if (error) throw error
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (data as any[]).map((m: any) => ({
+        id: m.userId,
+        name: m.userName,
+        image: m.userImage
+      }))
+    }
+  })
+
+  useEffect(() => {
+    if (card?.description) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDescription(card.description)
+    }
+    if (card?.coverImageUrl) {
+      setCoverUrl(card.coverImageUrl)
+    }
+  }, [card?.description, card?.coverImageUrl])
+
   const updateCard = useMutation({
-    mutationFn: async (updates: { title?: string; description?: string; dueDate?: string | null; priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null }) => {
-      const { data, error } = await api.tasks({ id: cardId }).patch(updates)
+    mutationFn: async (updates: Partial<Card>) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await api.tasks({ id: cardId }).patch(updates as any)
       if (error) throw error
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
       queryClient.invalidateQueries({ queryKey: ['card', cardId] })
-    },
+      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+      queryClient.invalidateQueries({ queryKey: ['board', boardId] })
+    }
   })
 
   const archiveCard = useMutation({
     mutationFn: async () => {
-      const { error } = await api.tasks({ id: cardId }).archive.post({})
+      const { error } = await api.tasks({ id: cardId }).archive.post()
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+      queryClient.invalidateQueries({ queryKey: ['board', boardId] })
       onClose()
-    },
+    }
   })
 
-  const toggleLabel = useMutation({
-    mutationFn: async ({ labelId, attached }: { labelId: string; attached: boolean }) => {
-      if (attached) {
-        const { error } = await api.labels.card({ cardId }).label({ labelId }).delete()
-        if (error) throw error
+  const moveCard = useMutation({
+    mutationFn: async (params: { columnId: string, beforeTaskId?: string, afterTaskId?: string }) => {
+      const { error } = await api.tasks({ id: cardId }).move.patch(params)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+      queryClient.invalidateQueries({ queryKey: ['board', boardId] })
+      setIsMoving(false)
+    }
+  })
+
+  const toggleAssignee = useMutation({
+    mutationFn: async (userId: string) => {
+      const currentAssignees = card!.assignees || []
+      if (currentAssignees.includes(userId)) {
+        await api.tasks({ id: cardId }).assignees({ userId }).delete()
       } else {
-        const { error } = await api.labels.card({ cardId }).label({ labelId }).post({})
-        if (error) throw error
+        await api.tasks({ id: cardId }).assignees.post({ userId })
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cardLabels', cardId] })
-      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-    },
-  })
-
-  const deleteLabel = useMutation({
-    mutationFn: async (labelId: string) => {
-      const { error } = await api.labels({ id: labelId }).delete()
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
-      queryClient.invalidateQueries({ queryKey: ['cardLabels'] })
-      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-    },
+      queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+      queryClient.invalidateQueries({ queryKey: ['activities', cardId] })
+    }
   })
 
   const createChecklist = useMutation({
-    mutationFn: async (checklistTitle: string) => {
-      const { data, error } = await api.checklists.post({
-        title: checklistTitle,
-        taskId: cardId,
+    mutationFn: async (title: string) => {
+      const { error } = await api.checklists.post({
+        title,
+        taskId: cardId
       })
       if (error) throw error
-      return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
+      queryClient.invalidateQueries({ queryKey: ['card', cardId] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-    },
-  })
-
-  const createAttachment = useMutation({
-    mutationFn: async (data: { type: 'link' | 'file'; url: string; name: string }) => {
-      const { data: result, error } = await api.attachments.post({
-        ...data,
-        taskId: cardId,
-      })
-      if (error) throw error
-      return result
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['attachments', cardId] })
-      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-    },
-  })
-
-  const deleteAttachment = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await api.attachments({ id }).delete()
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['attachments', cardId] })
-      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-    },
-  })
-
-  const createComment = useMutation({
-    mutationFn: async (content: string) => {
-      const { data, error } = await api.comments.post({ taskId: cardId, content })
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
-    },
-  })
-
-  const deleteComment = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await api.comments({ id }).delete()
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
-    },
-  })
-
-  // Initialize form state when card loads
-  if (card && !isInitialized) {
-    setTitle(card.title)
-    setDescription(card.description || '')
-    const dueDateStr = card.dueDate
-      ? (typeof card.dueDate === 'string' ? card.dueDate : card.dueDate.toISOString()).split('T')[0]
-      : ''
-    setDueDate(dueDateStr)
-    setPriority(card.priority)
-    setIsInitialized(true)
-  }
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    isMouseDownOnOverlay.current = e.target === e.currentTarget
-  }
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (isMouseDownOnOverlay.current && e.target === e.currentTarget) {
-      onClose()
     }
-    isMouseDownOnOverlay.current = false
-  }
+  })
 
-  const handleSave = () => {
-    updateCard.mutate({
-      title,
-      description,
-      dueDate: dueDate || null,
-    })
-  }
+  if (isLoading || !card) return <div className="loading-state">Loading...</div>
 
-  if (cardLoading || !card) {
-    return (
-      <div className="modal-overlay" onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
-        <div className="modal-content" onMouseDown={e => e.stopPropagation()} onMouseUp={e => e.stopPropagation()}>
-          <div className="loading-state">// Loading card...</div>
-        </div>
-      </div>
-    )
-  }
-
-  const now = new Date()
-  const twoDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000)
-  const isOverdue = dueDate && new Date(dueDate) < now
-  const isDueSoon = dueDate && !isOverdue && new Date(dueDate) <= twoDaysFromNow
+  const menuItems = [
+    { label: 'Move', icon: <Move size={14} />, onClick: () => setIsMoving(true) },
+    { label: 'Archive', icon: <Archive size={14} />, onClick: () => archiveCard.mutate() }
+  ]
 
   return (
-    <div className="modal-overlay" onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
-      <div className="modal-content" onMouseDown={e => e.stopPropagation()} onMouseUp={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        {card.coverImageUrl && (
+          <div className="modal-cover">
+            <img src={card.coverImageUrl} alt="Cover" className="cover-image" />
+            <button
+              className="modal-cover-remove-btn"
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onClick={() => updateCard.mutate({ coverImageUrl: null } as any)}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        )}
+
         <div className="modal-header">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+          <Input
+            value={card.title}
+            onChange={(e) => updateCard.mutate({ title: e.target.value })}
             className="modal-title-input"
-            onBlur={handleSave}
-            onFocus={(e) => {
-              const val = e.target.value
-              e.target.value = ''
-              e.target.value = val
-            }}
+            brutal={false}
           />
           <div className="modal-actions-header">
             <Dropdown
-              trigger={
-                <button className="modal-header-btn" title="More actions">
-                  <MoreHorizontal size={20} />
-                </button>
-              }
-              items={[
-                {
-                  label: 'Archive Task',
-                  icon: <Trash2 size={16} />,
-                  variant: 'danger',
-                  onClick: () => setShowArchiveConfirm(true),
-                },
-              ]}
+              trigger={<button className="modal-header-btn"><MoreHorizontal size={20} /></button>}
+              items={menuItems}
             />
-            <button onClick={onClose} className="modal-header-btn close" title="Close">
+            <button className="modal-header-btn close" onClick={onClose}>
               <X size={20} />
             </button>
           </div>
@@ -340,704 +242,314 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
 
         <div className="modal-body">
           <div className="modal-main-content">
-            {/* Labels Section */}
-            <div className="modal-section">
-              <h4 className="section-title"><ChevronRight size={14} /> Labels</h4>
-              <div className="labels-container">
-                {boardLabels?.map((label) => {
-                  const isAttached = cardLabels?.some((cl) => cl.id === label.id)
-                  return (
-                    <div key={label.id} className="label-wrapper">
-                      <button
-                        className={`label-pill ${isAttached ? 'active' : ''}`}
-                        style={{ '--label-color': label.color } as React.CSSProperties}
-                        onClick={() => toggleLabel.mutate({ labelId: label.id, attached: !!isAttached })}
-                      >
-                        {label.name}
-                      </button>
-                      <button 
-                        className="delete-label-pill-btn"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setDeletingLabel(label)
-                        }}
-                      >
-                        <X size={10} />
-                      </button>
-                    </div>
-                  )
-                })}
-                <LabelCreator boardId={boardId} />
-              </div>
-            </div>
-
-            {/* Priority Section */}
-            <div className="modal-section">
-              <h4 className="section-title"><ChevronRight size={14} /> Priority</h4>
-              <div className="priority-container">
-                {(['urgent', 'high', 'medium', 'low', 'none'] as const).map((p) => (
-                  <button
-                    key={p}
-                    className={`priority-pill ${priority === p ? 'active' : ''} ${p}`}
-                    onClick={() => {
-                      setPriority(p)
-                      updateCard.mutate({ priority: p })
-                    }}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Due Date Section */}
-            <div className="modal-section">
-              <h4 className="section-title"><ChevronRight size={14} /> Due Date</h4>
-              <div className="brutal-date-widget">
-                <div className="widget-segment icon-segment">
-                  <CalendarClock size={16} />
-                </div>
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => {
-                    setDueDate(e.target.value)
-                    updateCard.mutate({ dueDate: e.target.value || null })
+            {/* Labels & Members */}
+            <div className="modal-top-meta">
+              <div className="modal-section">
+                <h3 className="section-title"><Tag size={14} /> Labels</h3>
+                <LabelSection
+                  cardLabels={card.labels}
+                  allLabels={boardLabels}
+                  onToggle={async (labelId) => {
+                    const currentLabels = card.labels || []
+                    if (currentLabels.includes(labelId)) {
+                      await api.labels.card({ cardId }).label({ labelId }).delete()
+                    } else {
+                      await api.labels.card({ cardId }).label({ labelId }).post()
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+                    queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
                   }}
-                  className="widget-input"
+                  onAdd={async (name, color) => {
+                    await api.labels.post({ name, color, boardId })
+                    queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
+                  }}
+                  onDelete={async (labelId) => {
+                    await api.labels({ id: labelId }).delete()
+                    queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
+                    queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+                    queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+                  }}
                 />
-                
-                {isOverdue && (
-                  <div className="widget-segment status-segment overdue">
-                    <AlertTriangle size={12} />
-                    OVERDUE
-                  </div>
-                )}
-                {isDueSoon && (
-                  <div className="widget-segment status-segment soon">
-                    <CalendarClock size={12} />
-                    SOON
-                  </div>
-                )}
+              </div>
 
-                {dueDate && (
-                  <button
-                    className="widget-segment clear-segment"
-                    onClick={() => {
-                      setDueDate('')
-                      updateCard.mutate({ dueDate: null })
-                    }}
-                    title="Clear date"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+              <div className="modal-section">
+                <h3 className="section-title"><Users size={14} /> Members</h3>
+                <AssigneeSection
+                  currentAssignees={card.assignees || []}
+                  boardMembers={boardMembers}
+                  onToggle={(userId) => {
+                    if (userId === 'open-picker') {
+                      setIsMembersOpen(true)
+                    } else {
+                      toggleAssignee.mutate(userId)
+                    }
+                  }}
+                />
               </div>
             </div>
 
-            {/* Description Section */}
+            {/* Due Date */}
+            {card.dueDate && (
+              <div className="modal-section">
+                <h3 className="section-title"><Calendar size={14} /> Due Date</h3>
+                <div className="due-date-display">
+                  <Checkbox
+                    checked={false}
+                    onChange={() => { }}
+                    className="due-date-checkbox"
+                  />
+                  <div
+                    className="due-date-info"
+                    onClick={() => setIsDatePickerOpen(true)}
+                    ref={mainDateTriggerRef}
+                  >
+                    <span className="date-text">
+                      {format(new Date(card.dueDate), 'PPP')}
+                    </span>
+                    {new Date(card.dueDate) < new Date() && (
+                      <span className="overdue-badge">Overdue</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
             <div className="modal-section">
-              <h4 className="section-title"><ChevronRight size={14} /> Description</h4>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                onBlur={handleSave}
-                placeholder="Add a description..."
-                className="description-input"
+              <h3 className="section-title"><Type size={14} /> Description</h3>
+              {isEditingDescription ? (
+                <div className="description-editor">
+                  <Textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    autoFocus
+                  />
+                  <div className="description-actions">
+                    <Button onClick={() => {
+                      updateCard.mutate({ description })
+                      setIsEditingDescription(false)
+                    }}>Save</Button>
+                    <Button variant="secondary" onClick={() => setIsEditingDescription(false)}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="description-display"
+                  onClick={() => setIsEditingDescription(true)}
+                >
+                  {card.description || 'Add a more detailed description...'}
+                </div>
+              )}
+            </div>
+
+            {/* Checklists */}
+            {checklists.map(checklist => (
+              <Checklist
+                key={checklist.id}
+                checklist={checklist}
+                cardId={cardId}
+              />
+            ))}
+
+            {/* Attachments */}
+            <div className="modal-section">
+              <h3 className="section-title"><Paperclip size={14} /> Attachments</h3>
+              <AttachmentSection
+                attachments={[]}
+                onAdd={() => { }}
+                onDelete={() => { }}
               />
             </div>
 
-            {/* Attachments Section */}
+            {/* Comments */}
             <div className="modal-section">
-              <h4 className="section-title"><ChevronRight size={14} /> Attachments</h4>
-              <div className="attachments-list">
-                {attachments?.map((attachment) => (
-                  <div key={attachment.id} className="attachment-item">
-                    <div className="attachment-icon">
-                      {attachment.type === 'link' ? <Link2 size={16} /> : <File size={16} />}
-                    </div>
-                    <div className="attachment-info">
-                      <a
-                        href={attachment.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="attachment-name"
-                      >
-                        {attachment.name}
-                        <ExternalLink size={10} style={{ marginLeft: '4px', opacity: 0.5 }} />
-                      </a>
-                      <div className="attachment-meta">
-                        {attachment.type} • {new Date(attachment.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <button
-                      className="delete-attachment-btn"
-                      onClick={() => deleteAttachment.mutate(attachment.id)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <AttachmentCreator onCreate={(data) => createAttachment.mutate(data)} />
+              <h3 className="section-title"><MessageSquare size={14} /> Comments</h3>
+              <CommentSection
+                cardId={cardId}
+                comments={comments}
+                sessionUserId="current-user-id" // Replace with real session
+              />
             </div>
 
-            {/* Checklists Section */}
+            {/* Activity */}
             <div className="modal-section">
-              <h4 className="section-title"><ChevronRight size={14} /> Checklists</h4>
-              {checklists?.map((checklist) => (
-                <ChecklistComponent key={checklist.id} checklist={checklist} cardId={cardId} />
-              ))}
-              <ChecklistCreator onCreate={(title) => createChecklist.mutate(title)} />
+              <h3 className="section-title"><History size={14} /> Activity</h3>
+              <ActivitySection activities={activities} />
             </div>
           </div>
 
           <div className="modal-sidebar">
-            {/* Comments Section */}
             <div className="modal-section">
-              <h4 className="section-title"><ChevronRight size={14} /> Comments</h4>
-              <div className="comments-list">
-                {comments?.map((comment) => (
-                  <div key={comment.id} className="comment-item">
-                    <div className="comment-avatar">
-                      {comment.userName?.charAt(0).toUpperCase() || '?'}
-                    </div>
-                    <div className="comment-content-container">
-                      <div className="comment-author-info">
-                        <div className="comment-author-meta">
-                          <span className="comment-author-name">{comment.userName}</span>
-                          <span className="comment-date">
-                            {new Date(comment.createdAt).toLocaleString()}
-                          </span>
-                        </div>
-                        {session?.user.id === comment.userId && (
-                          <button
-                            className="comment-delete-btn"
-                            onClick={() => setDeletingCommentId(comment.id)}
-                            title="Delete comment"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
-                      <div className="comment-content">{comment.content}</div>
+              <h3 className="section-title">Add to card</h3>
+              <div className="sidebar-buttons">
+                <ChecklistCreator onCreate={(title) => createChecklist.mutate(title)} />
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setIsMembersOpen(true)}
+                  ref={membersTriggerRef}
+                >
+                  <UserPlus size={14} /> Members
+                </Button>
+
+                <Popover
+                  isOpen={isMembersOpen}
+                  onClose={() => setIsMembersOpen(false)}
+                  triggerRef={membersTriggerRef}
+                  title="Members"
+                >
+                  <AssigneeSection
+                    variant="picker"
+                    currentAssignees={card.assignees || []}
+                    boardMembers={boardMembers}
+                    onToggle={(userId) => toggleAssignee.mutate(userId)}
+                  />
+                </Popover>
+
+                {!card.dueDate && (
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    onClick={() => setIsDatePickerOpen(true)}
+                    ref={dateTriggerRef}
+                  >
+                    <Calendar size={14} /> Dates
+                  </Button>
+                )}
+
+                <Popover
+                  isOpen={isDatePickerOpen}
+                  onClose={() => setIsDatePickerOpen(false)}
+                  triggerRef={card.dueDate ? mainDateTriggerRef : dateTriggerRef}
+                  title="Dates"
+                >
+                  <DatePicker
+                    initialDate={card.dueDate}
+                    onSave={(date) => {
+                      updateCard.mutate({ dueDate: date })
+                      setIsDatePickerOpen(false)
+                    }}
+                  />
+                </Popover>
+
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setIsPriorityOpen(true)}
+                  ref={priorityTriggerRef}
+                >
+                  <Flag size={14} /> Priority
+                </Button>
+                <Popover
+                  isOpen={isPriorityOpen}
+                  onClose={() => setIsPriorityOpen(false)}
+                  triggerRef={priorityTriggerRef}
+                  title="Priority"
+                >
+                  <div className="priority-picker">
+                    {PRIORITIES.map(p => (
+                      <button
+                        key={p.id}
+                        className={`priority-option ${card.priority === p.id ? 'active' : ''}`}
+                        onClick={() => {
+                          updateCard.mutate({ priority: p.id as Card['priority'] })
+                          setIsPriorityOpen(false)
+                        }}
+                      >
+                        <span className="priority-dot" style={{ backgroundColor: p.color }} />
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </Popover>
+
+                <Button
+                  ref={coverTriggerRef}
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setIsCoverOpen(true)}
+                >
+                  <Image size={14} /> Cover
+                </Button>
+
+                <Popover
+                  isOpen={isCoverOpen}
+                  onClose={() => setIsCoverOpen(false)}
+                  triggerRef={coverTriggerRef}
+                  title="Card Cover"
+                >
+                  <div className="cover-picker">
+                    <Input
+                      placeholder="Enter image URL..."
+                      value={coverUrl}
+                      onChange={(e) => setCoverUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          updateCard.mutate({ coverImageUrl: coverUrl })
+                          setIsCoverOpen(false)
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                      <Button
+                        fullWidth
+                        onClick={() => {
+                          updateCard.mutate({ coverImageUrl: coverUrl })
+                          setIsCoverOpen(false)
+                        }}
+                      >
+                        Save
+                      </Button>
+                      {card.coverImageUrl && (
+                        <Button
+                          variant="danger"
+                          onClick={() => {
+                            updateCard.mutate({ coverImageUrl: null })
+                            setCoverUrl('')
+                            setIsCoverOpen(false)
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      )}
                     </div>
                   </div>
-                ))}
+                </Popover>
               </div>
-              <CommentCreator onCreate={(content) => createComment.mutate(content)} />
+            </div>
+
+            <div className="modal-section">
+              <h3 className="section-title">Details</h3>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <span className="detail-label">Position</span>
+                  <span className="detail-value">{card.position}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Priority</span>
+                  <span className="detail-value" style={{
+                    color: PRIORITIES.find(p => p.id === card.priority)?.color || 'inherit'
+                  }}>
+                    {card.priority || 'none'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <ConfirmModal
-        isOpen={showArchiveConfirm}
-        title="Archive Task"
-        message="Are you sure you want to archive this task? It will be removed from the board but can be restored later."
-        confirmText="Archive"
-        variant="danger"
-        onConfirm={() => archiveCard.mutate()}
-        onCancel={() => setShowArchiveConfirm(false)}
-      />
-
-      <ConfirmModal
-        isOpen={!!deletingLabel}
-        title="Delete Label"
-        message={`Are you sure you want to delete label "${deletingLabel?.name}" from the board? This will remove it from all tasks.`}
-        confirmText="Delete"
-        variant="danger"
-        onConfirm={() => {
-          if (deletingLabel) {
-            deleteLabel.mutate(deletingLabel.id)
-            setDeletingLabel(null)
-          }
-        }}
-        onCancel={() => setDeletingLabel(null)}
-      />
-
-      <ConfirmModal
-        isOpen={!!deletingCommentId}
-        title="Delete Comment"
-        message="Are you sure you want to delete this comment? This action cannot be undone."
-        confirmText="Delete"
-        variant="danger"
-        onConfirm={() => {
-          if (deletingCommentId) {
-            deleteComment.mutate(deletingCommentId)
-            setDeletingCommentId(null)
-          }
-        }}
-        onCancel={() => setDeletingCommentId(null)}
-      />
-    </div>
-  )
-}
-
-function ConfirmModal({ 
-  isOpen, 
-  title, 
-  message, 
-  onConfirm, 
-  onCancel, 
-  confirmText = 'Confirm', 
-  cancelText = 'Cancel',
-  variant = 'default' 
-}: {
-  isOpen: boolean
-  title: string
-  message: string
-  onConfirm: () => void
-  onCancel: () => void
-  confirmText?: string
-  cancelText?: string
-  variant?: 'default' | 'danger'
-}) {
-  if (!isOpen) return null
-
-  return createPortal(
-    <div className="modal-overlay confirm-overlay" onClick={onCancel}>
-      <div className="modal-content confirm-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="confirm-title">{title}</h3>
-          <button onClick={onCancel} className="modal-header-btn close"><X size={20} /></button>
-        </div>
-        <div className="modal-body confirm-body">
-          <p className="confirm-message">{message}</p>
-          <div className="confirm-actions">
-            <button onClick={onCancel} className="btn-cancel">{cancelText}</button>
-            <button 
-              onClick={onConfirm} 
-              className={`btn-save ${variant === 'danger' ? 'danger' : ''}`}
-            >
-              {confirmText}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
-  )
-}
-
-function CommentCreator({ onCreate }: { onCreate: (content: string) => void }) {
-  const [content, setContent] = useState('')
-
-  const handleSubmit = () => {
-    if (content.trim()) {
-      onCreate(content.trim())
-      setContent('')
-    }
-  }
-
-  return (
-    <div className="comment-creator">
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Write a comment..."
-        className="comment-input"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && e.ctrlKey) {
-            handleSubmit()
-          }
-        }}
-      />
-      <div className="comment-creator-actions">
-        <button
-          onClick={handleSubmit}
-          className="btn-save"
-          disabled={!content.trim()}
-        >
-          Comment
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function LabelCreator({ boardId }: { boardId: string }) {
-  const queryClient = useQueryClient()
-  const [isOpen, setIsOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [color, setColor] = useState('#e74c3c')
-
-  const colors = ['#FFA07A', '#E74C3C', '#F7DC6F', '#BB8FCE', '#3498db', '#2ecc71', '#000000', '#FF69B4']
-
-  const createLabel = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await api.labels.post({ name, color, boardId })
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
-      setName('')
-      setIsOpen(false)
-    },
-  })
-
-  if (!isOpen) {
-    return (
-      <button className="add-label-btn" onClick={() => setIsOpen(true)}>
-        + New Label
-      </button>
-    )
-  }
-
-  return (
-    <div className="label-creator">
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Label name"
-        className="label-name-input"
-      />
-      <div className="color-picker">
-        {colors.map((c) => (
-          <button
-            key={c}
-            className={`color-option ${color === c ? 'selected' : ''}`}
-            style={{ background: c }}
-            onClick={() => setColor(c)}
-          />
-        ))}
-      </div>
-      <div className="label-creator-actions">
-        <button onClick={() => createLabel.mutate()} className="btn-save" disabled={!name}>
-          Create
-        </button>
-        <button onClick={() => setIsOpen(false)} className="btn-cancel">
-          Cancel
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function AttachmentCreator({ onCreate }: { onCreate: (data: { type: 'link' | 'file'; url: string; name: string }) => void }) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [url, setUrl] = useState('')
-  const [name, setName] = useState('')
-
-  if (!isOpen) {
-    return (
-      <button className="add-attachment-btn" onClick={() => setIsOpen(true)}>
-        + Add Link
-      </button>
-    )
-  }
-
-  const handleSubmit = () => {
-    if (url) {
-      // Simple name inference if empty
-      const finalName = name || url.split('/').pop() || url
-      onCreate({ type: 'link', url, name: finalName })
-      setUrl('')
-      setName('')
-      setIsOpen(false)
-    }
-  }
-
-  return (
-    <div className="attachment-creator">
-      <input
-        type="text"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Paste link here..."
-        className="attachment-input"
-        autoFocus
-      />
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Link name (optional)"
-        className="attachment-input"
-      />
-      <div className="checklist-creator-actions">
-        <button
-          onClick={handleSubmit}
-          className="btn-save"
-          disabled={!url}
-        >
-          Add
-        </button>
-        <button onClick={() => setIsOpen(false)} className="btn-cancel">
-          Cancel
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function ChecklistComponent({ checklist, cardId }: { checklist: Checklist; cardId: string }) {
-  const queryClient = useQueryClient()
-  const [newItemContent, setNewItemContent] = useState('')
-  const [isEditingTitle, setIsEditingTitle] = useState(false)
-  const [editedTitle, setEditedTitle] = useState(checklist.title)
-  const [isAddingItem, setIsAddingItem] = useState(false)
-  const [editingItemId, setEditingItemId] = useState<string | null>(null)
-  const [editedItemContent, setEditedItemContent] = useState('')
-  
-  const items = checklist.items
-
-  const addItem = useMutation({
-    mutationFn: async (content: string) => {
-      const { data, error } = await api.checklists.items.post({
-        content,
-        checklistId: checklist.id,
-      })
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      queryClient.invalidateQueries({ queryKey: ['cards'] })
-      setNewItemContent('')
-      setIsAddingItem(false)
-    },
-  })
-
-  const toggleItem = useMutation({
-    mutationFn: async (itemId: string) => {
-      const { data, error } = await api.checklists.items({ id: itemId }).toggle.post({})
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      queryClient.invalidateQueries({ queryKey: ['cards'] })
-    },
-  })
-
-  const deleteItem = useMutation({
-    mutationFn: async (itemId: string) => {
-      const { error } = await api.checklists.items({ id: itemId }).delete()
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      queryClient.invalidateQueries({ queryKey: ['cards'] })
-    },
-  })
-
-  const updateChecklist = useMutation({
-    mutationFn: async (title: string) => {
-      const { data, error } = await api.checklists({ id: checklist.id }).patch({ title })
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      setIsEditingTitle(false)
-    },
-  })
-
-  const updateItem = useMutation({
-    mutationFn: async ({ itemId, content }: { itemId: string; content: string }) => {
-      const { data, error } = await api.checklists.items({ id: itemId }).patch({ content })
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      setEditingItemId(null)
-    },
-  })
-
-  const deleteChecklist = useMutation({
-    mutationFn: async () => {
-      const { error } = await api.checklists({ id: checklist.id }).delete()
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      queryClient.invalidateQueries({ queryKey: ['cards'] })
-    },
-  })
-
-  const completedCount = items?.filter((i: ChecklistItem) => i.isCompleted).length || 0
-  const totalCount = items?.length || 0
-  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
-
-  return (
-    <div className="checklist">
-      <div className="checklist-header">
-        {isEditingTitle ? (
-          <input
-            type="text"
-            value={editedTitle}
-            onChange={(e) => setEditedTitle(e.target.value)}
-            onBlur={() => {
-              if (editedTitle.trim() && editedTitle !== checklist.title) {
-                updateChecklist.mutate(editedTitle.trim())
-              } else {
-                setEditedTitle(checklist.title)
-                setIsEditingTitle(false)
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && editedTitle.trim()) {
-                updateChecklist.mutate(editedTitle.trim())
-              } else if (e.key === 'Escape') {
-                setEditedTitle(checklist.title)
-                setIsEditingTitle(false)
-              }
-            }}
-            className="checklist-title-edit"
-            autoFocus
-          />
-        ) : (
-          <span
-            className="checklist-title"
-            onClick={() => setIsEditingTitle(true)}
-            style={{ cursor: 'pointer' }}
-          >
-            {checklist.title}
-          </span>
-        )}
-            <span className="checklist-progress">{completedCount}/{totalCount}</span>
-            <button
-              className="delete-checklist-btn"
-              onClick={() => deleteChecklist.mutate()}
-              title="Delete checklist"
-            >
-              <X size={14} />
-            </button>
-          </div>
-
-      <div className="progress-bar">
-        <div className="progress-fill" style={{ width: `${progress}%` }} />
-      </div>
-      <div className="checklist-items">
-        {items?.map((item: ChecklistItem) => (
-          <div
-            key={item.id}
-            className={`checklist-item ${item.isCompleted ? 'completed' : ''}`}
-          >
-            <button 
-              className={`checklist-checkbox-btn ${item.isCompleted ? 'completed' : ''}`}
-              onClick={() => toggleItem.mutate(item.id)}
-            >
-              {item.isCompleted ? <CheckSquare size={18} /> : <Square size={18} />}
-            </button>
-            {editingItemId === item.id ? (
-              <input
-                type="text"
-                value={editedItemContent}
-                onChange={(e) => setEditedItemContent(e.target.value)}
-                onBlur={() => {
-                  if (editedItemContent.trim() && editedItemContent !== item.content) {
-                    updateItem.mutate({ itemId: item.id, content: editedItemContent.trim() })
-                  } else {
-                    setEditingItemId(null)
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && editedItemContent.trim()) {
-                    updateItem.mutate({ itemId: item.id, content: editedItemContent.trim() })
-                  } else if (e.key === 'Escape') {
-                    setEditingItemId(null)
-                  }
-                }}
-                className="checklist-item-edit"
-                autoFocus
-              />
-            ) : (
-              <span
-                className="checklist-item-content"
-                onClick={() => {
-                  setEditingItemId(item.id)
-                  setEditedItemContent(item.content)
-                }}
-              >
-                {item.content}
-              </span>
-            )}
-            <button
-              className="delete-item-btn"
-              onClick={() => deleteItem.mutate(item.id)}
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
-      {isAddingItem ? (
-        <div className="add-item-container">
-          <input
-            type="text"
-            value={newItemContent}
-            onChange={(e) => setNewItemContent(e.target.value)}
-            placeholder="Type and press Enter..."
-            className="add-item-input"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && newItemContent) {
-                addItem.mutate(newItemContent)
-              } else if (e.key === 'Escape') {
-                setNewItemContent('')
-                setIsAddingItem(false)
-              }
-            }}
-            onBlur={() => {
-              if (!newItemContent) {
-                setIsAddingItem(false)
-              }
-            }}
-          />
-        </div>
-      ) : (
-        <button className="add-item-trigger" onClick={() => setIsAddingItem(true)}>
-          + Add Item
-        </button>
+      {isMoving && (
+        <MoveModal
+          boards={boards}
+          currentBoardId={boardId}
+          currentColumnId={card.columnId}
+          cardId={cardId}
+          onMove={(columnId, beforeTaskId, afterTaskId) => moveCard.mutate({ columnId, beforeTaskId, afterTaskId })}
+          onCancel={() => setIsMoving(false)}
+        />
       )}
-    </div>
-  )
-}
-
-function ChecklistCreator({ onCreate }: { onCreate: (title: string) => void }) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [title, setTitle] = useState('')
-
-  if (!isOpen) {
-    return (
-      <button className="add-checklist-btn" onClick={() => setIsOpen(true)}>
-        + Add Checklist
-      </button>
-    )
-  }
-
-  return (
-    <div className="checklist-creator">
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Checklist title"
-        className="checklist-title-input"
-      />
-      <div className="checklist-creator-actions">
-        <button
-          onClick={() => {
-            if (title) {
-              onCreate(title)
-              setTitle('')
-              setIsOpen(false)
-            }
-          }}
-          className="btn-save"
-          disabled={!title}
-        >
-          Add
-        </button>
-        <button onClick={() => setIsOpen(false)} className="btn-cancel">
-          Cancel
-        </button>
-      </div>
     </div>
   )
 }

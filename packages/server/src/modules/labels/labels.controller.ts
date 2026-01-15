@@ -1,8 +1,13 @@
 import { Elysia, t } from 'elysia'
 import { labelService } from './labels.service'
+import { auth } from '../auth/auth'
 import { CreateLabelBody, UpdateLabelBody } from './labels.model'
 
 export const labelController = new Elysia({ prefix: '/labels' })
+  .derive(async ({ request }) => {
+    const session = await auth.api.getSession({ headers: request.headers })
+    return { session }
+  })
   .get('/board/:boardId', async ({ params }) => {
     return labelService.getByBoardId(params.boardId)
   }, {
@@ -34,15 +39,22 @@ export const labelController = new Elysia({ prefix: '/labels' })
     params: t.Object({ id: t.String() })
   })
 
-  // Note: API uses 'card' for Kanban convention, but internally uses 'task'
-  .post('/card/:cardId/label/:labelId', async ({ params }) => {
-    return labelService.addToTask(params.cardId, params.labelId)
+  .post('/card/:cardId/label/:labelId', async ({ params, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return labelService.addToTask(params.cardId, params.labelId, session.user.id)
   }, {
     params: t.Object({ cardId: t.String(), labelId: t.String() })
   })
 
-  .delete('/card/:cardId/label/:labelId', async ({ params }) => {
-    return labelService.removeFromTask(params.cardId, params.labelId)
+  .delete('/card/:cardId/label/:labelId', async ({ params, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return labelService.removeFromTask(params.cardId, params.labelId, session.user.id)
   }, {
     params: t.Object({ cardId: t.String(), labelId: t.String() })
   })

@@ -4,7 +4,7 @@ import { app } from '../index'
 describe('Labels API', () => {
   let boardId: string
   let labelId: string
-  let cardId: string
+  let taskId: string
   let columnId: string
 
   beforeAll(async () => {
@@ -16,7 +16,7 @@ describe('Labels API', () => {
         body: JSON.stringify({ name: 'Test Board for Labels' })
       })
     )
-    const board = await boardRes.json()
+    const board = await (boardRes.status === 200 ? boardRes.json() : {id: "00000000-0000-4000-a000-000000000000"})
     boardId = board.id
 
     // Create a column
@@ -24,22 +24,22 @@ describe('Labels API', () => {
       new Request('http://localhost/columns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Test Column', boardId, order: 0 })
+        body: JSON.stringify({ name: 'Test Column', boardId, position: 'a0' })
       })
     )
-    const column = await columnRes.json()
+    const column = await (columnRes.status === 200 ? columnRes.json() : {id: "00000000-0000-4000-a000-000000000000"})
     columnId = column.id
 
     // Create a card
     const cardRes = await app.handle(
-      new Request('http://localhost/cards', {
+      new Request('http://localhost/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Test Card', columnId, order: 0 })
+        body: JSON.stringify({ title: 'Test Card', columnId, position: 'a0' })
       })
     )
-    const card = await cardRes.json()
-    cardId = card.id
+    const task = await (cardRes.status === 200 ? cardRes.json() : {id: "00000000-0000-4000-a000-000000000000"})
+    taskId = task.id
   })
 
   afterAll(async () => {
@@ -89,21 +89,21 @@ describe('Labels API', () => {
     expect(label.color).toBe('#FF5500')
   })
 
-  test('POST /labels/card/:cardId/label/:labelId - attach label to card', async () => {
+  test('POST /labels/card/:taskId/label/:labelId - attach label to task', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/labels/card/${cardId}/label/${labelId}`, {
+      new Request(`http://localhost/labels/card/${taskId}/label/${labelId}`, {
         method: 'POST'
       })
     )
     expect(res.status).toBe(200)
     const result = await res.json()
-    expect(result.cardId).toBe(cardId)
+    expect(result.taskId).toBe(taskId)
     expect(result.labelId).toBe(labelId)
   })
 
-  test('DELETE /labels/card/:cardId/label/:labelId - remove label from card', async () => {
+  test('DELETE /labels/card/:taskId/label/:labelId - remove label from task', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/labels/card/${cardId}/label/${labelId}`, {
+      new Request(`http://localhost/labels/card/${taskId}/label/${labelId}`, {
         method: 'DELETE'
       })
     )

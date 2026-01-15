@@ -1,0 +1,40 @@
+.activity-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.activity-content-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.activity-text {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #333333;
+  margin: 0;
+}
+
+.activity-text strong {
+  color: #000000;
+}
+
+.activity-date {
+  font-size: 10px;
+  font-weight: 600;
+  color: #999999;
+}
+
+.toggle-activity-btn {
+  margin-top: 4px;
+  align-self: flex-start;
+}

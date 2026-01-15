@@ -1,0 +1,79 @@
+.assignee-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.assignees-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.assignee-item {
+  cursor: pointer;
+}
+
+.add-assignee-mini-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.add-assignee-mini-btn:hover {
+  transform: scale(1.1);
+}
+
+.assignee-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.picker-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #FFFFFF;
+  border: 2px solid #000000;
+  font-family: var(--fonts-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.1s;
+  text-align: left;
+  width: 100%;
+}
+
+.picker-option:hover {
+  background: #F4F4F4;
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.picker-option.active {
+  background: #EEEEEE;
+  box-shadow: inset 2px 2px 0px #000000;
+}
+
+.member-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.check-icon {
+  color: var(--colors-accent);
+}

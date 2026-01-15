@@ -1,0 +1,28 @@
+.brutal-checkbox {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000000;
+  width: auto !important;
+  height: auto !important;
+  transition: transform 0.1s;
+}
+
+.brutal-checkbox:hover:not(:disabled) {
+  transform: scale(1.1);
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.brutal-checkbox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.brutal-checkbox.checked {
+  color: #000000;
+}

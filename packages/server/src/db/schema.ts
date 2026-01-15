@@ -28,14 +28,14 @@ export const notificationTypeEnum = pgEnum('notification_type', [
 
 /** Activity log action types */
 export const activityActionEnum = pgEnum('activity_action', [
-  'created', 'updated', 'deleted', 'moved', 'assigned', 'unassigned',
+  'created', 'updated', 'deleted', 'moved', 'moved_out', 'assigned', 'unassigned',
   'completed', 'uncompleted', 'archived', 'restored', 'label_added',
   'label_removed', 'due_date_set', 'attachment_added'
 ])
 
 /** Activity log target entity types */
 export const activityTargetEnum = pgEnum('activity_target', [
-  'task', 'column', 'board', 'comment', 'checklist', 'checklist_item', 'attachment', 'label'
+  'task', 'column', 'board', 'comment', 'checklist', 'checklist_item', 'attachment', 'label', 'user'
 ])
 
 /**

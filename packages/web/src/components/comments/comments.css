@@ -1,0 +1,82 @@
+.comment-section {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.comment-creator {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment-creator-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #000000;
+}
+
+.comment-content-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.comment-author-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.comment-author-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.comment-author-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #000000;
+}
+
+.comment-date {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666666;
+}
+
+.comment-delete-btn {
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.comment-item:hover .comment-delete-btn {
+  opacity: 1;
+}
+
+.comment-delete-btn:hover {
+  color: #E74C3C !important;
+}
+
+.comment-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333333;
+  word-break: break-word;
+}

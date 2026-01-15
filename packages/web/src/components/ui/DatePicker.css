@@ -1,0 +1,28 @@
+.date-picker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.date-picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-picker-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.brutal-date-input {
+  cursor: pointer;
+}
+
+.date-picker-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
