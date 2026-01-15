@@ -40,5 +40,4 @@ Design/**/*.md
 .loop*
 tmp/
 
-Documents/*.docx
-Documents/Lab/
+
