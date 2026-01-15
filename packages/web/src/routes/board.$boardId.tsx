@@ -6,7 +6,8 @@ import { Plus, MoreHorizontal, ChevronRight, CheckSquare, Copy, ExternalLink, Ar
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
 import { CardModal } from '../components/CardModal'
 import { Dropdown } from '../components/Dropdown'
-import './board.$boardId.css'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
 
 export const Route = createFileRoute('/board/$boardId')({
   component: BoardComponent,
@@ -52,7 +53,10 @@ function BoardComponent() {
     queryFn: async () => {
       const { data, error } = await api.columns.board({ boardId }).get()
       if (error) throw error
-      return (data || []).sort((a, b) => a.position < b.position ? -1 : a.position > b.position ? 1 : 0)
+      return (data || []).sort((a, b) => {
+        if (a.position !== b.position) return a.position < b.position ? -1 : 1
+        return a.id.localeCompare(b.id) // Stable secondary sort
+      })
     },
   })
 
@@ -61,7 +65,11 @@ function BoardComponent() {
     queryFn: async () => {
       const { data, error } = await api.tasks.board({ boardId }).enriched.get()
       if (error) throw error
-      return (data || []).sort((a, b) => a.position < b.position ? -1 : a.position > b.position ? 1 : 0) as Card[]
+      return (data || []).sort((a, b) => {
+        if (a.position !== b.position) return a.position < b.position ? -1 : 1
+        if (a.columnId !== b.columnId) return a.columnId.localeCompare(b.columnId)
+        return a.id.localeCompare(b.id) // Stable secondary sort
+      }) as Card[]
     },
   })
 
@@ -106,17 +114,19 @@ function BoardComponent() {
   const ghostRef = useRef<HTMLDivElement>(null)
   const cardGhostRef = useRef<HTMLDivElement>(null)
   const lastMousePos = useRef({ x: 0, y: 0 })
+  const dragDirection = useRef({ x: 0, y: 0 })
   const cardRects = useRef<{ id: string, columnId: string, top: number, height: number }[]>([])
   const columnRectsForCards = useRef<{ id: string, left: number, right: number, top: number, bottom: number }[]>([])
-  const columnMidpoints = useRef<{ mid: number }[]>([])
   const isDraggingCard = useRef(false)
-  const pendingCardDrag = useRef<{ card: Card, x: number, y: number, rect: DOMRect } | null>(null)
-  const pendingColumnDrag = useRef<{ columnId: string, x: number, y: number, rect: DOMRect } | null>(null)
+  const pendingCardDrag = useRef<{ card: Card, x: number, y: number, rect: DOMRect, width: number, height: number } | null>(null)
+  const pendingColumnDrag = useRef<{ columnId: string, x: number, y: number, rect: DOMRect, width: number, height: number } | null>(null)
 
   const [isScrolling, setIsScrolling] = useState(false)
   const [startX, setStartX] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(0)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [draggedWidth, setDraggedWidth] = useState(0)
+  const [draggedHeight, setDraggedHeight] = useState(0)
 
   useLayoutEffect(() => {
     if (draggedColumnId && ghostRef.current) {
@@ -135,10 +145,10 @@ function BoardComponent() {
     if (
       target.closest('button') || 
       target.closest('a') || 
-      target.closest('.card-item') || 
+      target.closest('[data-role="card"]') || 
       target.closest('input') ||
       target.closest('textarea') ||
-      target.closest('.column-header')
+      target.closest('[data-role="column-header"]')
     ) return
 
     setIsScrolling(true)
@@ -147,19 +157,25 @@ function BoardComponent() {
   }, [])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    const dx = e.clientX - lastMousePos.current.x
+    const dy = e.clientY - lastMousePos.current.y
+    if (dx !== 0) dragDirection.current.x = dx > 0 ? 1 : -1
+    if (dy !== 0) dragDirection.current.y = dy > 0 ? 1 : -1
+    
     lastMousePos.current = { x: e.clientX, y: e.clientY }
     
     if (pendingCardDrag.current) {
-      const { x, y, card, rect } = pendingCardDrag.current
+      const { x, y, card, rect, width, height } = pendingCardDrag.current
       const dist = Math.sqrt(Math.pow(e.clientX - x, 2) + Math.pow(e.clientY - y, 2))
       
       if (dist > 5) {
         if (scrollContainerRef.current) {
-          const cols = Array.from(scrollContainerRef.current.querySelectorAll('.board-column'))
-          columnRectsForCards.current = cols.map((col, i) => {
+          const cols = Array.from(scrollContainerRef.current.querySelectorAll('[data-role="column"]'))
+          columnRectsForCards.current = cols.map((col) => {
             const r = col.getBoundingClientRect()
+            const columnId = (col as HTMLElement).dataset.columnId!
             return {
-              id: displayColumns[i].id,
+              id: columnId,
               left: r.left,
               right: r.right,
               top: r.top,
@@ -167,7 +183,7 @@ function BoardComponent() {
             }
           })
 
-          const items = Array.from(scrollContainerRef.current.querySelectorAll('.card-wrapper'))
+          const items = Array.from(scrollContainerRef.current.querySelectorAll('[data-role="card-wrapper"]'))
           cardRects.current = items.map((item) => {
             const r = item.getBoundingClientRect()
             const id = (item as HTMLElement).dataset.cardId!
@@ -184,6 +200,8 @@ function BoardComponent() {
         setLocalCards(allCards)
         setDraggedCardId(card.id)
         setDraggedCardData(card)
+        setDraggedWidth(width)
+        setDraggedHeight(height)
         
         setDragOffset({
           x: x - rect.left,
@@ -196,23 +214,15 @@ function BoardComponent() {
     }
 
     if (pendingColumnDrag.current) {
-      const { x, y, columnId, rect } = pendingColumnDrag.current
+      const { x, y, columnId, rect, width, height } = pendingColumnDrag.current
       const dist = Math.sqrt(Math.pow(e.clientX - x, 2) + Math.pow(e.clientY - y, 2))
       
       if (dist > 5) {
         setLocalColumns(serverColumns)
         setDraggedColumnId(columnId)
+        setDraggedWidth(width)
+        setDraggedHeight(height)
         
-        if (scrollContainerRef.current) {
-          const colElements = Array.from(scrollContainerRef.current.querySelectorAll('.board-column'))
-          columnMidpoints.current = colElements
-            .filter(col => (col as HTMLElement).dataset.columnId !== columnId)
-            .map(col => {
-              const r = col.getBoundingClientRect()
-              return { mid: r.left + r.width / 2 }
-            })
-        }
-
         setDragOffset({
           x: x - rect.left,
           y: y - rect.top
@@ -230,28 +240,43 @@ function BoardComponent() {
         ghostRef.current.style.transform = `translate3d(${e.clientX - dragOffset.x}px, ${e.clientY - dragOffset.y}px, 0) rotate(2deg)`
       }
       
-      const midpoints = columnMidpoints.current
-      let newIndex = 0
-      for (let i = 0; i < midpoints.length; i++) {
-        if (e.clientX > midpoints[i].mid) {
-          newIndex = i + 1
-        } else {
-          break
-        }
-      }
-      
-      if (newIndex !== placeholderIndex) {
-          setPlaceholderIndex(newIndex)
+      if (scrollContainerRef.current) {
+        const colElements = Array.from(scrollContainerRef.current.querySelectorAll('[data-role="column"]'))
+        const otherCols = colElements
+          .map((el) => ({ 
+            id: (el as HTMLElement).dataset.columnId!, 
+            rect: el.getBoundingClientRect() 
+          }))
+          .filter(c => c.id !== draggedColumnId)
+
+        let newIndex = placeholderIndex ?? 0
+        const draggedMidX = e.clientX - dragOffset.x + draggedWidth / 2
+
+        for (let i = 0; i < otherCols.length; i++) {
+          const { rect } = otherCols[i]
+          const neighborMidX = rect.left + rect.width / 2
           
-          setLocalColumns(prev => {
-            const filtered = prev.filter(c => c.id !== draggedColumnId)
-            const draggedCol = prev.find(c => c.id === draggedColumnId)
-            if (!draggedCol) return prev
-            const updated = [...filtered]
-            updated.splice(newIndex, 0, draggedCol)
-            return updated
-          })
+          if (draggedMidX > neighborMidX && i >= (placeholderIndex ?? 0)) {
+            newIndex = i + 1
+          } else if (draggedMidX < neighborMidX && i < (placeholderIndex ?? 0)) {
+            newIndex = i
+            break
+          }
         }
+        
+        if (newIndex !== placeholderIndex) {
+            setPlaceholderIndex(newIndex)
+            
+            setLocalColumns(prev => {
+              const filtered = prev.filter(c => c.id !== draggedColumnId)
+              const draggedCol = prev.find(c => c.id === draggedColumnId)
+              if (!draggedCol) return prev
+              const updated = [...filtered]
+              updated.splice(newIndex, 0, draggedCol)
+              return updated
+            })
+          }
+      }
       return
     }
 
@@ -261,69 +286,93 @@ function BoardComponent() {
       }
 
       if (scrollContainerRef.current) {
-        const colElements = Array.from(scrollContainerRef.current.querySelectorAll('.board-column'))
-        const colRects = colElements.map((el, i) => {
+        const colElements = Array.from(scrollContainerRef.current.querySelectorAll('[data-role="column"]'))
+        const colRects = colElements.map((el) => {
           const r = el.getBoundingClientRect()
-          return { id: displayColumns[i].id, left: r.left, right: r.right }
+          const columnId = (el as HTMLElement).dataset.columnId!
+          return { id: columnId, left: r.left, right: r.right }
         })
 
         const hoveredCol = colRects.find(r => e.clientX >= r.left && e.clientX <= r.right)
         if (hoveredCol) {
           const targetColId = hoveredCol.id
-          const cardElements = Array.from(scrollContainerRef.current.querySelectorAll(`.card-wrapper[data-column-id="${targetColId}"]:not(.is-placeholder)`))
+          const cardElements = Array.from(scrollContainerRef.current.querySelectorAll(`[data-role="card-wrapper"][data-column-id="${targetColId}"]:not([data-state="placeholder"])`))
+          
           const rects = cardElements.map(el => {
             const r = el.getBoundingClientRect()
-            return { id: (el as HTMLElement).dataset.cardId!, mid: r.top + r.height / 2 }
+            return { id: (el as HTMLElement).dataset.cardId!, top: r.top, bottom: r.bottom, height: r.height }
           })
 
-          let insertIdxInCol = 0
+          const isMovingDown = dragDirection.current.y > 0
+          let targetNeighborId: string | null = null
+          let relativePos: 'before' | 'after' = 'before'
+          
+          const draggedMidY = e.clientY - dragOffset.y + draggedHeight / 2
+
           for (let i = 0; i < rects.length; i++) {
-            if (e.clientY > rects[i].mid) {
-              insertIdxInCol = i + 1
+            const r = rects[i]
+            const neighborMidY = r.top + r.height / 2
+            
+            if (draggedMidY > neighborMidY) {
+              targetNeighborId = r.id
+              relativePos = 'after'
             } else {
+              targetNeighborId = r.id
+              relativePos = 'before'
               break
             }
           }
 
           setLocalCards(prev => {
-            const updated = prev.filter(c => c.id !== draggedCardId)
             const card = prev.find(c => c.id === draggedCardId)
             if (!card) return prev
             
+            // If no neighbor found, it means the column is empty or we are at the very top/bottom
+            const updated = prev.filter(c => c.id !== draggedCardId)
             const updatedCard = { ...card, columnId: targetColId }
-            const cardsInTarget = updated.filter(c => c.columnId === targetColId)
             
-            let finalGlobalIdx
-            if (insertIdxInCol >= cardsInTarget.length) {
-              const lastCardInTarget = cardsInTarget[cardsInTarget.length - 1]
-              if (lastCardInTarget) {
-                finalGlobalIdx = updated.indexOf(lastCardInTarget) + 1
-              } else {
+            let finalIdx = -1
+            if (!targetNeighborId) {
+              // Empty column or at the very top (if moving up) or bottom (if moving down)
+              const cardsInTarget = updated.filter(c => c.columnId === targetColId)
+              if (cardsInTarget.length === 0) {
+                // Find column insert position
                 const colIdx = displayColumns.findIndex(c => c.id === targetColId)
-                let foundIdx = -1
                 for (let i = colIdx + 1; i < displayColumns.length; i++) {
                   const firstInNext = updated.find(c => c.columnId === displayColumns[i].id)
                   if (firstInNext) {
-                    foundIdx = updated.indexOf(firstInNext)
+                    finalIdx = updated.indexOf(firstInNext)
                     break
                   }
                 }
-                finalGlobalIdx = foundIdx !== -1 ? foundIdx : updated.length
+                if (finalIdx === -1) finalIdx = updated.length
+              } else {
+                // If moving up and no neighbor met threshold, it's at the top
+                if (!isMovingDown) {
+                  finalIdx = updated.indexOf(cardsInTarget[0])
+                } else {
+                  // If moving down and no neighbor met threshold, it's at the bottom
+                  finalIdx = updated.indexOf(cardsInTarget[cardsInTarget.length - 1]) + 1
+                }
               }
             } else {
-              finalGlobalIdx = updated.indexOf(cardsInTarget[insertIdxInCol])
+              const neighborIdx = updated.findIndex(c => c.id === targetNeighborId)
+              finalIdx = relativePos === 'before' ? neighborIdx : neighborIdx + 1
             }
 
-            const currentIdx = prev.findIndex(c => c.id === draggedCardId)
-            const cardsInPrevTarget = prev.filter(c => c.columnId === targetColId)
-            const currentIdxInCol = cardsInPrevTarget.indexOf(prev[currentIdx])
+            // Check if position actually changed to avoid thrashing
+            if (prev[updated.indexOf(updatedCard)]?.id === draggedCardId) {
+               // This is tricky because updatedCard isn't in 'updated' yet.
+            }
             
-            if (prev[currentIdx]?.columnId === targetColId && currentIdxInCol === insertIdxInCol) {
+            const currentIdx = prev.findIndex(c => c.id === draggedCardId)
+            if (currentIdx === finalIdx && prev[currentIdx].columnId === targetColId) {
               return prev
             }
 
-            updated.splice(finalGlobalIdx, 0, updatedCard)
-            return updated
+            const result = [...updated]
+            result.splice(finalIdx, 0, updatedCard)
+            return result
           })
         }
       }
@@ -335,7 +384,7 @@ function BoardComponent() {
     const x = e.pageX - scrollContainerRef.current.offsetLeft
     const walk = (x - startX) * 1.5
     scrollContainerRef.current.scrollLeft = scrollLeft - walk
-  }, [draggedColumnId, draggedCardId, dragOffset, placeholderIndex, isScrolling, startX, scrollLeft, allCards, displayColumns, serverColumns])
+  }, [draggedColumnId, draggedCardId, dragOffset, placeholderIndex, isScrolling, startX, scrollLeft, allCards, displayColumns, serverColumns, draggedWidth, draggedHeight])
 
   const handleMouseUpOrLeave = useCallback(() => {
     pendingCardDrag.current = null
@@ -366,7 +415,6 @@ function BoardComponent() {
       setDraggedColumnId(null)
       setPlaceholderIndex(null)
       setGlobalDragging(false)
-      columnMidpoints.current = []
     }
 
     if (draggedCardId) {
@@ -410,7 +458,7 @@ function BoardComponent() {
   const handleColumnDragStart = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return
     const header = e.currentTarget as HTMLElement
-    const columnId = header.closest('.board-column')?.getAttribute('data-column-id')
+    const columnId = header.closest('[data-role="column"]')?.getAttribute('data-column-id')
     if (!columnId) return
 
     const rect = header.getBoundingClientRect()
@@ -419,7 +467,9 @@ function BoardComponent() {
       columnId,
       x: e.clientX,
       y: e.clientY,
-      rect
+      rect,
+      width: rect.width,
+      height: rect.height
     }
   }, [])
 
@@ -433,7 +483,9 @@ function BoardComponent() {
       card,
       x: e.clientX,
       y: e.clientY,
-      rect
+      rect,
+      width: rect.width,
+      height: rect.height
     }
   }, [])
 
@@ -476,25 +528,26 @@ function BoardComponent() {
     }
   }, [boardId, queryClient])
 
-  if (boardLoading || columnsLoading) return <div className="loading-state">Loading workspace...</div>
-  if (!board) return <div className="loading-state">Error: Page not found</div>
+  if (boardLoading || columnsLoading) return <div className="h-screen flex items-center justify-center text-black font-heading font-extrabold uppercase bg-canvas">Loading workspace...</div>
+  if (!board) return <div className="h-screen flex items-center justify-center text-black font-heading font-extrabold uppercase bg-canvas">Error: Page not found</div>
 
   const draggedColumn = draggedColumnId ? displayColumns.find(c => c.id === draggedColumnId) : null
+  const isAnyDragging = !!draggedCardId || !!draggedColumnId
 
   return (
-    <div className="board-container">
-      <header className="board-header">
-        <div className="header-left">
-          <Link to="/dashboard" className="back-link">Workspace</Link>
-          <ChevronRight size={14} style={{ color: 'var(--colors-text-muted)' }} />
-          <h1 className="board-title">{board.name}</h1>
+    <div className="h-screen bg-canvas p-0 font-body color-text flex flex-col overflow-hidden">
+      <header className="flex justify-between items-center px-6 py-4 shrink-0 bg-canvas border-b-2 border-black">
+        <div className="flex items-center gap-3">
+          <Link to="/dashboard" className="text-black text-sm font-extrabold uppercase hover:bg-accent hover:px-1 hover:shadow-brutal-sm">Workspace</Link>
+          <ChevronRight size={14} className="text-text-muted" />
+          <h1 className="m-0 font-heading text-[18px] font-bold text-black">{board.name}</h1>
         </div>
         <div className="header-right">
         </div>
       </header>
 
       <div 
-        className={`board-columns ${isScrolling ? 'is-dragging' : ''} ${draggedColumnId ? 'is-column-dragging' : ''} ${draggedCardId ? 'is-card-dragging' : ''}`}
+        className={`flex px-16 py-12 gap-(--board-gap,24px) overflow-x-auto overflow-y-hidden flex-1 items-start bg-canvas cursor-grab ${isScrolling ? 'cursor-grabbing' : ''} ${draggedColumnId ? 'cursor-grabbing' : ''} ${draggedCardId ? 'cursor-grabbing' : ''}`}
         ref={scrollContainerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -517,11 +570,12 @@ function BoardComponent() {
             boards={allBoards}
             isDragging={column.id === draggedColumnId}
             draggedCardId={draggedCardId}
+            isAnyDragging={isAnyDragging}
           />
         ))}
-        <div className="add-column-section">
-          <input 
-            className="board-input" 
+        <div className={`w-(--board-column-width,300px) min-w-(--board-column-width,300px) shrink-0 px-1 ${isAnyDragging ? 'pointer-events-none' : ''}`}>
+          <Input 
+            className="shadow-brutal-md font-heading text-[13px] font-extrabold uppercase tracking-wider hover:-translate-x-px hover:-translate-y-px hover:shadow-brutal-xl! focus:bg-accent focus:shadow-brutal-lg" 
             placeholder="+ Add a group" 
             value={newColumnName}
             onChange={e => setNewColumnName(e.target.value)}
@@ -539,22 +593,25 @@ function BoardComponent() {
 
       {draggedColumn && (
         <div 
-          className="column-ghost"
+          className="fixed top-0 left-0 pointer-events-none z-1000 opacity-80 w-(--board-column-width,300px) bg-surface p-(--column-padding,16px) border-2 border-black shadow-brutal-2xl! will-change-transform rounded-none"
           ref={ghostRef}
         >
-          <h4 className="column-header">
-            <span className="column-name-text">{draggedColumn.name}</span>
-            <span className="column-count">{cardsByColumn[draggedColumn.id]?.length || 0}</span>
-            <MoreHorizontal size={14} style={{ cursor: 'pointer', color: 'var(--colors-text-muted)' }} />
+          <h4 className="p-2 mb-5 font-heading text-(--column-header-size,14px) font-extrabold text-black shrink-0 flex items-center gap-2.5 border-b-2 border-black uppercase tracking-widest relative">
+            <span className="cursor-text flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{draggedColumn.name}</span>
+            <span className="ml-auto text-[11px] font-extrabold bg-accent px-2 py-0.5 border-2 border-black">{cardsByColumn[draggedColumn.id]?.length || 0}</span>
+            <MoreHorizontal size={14} className="cursor-pointer text-text-muted" />
           </h4>
         </div>
       )}
 
-      {draggedCardData && (
-        <div className="card-ghost" ref={cardGhostRef}>
-          <CardItem card={draggedCardData} onCardClick={() => {}} />
+       {draggedCardData && (
+        <div className="fixed top-0 left-0 pointer-events-none z-1000 opacity-90 w-[calc(var(--board-column-width,300px)-48px)] will-change-transform" ref={cardGhostRef}>
+          <div className="rotate-2 shadow-brutal-2xl! border-2 border-black">
+            <CardItem card={draggedCardData} onCardClick={() => {}} isAnyDragging={isAnyDragging} />
+          </div>
         </div>
       )}
+
 
       {selectedCardId && (
         <CardModal
@@ -580,7 +637,8 @@ const BoardColumn = memo(({
   onMoveColumnToBoard,
   boards,
   isDragging,
-  draggedCardId
+  draggedCardId,
+  isAnyDragging
 }: { 
   column: Column
   cards: Card[]
@@ -595,10 +653,12 @@ const BoardColumn = memo(({
   boards: Board[]
   isDragging?: boolean
   draggedCardId: string | null
+  isAnyDragging: boolean
 }) => {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [isEditingName, setIsEditingName] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [nameValue, setNameValue] = useState(column.name)
   const inputRef = useRef<HTMLInputElement>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
@@ -654,84 +714,92 @@ const BoardColumn = memo(({
 
   return (
     <div 
-      className={`board-column ${isDragging ? 'is-dragging' : ''}`}
+      className={`w-(--board-column-width,300px) min-w-(--board-column-width,300px) max-h-full flex flex-col rounded-none p-4 border-2 relative ${isDragging ? 'border-dashed border-black/20 bg-black/5 shadow-none! translate-x-0! translate-y-0! opacity-100' : 'bg-surface border-black shadow-brutal-lg -translate-x-px -translate-y-px'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
       data-column-id={column.id}
+      data-role="column"
     >
-      <div className="column-header-container">
-        <h4 
-          className="column-header" 
-          onMouseDown={onDragStart} 
-          style={{ cursor: 'grab' }}
-        >
-          {isEditingName ? (
-            <input
-              ref={nameInputRef}
-              className="column-name-input"
-              value={nameValue}
-              onChange={e => setNameValue(e.target.value)}
-              onBlur={handleRenameSubmit}
+      <div className={`flex flex-col flex-1 min-h-0 ${isDragging ? 'invisible' : ''}`}>
+        <div className="column-header-container">
+          <h4 
+            className="p-2 mb-5 font-heading text-[14px] font-extrabold text-black shrink-0 flex items-center gap-2.5 border-b-2 border-black uppercase tracking-widest relative cursor-grab" 
+            onMouseDown={onDragStart} 
+            data-role="column-header"
+          >
+            {isEditingName ? (
+              <input
+                ref={nameInputRef}
+                className="flex-1 bg-transparent border-none font-inherit text-inherit uppercase tracking-inherit outline-none p-0 m-0 w-full m-0 w-full"
+                value={nameValue}
+                onChange={e => setNameValue(e.target.value)}
+                onBlur={handleRenameSubmit}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleRenameSubmit()
+                  if (e.key === 'Escape') {
+                    setNameValue(column.name)
+                    setIsEditingName(false)
+                  }
+                }}
+                onMouseDown={e => e.stopPropagation()}
+              />
+            ) : (
+              <span 
+                className="cursor-text flex-1 overflow-hidden text-ellipsis whitespace-nowrap" 
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsEditingName(true)
+                }}
+              >
+                {column.name}
+              </span>
+            )}
+            <span className="ml-auto text-[11px] font-extrabold bg-accent px-2 py-0.5 border-2 border-black">{cards.length}</span>
+            <div onMouseDown={e => e.stopPropagation()} className="flex items-center">
+              <Dropdown 
+                trigger={<MoreHorizontal size={14} className={`cursor-pointer ${isMenuOpen ? 'text-black' : 'text-text-muted'}`} />}
+                items={menuItems}
+                onOpenChange={setIsMenuOpen}
+              />
+            </div>
+          </h4>
+        </div>
+        <div className="px-1 pt-1 pb-3 flex flex-col overflow-y-auto flex-1 min-h-5 gap-4">
+          {cards.map((card) => (
+              <CardItem 
+                key={card.id} 
+                card={card} 
+                onCardClick={onCardClick} 
+                onCardDragStart={onCardDragStart}
+                isDragging={card.id === draggedCardId}
+                isAnyDragging={isAnyDragging}
+              />
+          ))}
+          {cards.length === 0 && (
+            <div className="p-4 text-center text-text-subtle text-[12px] font-bold uppercase border-2 border-dashed border-black bg-black/5">No items</div>
+          )}
+        </div>
+        <div className="pt-6 shrink-0">
+          {isAddingTask ? (
+            <Input
+              ref={inputRef}
+              className="shadow-brutal-md font-heading text-[13px] font-extrabold uppercase tracking-wider"
+              placeholder="What needs to be done?"
+              value={newTaskTitle}
+              onChange={e => setNewTaskTitle(e.target.value)}
+              onBlur={handleSubmit}
               onKeyDown={e => {
-                if (e.key === 'Enter') handleRenameSubmit()
-                if (e.key === 'Escape') {
-                  setNameValue(column.name)
-                  setIsEditingName(false)
-                }
+                if (e.key === 'Enter') handleSubmit()
+                if (e.key === 'Escape') setIsAddingTask(false)
               }}
-              onMouseDown={e => e.stopPropagation()}
             />
           ) : (
-            <span 
-              className="column-name-text" 
-              onClick={(e) => {
-                e.stopPropagation()
-                setIsEditingName(true)
-              }}
+            <Button 
+              fullWidth
+              onClick={() => setIsAddingTask(true)}
             >
-              {column.name}
-            </span>
+              <Plus size={14} /> New
+            </Button>
           )}
-          <span className="column-count">{cards.length}</span>
-          <div onMouseDown={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
-            <Dropdown 
-              trigger={<MoreHorizontal size={14} style={{ cursor: 'pointer', color: 'var(--colors-text-muted)' }} />}
-              items={menuItems}
-            />
-          </div>
-        </h4>
-      </div>
-      <div className="cards-list">
-        {cards.map((card) => (
-            <CardItem 
-              key={card.id} 
-              card={card} 
-              onCardClick={onCardClick} 
-              onCardDragStart={onCardDragStart}
-              isDragging={card.id === draggedCardId}
-            />
-        ))}
-        {cards.length === 0 && (
-          <div className="empty-column-placeholder">No items</div>
-        )}
-      </div>
-      <div className="add-card-container">
-        {isAddingTask ? (
-          <input
-            ref={inputRef}
-            className="board-input"
-            placeholder="What needs to be done?"
-            value={newTaskTitle}
-            onChange={e => setNewTaskTitle(e.target.value)}
-            onBlur={handleSubmit}
-            onKeyDown={e => {
-              if (e.key === 'Enter') handleSubmit()
-              if (e.key === 'Escape') setIsAddingTask(false)
-            }}
-          />
-        ) : (
-          <button className="btn-add-card" onClick={() => setIsAddingTask(true)}>
-            <Plus size={14} /> New
-          </button>
-        )}
+        </div>
       </div>
     </div>
   )
@@ -741,12 +809,14 @@ const CardItem = memo(({
   card, 
   onCardClick, 
   onCardDragStart,
-  isDragging 
+  isDragging,
+  isAnyDragging
 }: { 
   card: Card
   onCardClick: (id: string) => void
   onCardDragStart?: (card: Card, e: React.MouseEvent) => void
   isDragging?: boolean
+  isAnyDragging: boolean
 }) => {
   const now = new Date()
   const twoDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000)
@@ -763,30 +833,36 @@ const CardItem = memo(({
 
   return (
     <div 
-      className={`card-wrapper ${isDragging ? 'is-placeholder' : ''}`}
+      className={`card-wrapper ${isDragging ? 'border-2 border-dashed border-black bg-black/5 shadow-none! relative rounded-none transition-none!' : ''}`}
       onMouseDown={handleMouseDown}
       data-card-id={card.id}
       data-column-id={card.columnId}
+      data-role="card-wrapper"
+      data-state={isDragging ? 'placeholder' : undefined}
     >
-      <div className="card-item" onClick={handleClick}>
+      <div 
+        className={`p-3 bg-surface border-2 border-black text-[14px] cursor-pointer flex flex-col gap-2 transition-[transform,box-shadow,background-color] duration-200 shadow-brutal-sm ${isDragging ? 'invisible! transition-none!' : 'hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-lg'} ${isAnyDragging ? 'pointer-events-none' : ''}`} 
+        onClick={handleClick}
+        data-role="card"
+      >
         {card.labels && card.labels.length > 0 && (
-          <div className="card-labels">
+          <div className="flex flex-wrap gap-1 mb-1.5">
             {card.labels.map(l => (
-              <div key={l.id} className="card-label-pill" style={{ background: l.color }} />
+              <div key={l.id} className="h-2 w-10 rounded-none border-[1.5px] border-black shadow-[1px_1px_0px_#000] hover:scale-y-150 origin-top transition-transform" style={{ background: l.color }} />
             ))}
           </div>
         )}
-        <div className="card-item-title">{card.title}</div>
+        <div className="text-black leading-tight font-bold">{card.title}</div>
         {(card.checklistProgress || card.dueDate) && (
-          <div className="card-meta">
+          <div className="flex items-center gap-3 text-[11px] font-bold text-black uppercase">
             {card.checklistProgress && (
-              <span className="checklist-meta">
+              <span className="flex items-center gap-1">
                 <CheckSquare size={12} />
                 {card.checklistProgress.completed}/{card.checklistProgress.total}
               </span>
             )}
             {card.dueDate && (
-              <span className={`due-date-meta ${isOverdue ? 'overdue' : ''} ${isDueSoon ? 'soon' : ''}`}>
+              <span className={`px-1.5 py-0.5 border-2 border-black ${isOverdue ? 'bg-[#E74C3C] text-white border-black' : isDueSoon ? 'bg-accent text-black border-black' : 'bg-white text-black border-transparent'}`}>
                 {new Date(card.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </span>
             )}

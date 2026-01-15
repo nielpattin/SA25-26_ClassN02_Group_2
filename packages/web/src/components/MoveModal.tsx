@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
+import { X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { Button } from './ui/Button'
 import { Input } from './ui/Input'
+import { Select } from './ui/Select'
 import { Column, Board, Card } from './CardModalTypes'
-import './MoveModal.css'
 
 interface MoveModalProps {
   boards: Board[]
@@ -51,7 +52,7 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedColumnId(currentColumnId)
       } else {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setSelectedColumnId(columns[0].id)
       }
     }
@@ -78,41 +79,38 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
   }
 
   return createPortal(
-    <div className="modal-overlay move-overlay" onClick={onCancel}>
-      <div className="move-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="move-header">
-          <h2 className="move-title">Move Card</h2>
-          <button className="move-close" onClick={onCancel}>&times;</button>
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-11000" onClick={onCancel}>
+      <div className="w-[90%] max-w-100 bg-white border-2 border-black shadow-[15px_15px_0px_#000] flex flex-col rounded-none" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black">
+          <h2 className="m-0 font-heading text-[18px] font-extrabold uppercase text-black">Move Card</h2>
+          <button 
+            className="bg-white border-2 border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none" 
+            onClick={onCancel}
+          >
+            <X size={16} />
+          </button>
         </div>
-        <div className="move-body">
-          <div className="move-field">
-            <label className="move-label">Board</label>
-            <select 
-              className="brutal-select"
+        <div className="p-8 flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <label className="font-heading text-[11px] font-extrabold uppercase tracking-widest text-black/60">Board</label>
+            <Select 
               value={selectedBoardId}
-              onChange={(e) => setSelectedBoardId(e.target.value)}
-            >
-              {boards.map(board => (
-                <option key={board.id} value={board.id}>{board.name}</option>
-              ))}
-            </select>
+              options={boards}
+              onChange={setSelectedBoardId}
+            />
           </div>
 
-          <div className="move-row">
-            <div className="move-field flex-2">
-              <label className="move-label">Column</label>
-              <select 
-                className="brutal-select"
+          <div className="flex gap-4">
+            <div className="flex flex-col gap-2 flex-2">
+              <label className="font-heading text-[11px] font-extrabold uppercase tracking-widest text-black/60">Column</label>
+              <Select 
                 value={selectedColumnId}
-                onChange={(e) => setSelectedColumnId(e.target.value)}
-              >
-                {columns.map(column => (
-                  <option key={column.id} value={column.id}>{column.name}</option>
-                ))}
-              </select>
+                options={columns}
+                onChange={setSelectedColumnId}
+              />
             </div>
-            <div className="move-field flex-1">
-              <label className="move-label">Position</label>
+            <div className="flex flex-col gap-2 flex-1">
+              <label className="font-heading text-[11px] font-extrabold uppercase tracking-widest text-black/60">Position</label>
               <Input
                 type="number"
                 min={1}
@@ -123,7 +121,7 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
             </div>
           </div>
           
-          <div className="move-actions">
+          <div className="flex flex-col gap-3 mt-2">
             <Button 
               fullWidth 
               onClick={handleMove}

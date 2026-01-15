@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Button } from './Button'
 import { Input } from './Input'
-import './DatePicker.css'
 
 interface DatePickerProps {
   initialDate?: Date | string | null
@@ -15,18 +14,18 @@ export function DatePicker({ initialDate, onSave }: DatePickerProps) {
   const [date, setDate] = useState(formattedInitial)
 
   return (
-    <div className="date-picker-container">
-      <div className="date-picker-field">
-        <label className="date-picker-label">Due Date</label>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <label className="font-heading text-[11px] font-extrabold uppercase tracking-widest text-black/60">Due Date</label>
         <Input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="brutal-date-input"
+          className="cursor-pointer"
         />
       </div>
       
-      <div className="date-picker-actions">
+      <div className="flex flex-col gap-2">
         <Button 
           fullWidth 
           onClick={() => onSave(date || null)}

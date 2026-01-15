@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { X } from 'lucide-react'
 import { useSession } from '../../api/auth'
-import './AuthModal.css'
+import { Button } from '../ui/Button'
+import { Input } from '../ui/Input'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -57,48 +59,52 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   }
 
   return (
-    <div className="auth-modal-backdrop" onClick={handleBackdropClick}>
-      <div className="auth-modal">
-        <button className="auth-modal-close" onClick={onClose}>
-          &times;
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-1000" onClick={handleBackdropClick}>
+      <div className="bg-surface border-2 border-black rounded-none shadow-[15px_15px_0px_#000] p-10 w-full max-w-100 relative animate-in fade-in zoom-in duration-200">
+        <button
+          className="absolute top-4 right-4 bg-white border-2 border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none"
+          onClick={onClose}
+        >
+          <X size={16} />
         </button>
-        <h2 className="auth-modal-title">{isLogin ? 'LOGIN' : 'SIGN UP'}</h2>
-        <form onSubmit={handleSubmit} className="auth-modal-form">
+        <h2 className="m-0 mb-6 text-2xl font-extrabold text-black text-center tracking-wider uppercase">{isLogin ? 'LOGIN' : 'SIGN UP'}</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {!isLogin && (
-            <input
+            <Input
               type="text"
               placeholder="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="auth-input"
               required
             />
           )}
-          <input
+          <Input
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="auth-input"
             required
           />
-          <input
+          <Input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="auth-input"
             required
             minLength={8}
           />
-          {error && <div className="auth-error">{error}</div>}
-          <button type="submit" className="auth-submit" disabled={loading}>
+          {error && <div className="text-black text-sm font-bold p-2 bg-danger-bg border-2 border-black rounded-none">{error}</div>}
+          <Button
+            type="submit"
+            fullWidth
+            disabled={loading}
+          >
             {loading ? 'Loading...' : isLogin ? 'Login' : 'Sign Up'}
-          </button>
+          </Button>
         </form>
         <button
           onClick={() => setIsLogin(!isLogin)}
-          className="auth-toggle"
+          className="w-full mt-4 p-2 bg-transparent border-none text-black text-[13px] font-bold uppercase cursor-pointer hover:underline"
         >
           {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Login'}
         </button>

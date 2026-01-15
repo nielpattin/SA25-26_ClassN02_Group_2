@@ -3,7 +3,6 @@ import { Avatar } from './ui/Avatar'
 import { Activity as ActivityType } from './CardModalTypes'
 import { formatDistanceToNow, format } from 'date-fns'
 import { Button } from './ui/Button'
-import './Activity.css'
 
 interface ActivityProps {
   activities: ActivityType[]
@@ -88,19 +87,19 @@ export function ActivitySection({ activities }: ActivityProps) {
   const hasMore = activities.length > 3
 
   return (
-    <div className="activity-section">
+    <div className="flex flex-col gap-5">
       {displayedActivities.map((activity) => (
-        <div key={activity.id} className="activity-item">
+        <div key={activity.id} className="flex gap-3.5 items-start">
           <Avatar 
             src={activity.userImage} 
             fallback={activity.userName || 'U'} 
             size="sm" 
           />
-          <div className="activity-content-box">
-            <p className="activity-text">
-              <strong>{activity.userName}</strong> {formatActivityMessage(activity)}
+          <div className="flex flex-col gap-1">
+            <p className="m-0 text-[13px] leading-tight text-black font-semibold">
+              <strong className="font-extrabold">{activity.userName}</strong> {formatActivityMessage(activity)}
             </p>
-            <span className="activity-date">
+            <span className="text-[11px] font-extrabold text-black/40 uppercase tracking-widest">
               {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
             </span>
           </div>
@@ -112,7 +111,7 @@ export function ActivitySection({ activities }: ActivityProps) {
           variant="secondary" 
           size="sm" 
           onClick={() => setIsExpanded(!isExpanded)}
-          className="toggle-activity-btn"
+          className="w-fit self-start mt-2"
         >
           {isExpanded ? 'Show less' : `Show more (${activities.length - 3} more)`}
         </Button>

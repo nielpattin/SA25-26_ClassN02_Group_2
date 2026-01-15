@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import './Dropdown.css'
 
 export type DropdownItem = {
   label: string
@@ -13,18 +12,29 @@ type DropdownProps = {
   trigger: ReactNode
   items: DropdownItem[]
   position?: 'bottom-left' | 'bottom-right'
+  onOpenChange?: (open: boolean) => void
 }
 
-export function Dropdown({ trigger, items, position = 'bottom-right' }: DropdownProps) {
+export function Dropdown({ trigger, items, position = 'bottom-right', onOpenChange }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [coords, setCoords] = useState({ top: 0, left: 0 })
+  const [isReady, setIsReady] = useState(false)
   const triggerRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setIsOpen(!isOpen)
+    const next = !isOpen
+    setIsOpen(next)
+    onOpenChange?.(next)
   }
+
+  useEffect(() => {
+    if (!isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsReady(false)
+    }
+  }, [isOpen])
 
   useEffect(() => {
     const updatePosition = () => {
@@ -34,6 +44,7 @@ export function Dropdown({ trigger, items, position = 'bottom-right' }: Dropdown
           top: rect.bottom + window.scrollY + 5,
           left: position === 'bottom-right' ? rect.right + window.scrollX - 200 : rect.left + window.scrollX,
         })
+        setIsReady(true)
       }
     }
 
@@ -51,12 +62,14 @@ export function Dropdown({ trigger, items, position = 'bottom-right' }: Dropdown
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false)
+        onOpenChange?.(false)
       }
     }
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsOpen(false)
+        onOpenChange?.(false)
       }
     }
 
@@ -69,35 +82,39 @@ export function Dropdown({ trigger, items, position = 'bottom-right' }: Dropdown
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleEscape)
     }
-  }, [isOpen])
+  }, [isOpen, onOpenChange])
 
   return (
-    <div className="dropdown-container" ref={triggerRef}>
-      <div onClick={toggle} className="dropdown-trigger">
+    <div className="inline-flex relative" ref={triggerRef}>
+      <div onClick={toggle} className="flex items-center justify-center">
         {trigger}
       </div>
       {isOpen && createPortal(
         <div 
-          className={`dropdown-menu ${position}`}
+          className={`absolute z-10000 bg-surface border-2 border-black shadow-brutal-md min-w-[200px] p-1 rounded-none transition-opacity duration-100 ${position}`}
           ref={menuRef}
           style={{ 
             top: coords.top, 
             left: coords.left,
-            position: 'absolute'
+            position: 'absolute',
+            visibility: isReady ? 'visible' : 'hidden',
+            opacity: isReady ? 1 : 0,
+            pointerEvents: isReady ? 'auto' : 'none'
           }}
           onClick={e => e.stopPropagation()}
         >
           {items.map((item, index) => (
             <div
               key={index}
-              className={`dropdown-item ${item.variant || 'default'}`}
+              className={`p-2.5 cursor-pointer flex items-center gap-2.5 font-heading text-[13px] font-extrabold uppercase transition-all hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-md ${item.variant === 'danger' ? 'text-text-danger hover:bg-text-danger hover:text-white' : 'text-black'}`}
               onClick={() => {
                 item.onClick()
                 setIsOpen(false)
+                onOpenChange?.(false)
               }}
             >
-              {item.icon && <span className="dropdown-item-icon">{item.icon}</span>}
-              <span className="dropdown-item-label">{item.label}</span>
+              {item.icon && <span className="flex items-center shrink-0">{item.icon}</span>}
+              <span className="flex-1">{item.label}</span>
             </div>
           ))}
         </div>,

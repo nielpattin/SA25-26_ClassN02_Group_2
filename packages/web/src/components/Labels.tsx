@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { X, Plus } from 'lucide-react'
 import { Button } from './ui/Button'
 import { Input } from './ui/Input'
-import './Labels.css'
 
 interface LabelsProps {
   cardLabels?: string[]
@@ -22,19 +21,27 @@ export function LabelSection({ cardLabels = [], allLabels, onToggle, onAdd, onDe
     '#9B59B6', '#1ABC9C', '#34495E', '#95A5A6', '#D35400'
   ]
 
+  const labelPillBase = "px-3 py-1 border-2 border-black bg-(--label-color,#FFFFFF) font-body text-[11px] font-extrabold uppercase tracking-wider cursor-pointer transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm"
+
   return (
-    <div className="label-section">
-      <div className="labels-container">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-2">
         {allLabels.filter(l => cardLabels.includes(l.id)).map((label) => (
-          <div key={label.id} className="label-wrapper">
+          <div key={label.id} className="relative flex group">
             <button
-              className="label-pill active"
+              className={`${labelPillBase} shadow-brutal-sm text-white [text-shadow:1px_1px_0px_#000]`}
               style={{ '--label-color': label.color } as React.CSSProperties}
               onClick={() => onToggle(label.id)}
             >
               {label.name}
             </button>
-            <button className="delete-label-pill-btn" onClick={() => onDelete(label.id)}>
+            <button 
+              className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-black text-white border-2 border-black flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-2 p-0 transition-opacity" 
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(label.id)
+              }}
+            >
               <X size={10} />
             </button>
           </div>
@@ -43,7 +50,7 @@ export function LabelSection({ cardLabels = [], allLabels, onToggle, onAdd, onDe
         {allLabels.filter(l => !cardLabels.includes(l.id)).map(label => (
           <button
             key={label.id}
-            className="label-pill"
+            className={`${labelPillBase} text-black`}
             style={{ '--label-color': label.color } as React.CSSProperties}
             onClick={() => onToggle(label.id)}
           >
@@ -51,30 +58,30 @@ export function LabelSection({ cardLabels = [], allLabels, onToggle, onAdd, onDe
           </button>
         ))}
 
-        <Button variant="secondary" size="sm" onClick={() => setIsCreating(true)} className="add-label-btn">
+        <Button variant="secondary" size="sm" onClick={() => setIsCreating(true)} className="h-6.5">
           <Plus size={14} />
         </Button>
       </div>
 
       {isCreating && (
-        <div className="label-creator">
+        <div className="flex flex-col gap-4 p-5 border-2 border-black bg-white shadow-brutal-xl mt-2">
           <Input
             value={newLabelName}
             onChange={(e) => setNewLabelName(e.target.value)}
             placeholder="Label name..."
             autoFocus
           />
-          <div className="color-picker">
+          <div className="flex flex-wrap gap-2.5">
             {colors.map(color => (
               <div
                 key={color}
-                className={`color-option ${selectedColor === color ? 'selected' : ''}`}
+                className={`w-7 h-7 border-2 border-black cursor-pointer transition-all ${selectedColor === color ? 'shadow-[3px_3px_0px_#000] -translate-x-0.5 -translate-y-0.5' : ''}`}
                 style={{ backgroundColor: color }}
                 onClick={() => setSelectedColor(color)}
               />
             ))}
           </div>
-          <div className="label-creator-actions">
+          <div className="flex gap-3">
             <Button
               onClick={() => {
                 if (newLabelName) {

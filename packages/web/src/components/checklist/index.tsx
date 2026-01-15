@@ -7,7 +7,6 @@ import { Button } from '../ui/Button'
 import { Checkbox } from '../ui/Checkbox'
 import { Input } from '../ui/Input'
 import { Progress } from '../ui/Progress'
-import './checklist.css'
 
 interface ChecklistProps {
   checklist: ChecklistType
@@ -90,102 +89,132 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
   })
 
   return (
-    <div className="checklist-feature">
-      <div className="checklist-header">
-        {isEditingTitle ? (
-          <Input
-            value={editedTitle}
-            onChange={(e) => setEditedTitle(e.target.value)}
-            onBlur={() => {
-              if (editedTitle.trim() && editedTitle !== checklist.title) {
-                updateChecklist.mutate(editedTitle.trim())
-              } else {
-                setEditedTitle(checklist.title)
-                setIsEditingTitle(false)
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && editedTitle.trim()) {
-                updateChecklist.mutate(editedTitle.trim())
-              } else if (e.key === 'Escape') {
-                setEditedTitle(checklist.title)
-                setIsEditingTitle(false)
-              }
-            }}
-            autoFocus
-          />
-        ) : (
-          <span className="checklist-title" onClick={() => setIsEditingTitle(true)}>
-            {checklist.title}
-          </span>
-        )}
-        <div className="checklist-header-actions">
-          <span className="checklist-progress-text">{completedCount}/{totalCount}</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => deleteChecklist.mutate()}
-            className="delete-checklist-btn"
-          >
-            <X size={14} />
-          </Button>
-        </div>
-      </div>
-
-      <Progress value={progress} className="checklist-progress-bar" />
-
-      <div className="checklist-items">
-        {items.map((item: ChecklistItem) => (
-          <div key={item.id} className={`checklist-item-row ${item.isCompleted ? 'completed' : ''}`}>
-            <Checkbox 
-              checked={item.isCompleted} 
-              onChange={() => toggleItem.mutate(item.id)} 
-            />
-            {editingItemId === item.id ? (
+    <div className="flex flex-col gap-2.5 w-full">
+      <div className="flex items-start gap-4 group">
+        <div className="flex-1">
+          {isEditingTitle ? (
+            <div className="flex flex-col gap-2">
               <Input
-                value={editedItemContent}
-                onChange={(e) => setEditedItemContent(e.target.value)}
-                onBlur={() => {
-                  if (editedItemContent.trim() && editedItemContent !== item.content) {
-                    updateItem.mutate({ itemId: item.id, content: editedItemContent.trim() })
-                  } else {
-                    setEditingItemId(null)
-                  }
-                }}
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && editedItemContent.trim()) {
-                    updateItem.mutate({ itemId: item.id, content: editedItemContent.trim() })
+                  if (e.key === 'Enter' && editedTitle.trim()) {
+                    updateChecklist.mutate(editedTitle.trim())
                   } else if (e.key === 'Escape') {
-                    setEditingItemId(null)
+                    setEditedTitle(checklist.title)
+                    setIsEditingTitle(false)
                   }
                 }}
                 autoFocus
               />
-            ) : (
-              <span
-                className="checklist-item-content"
-                onClick={() => {
-                  setEditingItemId(item.id)
-                  setEditedItemContent(item.content)
-                }}
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={() => {
+                    if (editedTitle.trim()) updateChecklist.mutate(editedTitle.trim())
+                  }}
+                >
+                  Save
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={() => {
+                    setEditedTitle(checklist.title)
+                    setIsEditingTitle(false)
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <span className="font-heading text-[14px] font-extrabold uppercase tracking-widest text-black cursor-pointer hover:underline underline-offset-4" onClick={() => setIsEditingTitle(true)}>
+              {checklist.title}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-4 pt-1">
+          <span className="text-[11px] font-extrabold text-black/40 uppercase leading-none">{completedCount}/{totalCount}</span>
+          <button 
+            onClick={() => deleteChecklist.mutate()}
+            className="bg-white border-2 border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm opacity-0 group-hover:opacity-100"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      </div>
+
+      <Progress value={progress} className="w-full" />
+
+      <div className="flex flex-col gap-1">
+        {items.map((item: ChecklistItem) => (
+          <div key={item.id} className={`flex flex-col gap-2 p-2 bg-white border-2 border-black shadow-brutal-sm transition-all hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5 group ${item.isCompleted && editingItemId !== item.id ? 'opacity-60' : ''}`}>
+            <div className="flex items-center gap-4">
+              <Checkbox 
+                checked={item.isCompleted} 
+                onChange={() => toggleItem.mutate(item.id)} 
+              />
+              <div className="flex-1">
+                {editingItemId === item.id ? (
+                  <Input
+                    value={editedItemContent}
+                    onChange={(e) => setEditedItemContent(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && editedItemContent.trim()) {
+                        updateItem.mutate({ itemId: item.id, content: editedItemContent.trim() })
+                      } else if (e.key === 'Escape') {
+                        setEditingItemId(null)
+                      }
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <span
+                    className={`text-[14px] font-semibold text-black leading-tight cursor-pointer hover:underline decoration-2 ${item.isCompleted ? 'line-through decoration-black/30' : ''}`}
+                    onClick={() => {
+                      setEditingItemId(item.id)
+                      setEditedItemContent(item.content)
+                    }}
+                  >
+                    {item.content}
+                  </span>
+                )}
+              </div>
+              <button 
+                onClick={() => deleteItem.mutate(item.id)}
+                className="bg-white border-2 border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm opacity-0 group-hover:opacity-100 shrink-0"
               >
-                {item.content}
-              </span>
+                <X size={14} />
+              </button>
+            </div>
+            {editingItemId === item.id && (
+              <div className="flex gap-2 ml-9">
+                <Button 
+                  size="sm"
+                  onClick={() => {
+                    if (editedItemContent.trim()) {
+                      updateItem.mutate({ itemId: item.id, content: editedItemContent.trim() })
+                    }
+                  }}
+                >
+                  Save
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setEditingItemId(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => deleteItem.mutate(item.id)}
-              className="delete-item-btn"
-            >
-              <X size={14} />
-            </Button>
           </div>
         ))}
       </div>
 
       {isAddingItem ? (
-        <div className="add-item-form">
+        <div className="flex flex-col gap-2">
           <Input
             value={newItemContent}
             onChange={(e) => setNewItemContent(e.target.value)}
@@ -199,13 +228,31 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
                 setIsAddingItem(false)
               }
             }}
-            onBlur={() => {
-              if (!newItemContent) setIsAddingItem(false)
-            }}
           />
+          <div className="flex gap-2">
+            <Button 
+              size="sm"
+              onClick={() => {
+                if (newItemContent) addItem.mutate(newItemContent)
+              }}
+              disabled={!newItemContent}
+            >
+              Add
+            </Button>
+            <Button 
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setNewItemContent('')
+                setIsAddingItem(false)
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
       ) : (
-        <Button variant="secondary" size="sm" fullWidth onClick={() => setIsAddingItem(true)} className="add-item-trigger">
+        <Button variant="secondary" size="sm" fullWidth onClick={() => setIsAddingItem(true)} className="justify-start! px-3!">
           <Plus size={14} /> Add Item
         </Button>
       )}
@@ -226,14 +273,14 @@ export function ChecklistCreator({ onCreate }: { onCreate: (title: string) => vo
   }
 
   return (
-    <div className="checklist-creator-form">
+    <div className="flex flex-col gap-3 p-4 border-2 border-black bg-white shadow-brutal-md">
       <Input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Checklist title"
         autoFocus
       />
-      <div className="checklist-creator-actions">
+      <div className="flex gap-2.5">
         <Button 
           onClick={() => {
             if (title) {
@@ -243,10 +290,11 @@ export function ChecklistCreator({ onCreate }: { onCreate: (title: string) => vo
             }
           }}
           disabled={!title}
+          className="flex-1"
         >
           Add
         </Button>
-        <Button variant="secondary" onClick={() => setIsOpen(false)}>
+        <Button variant="secondary" onClick={() => setIsOpen(false)} className="flex-1">
           Cancel
         </Button>
       </div>

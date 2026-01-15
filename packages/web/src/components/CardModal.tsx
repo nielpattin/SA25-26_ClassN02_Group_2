@@ -7,7 +7,6 @@ import { Textarea } from './ui/Textarea'
 import { Input } from './ui/Input'
 import { Popover } from './ui/Popover'
 import { DatePicker } from './ui/DatePicker'
-import { Checkbox } from './ui/Checkbox'
 import { Dropdown } from './Dropdown'
 import { Checklist, ChecklistCreator } from './checklist'
 import { CommentSection } from './comments'
@@ -18,7 +17,6 @@ import { ActivitySection } from './Activity'
 import { MoveModal } from './MoveModal'
 import { Card, Checklist as ChecklistType, Comment, Activity, Board } from './CardModalTypes'
 import { format } from 'date-fns'
-import './CardModal.css'
 
 interface CardModalProps {
   cardId: string
@@ -199,7 +197,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
     }
   })
 
-  if (isLoading || !card) return <div className="loading-state">Loading...</div>
+  if (isLoading || !card) return <div className="h-screen flex items-center justify-center text-black font-heading font-extrabold uppercase bg-canvas">Loading...</div>
 
   const menuItems = [
     { label: 'Move', icon: <Move size={14} />, onClick: () => setIsMoving(true) },
@@ -207,13 +205,13 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   ]
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-1000" onClick={onClose}>
+      <div className="bg-canvas border-2 border-black w-[95%] max-w-250 max-h-[90vh] flex flex-col relative shadow-[15px_15px_0px_#000] overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {card.coverImageUrl && (
-          <div className="modal-cover">
-            <img src={card.coverImageUrl} alt="Cover" className="cover-image" />
+          <div className="w-full h-50 relative overflow-hidden border-b-2 border-black bg-[#EEEEEE] shrink-0">
+            <img src={card.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
             <button
-              className="modal-cover-remove-btn"
+              className="absolute top-3 right-3 bg-black text-white border-2 border-white p-2 cursor-pointer flex items-center justify-center hover:bg-[#E74C3C]"
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onClick={() => updateCard.mutate({ coverImageUrl: null } as any)}
             >
@@ -222,30 +220,37 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
           </div>
         )}
 
-        <div className="modal-header">
+        <div className="flex items-center justify-between pl-6 border-b-2 border-black h-16 bg-canvas shrink-0">
           <Input
             value={card.title}
             onChange={(e) => updateCard.mutate({ title: e.target.value })}
-            className="modal-title-input"
+            className="h-full border-none font-heading text-[20px] font-extrabold uppercase p-0 bg-transparent"
             brutal={false}
           />
-          <div className="modal-actions-header">
+          <div className="flex items-center gap-2 pr-4">
             <Dropdown
-              trigger={<button className="modal-header-btn"><MoreHorizontal size={20} /></button>}
+              trigger={
+                <button className="bg-white border-2 border-black text-black cursor-pointer w-10 h-10 flex items-center justify-center transition-all hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none">
+                  <MoreHorizontal size={18} />
+                </button>
+              }
               items={menuItems}
             />
-            <button className="modal-header-btn close" onClick={onClose}>
-              <X size={20} />
+            <button
+              className="bg-white border-2 border-black text-black cursor-pointer w-10 h-10 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none"
+              onClick={onClose}
+            >
+              <X size={18} />
             </button>
           </div>
         </div>
 
-        <div className="modal-body">
-          <div className="modal-main-content">
+        <div className="flex flex-row min-h-0 flex-1 overflow-hidden bg-white">
+          <div className="flex-1 p-8 flex flex-col gap-6 overflow-y-auto border-r-2 border-black min-w-0">
             {/* Labels & Members */}
-            <div className="modal-top-meta">
-              <div className="modal-section">
-                <h3 className="section-title"><Tag size={14} /> Labels</h3>
+            <div className="flex flex-wrap gap-8">
+              <div className="flex flex-col gap-3">
+                <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60"><Tag size={14} /> Labels</h3>
                 <LabelSection
                   cardLabels={card.labels}
                   allLabels={boardLabels}
@@ -272,8 +277,8 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                 />
               </div>
 
-              <div className="modal-section">
-                <h3 className="section-title"><Users size={14} /> Members</h3>
+              <div className="flex flex-col gap-3">
+                <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60"><Users size={14} /> Members</h3>
                 <AssigneeSection
                   currentAssignees={card.assignees || []}
                   boardMembers={boardMembers}
@@ -290,24 +295,18 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
 
             {/* Due Date */}
             {card.dueDate && (
-              <div className="modal-section">
-                <h3 className="section-title"><Calendar size={14} /> Due Date</h3>
-                <div className="due-date-display">
-                  <Checkbox
-                    checked={false}
-                    onChange={() => { }}
-                    className="due-date-checkbox"
-                  />
-                  <div
-                    className="due-date-info"
-                    onClick={() => setIsDatePickerOpen(true)}
-                    ref={mainDateTriggerRef}
-                  >
-                    <span className="date-text">
+              <div className="flex flex-col gap-3">
+                <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60"><Calendar size={14} /> Due Date</h3>
+                <div
+                  className="flex items-center gap-3 p-2 px-3 bg-white border-2 border-black w-fit cursor-pointer shadow-brutal-sm transition-all hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5"
+                  onClick={() => setIsDatePickerOpen(true)}
+                  ref={mainDateTriggerRef}>
+                  <div className="flex items-center gap-2 ">
+                    <span className="font-body text-[14px] font-bold text-black">
                       {format(new Date(card.dueDate), 'PPP')}
                     </span>
                     {new Date(card.dueDate) < new Date() && (
-                      <span className="overdue-badge">Overdue</span>
+                      <span className="bg-[#E74C3C] text-white text-[10px] font-extrabold px-1.5 py-0.5 uppercase border-2 border-black">Overdue</span>
                     )}
                   </div>
                 </div>
@@ -315,16 +314,16 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
             )}
 
             {/* Description */}
-            <div className="modal-section">
-              <h3 className="section-title"><Type size={14} /> Description</h3>
+            <div className="flex flex-col gap-3">
+              <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60"><Type size={14} /> Description</h3>
               {isEditingDescription ? (
-                <div className="description-editor">
+                <div className="flex flex-col gap-3">
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     autoFocus
                   />
-                  <div className="description-actions">
+                  <div className="flex gap-3">
                     <Button onClick={() => {
                       updateCard.mutate({ description })
                       setIsEditingDescription(false)
@@ -334,7 +333,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                 </div>
               ) : (
                 <div
-                  className="description-display"
+                  className="p-4 bg-[#F8F8F8] border-2 border-black text-[14px] leading-relaxed text-[#333333] cursor-pointer min-h-25 wrap-break-word shadow-brutal-sm hover:bg-[#EEEEEE] hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
                   onClick={() => setIsEditingDescription(true)}
                 >
                   {card.description || 'Add a more detailed description...'}
@@ -352,8 +351,8 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
             ))}
 
             {/* Attachments */}
-            <div className="modal-section">
-              <h3 className="section-title"><Paperclip size={14} /> Attachments</h3>
+            <div className="flex flex-col gap-3">
+              <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60"><Paperclip size={14} /> Attachments</h3>
               <AttachmentSection
                 attachments={[]}
                 onAdd={() => { }}
@@ -362,8 +361,8 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
             </div>
 
             {/* Comments */}
-            <div className="modal-section">
-              <h3 className="section-title"><MessageSquare size={14} /> Comments</h3>
+            <div className="flex flex-col gap-3">
+              <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60"><MessageSquare size={14} /> Comments</h3>
               <CommentSection
                 cardId={cardId}
                 comments={comments}
@@ -372,16 +371,16 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
             </div>
 
             {/* Activity */}
-            <div className="modal-section">
-              <h3 className="section-title"><History size={14} /> Activity</h3>
+            <div className="flex flex-col gap-3">
+              <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60"><History size={14} /> Activity</h3>
               <ActivitySection activities={activities} />
             </div>
           </div>
 
-          <div className="modal-sidebar">
-            <div className="modal-section">
-              <h3 className="section-title">Add to card</h3>
-              <div className="sidebar-buttons">
+          <div className="w-[320px] shrink-0 p-8 bg-[#F4F4F4] overflow-y-auto flex flex-col gap-6 min-w-0">
+            <div className="flex flex-col gap-3">
+              <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60">Add to card</h3>
+              <div className="flex flex-col gap-2">
                 <ChecklistCreator onCreate={(title) => createChecklist.mutate(title)} />
                 <Button
                   variant="secondary"
@@ -446,17 +445,17 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                   triggerRef={priorityTriggerRef}
                   title="Priority"
                 >
-                  <div className="priority-picker">
+                  <div className="flex flex-col gap-1">
                     {PRIORITIES.map(p => (
                       <button
                         key={p.id}
-                        className={`priority-option ${card.priority === p.id ? 'active' : ''}`}
+                        className={`flex items-center gap-2.5 p-2 px-3 bg-white border-2 border-black font-body text-[13px] font-bold cursor-pointer transition-all text-left ${card.priority === p.id ? 'bg-[#EEEEEE] shadow-inner-brutal' : 'hover:bg-[#F4F4F4] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-md'}`}
                         onClick={() => {
                           updateCard.mutate({ priority: p.id as Card['priority'] })
                           setIsPriorityOpen(false)
                         }}
                       >
-                        <span className="priority-dot" style={{ backgroundColor: p.color }} />
+                        <span className="w-3 h-3 border-2 border-black" style={{ backgroundColor: p.color }} />
                         {p.name}
                       </button>
                     ))}
@@ -478,7 +477,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                   triggerRef={coverTriggerRef}
                   title="Card Cover"
                 >
-                  <div className="cover-picker">
+                  <div className="flex flex-col p-1 min-w-70">
                     <Input
                       placeholder="Enter image URL..."
                       value={coverUrl}
@@ -491,7 +490,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                       }}
                       autoFocus
                     />
-                    <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                    <div className="mt-3 flex gap-2">
                       <Button
                         fullWidth
                         onClick={() => {
@@ -519,16 +518,16 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
               </div>
             </div>
 
-            <div className="modal-section">
-              <h3 className="section-title">Details</h3>
-              <div className="details-grid">
-                <div className="detail-item">
-                  <span className="detail-label">Position</span>
-                  <span className="detail-value">{card.position}</span>
+            <div className="flex flex-col gap-4">
+              <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60">Details</h3>
+              <div className="grid grid-cols-2 gap-4 p-4 bg-white border-2 border-black shadow-brutal-sm transition-all hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-extrabold uppercase text-text-subtle">Position</span>
+                  <span className="text-[13px] font-extrabold text-black">{card.position}</span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">Priority</span>
-                  <span className="detail-value" style={{
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-extrabold uppercase text-text-subtle">Priority</span>
+                  <span className="text-[13px] font-extrabold text-black" style={{
                     color: PRIORITIES.find(p => p.id === card.priority)?.color || 'inherit'
                   }}>
                     {card.priority || 'none'}

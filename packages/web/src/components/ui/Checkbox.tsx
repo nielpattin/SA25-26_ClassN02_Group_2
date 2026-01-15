@@ -1,5 +1,4 @@
 import { CheckSquare, Square } from 'lucide-react'
-import './Checkbox.css'
 
 type CheckboxProps = {
   checked?: boolean
@@ -9,11 +8,11 @@ type CheckboxProps = {
   size?: number
 }
 
-export function Checkbox({ checked, onChange, disabled, className = '', size = 18 }: CheckboxProps) {
+export function Checkbox({ checked, onChange, disabled, className = '', size = 20 }: CheckboxProps) {
   return (
     <button
       type="button"
-      className={`brutal-checkbox ${checked ? 'checked' : ''} ${className}`}
+      className={`bg-transparent border-none p-0 cursor-pointer flex items-center justify-center text-black transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       onClick={() => !disabled && onChange?.(!checked)}
       disabled={disabled}
     >
