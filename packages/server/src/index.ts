@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { cors } from '@elysiajs/cors'
 import { authPlugin } from './modules/auth'
+import { idempotencyPlugin } from './shared/middleware/idempotency'
 import { boardController } from './modules/boards'
 import { columnController } from './modules/columns'
 import { taskController } from './modules/tasks'
@@ -25,6 +26,7 @@ initActivitySubscriber()
 
 // API v1 - groups all domain controllers under /v1 prefix
 const v1 = new Elysia({ prefix: '/v1' })
+  .use(idempotencyPlugin)
   .use(boardController)
   .use(columnController)
   .use(taskController)
@@ -77,7 +79,7 @@ export const app = new Elysia()
     origin: 'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
   }))
   .use(authPlugin)
   .use(v1)

@@ -1,11 +1,3 @@
-/**
- * Seed script for development
- * Creates two test boards:
- * - Small Board: 2 columns, 3 cards each (simple)
- * - Big Board: 10 columns, 15 cards each (detailed)
- *
- * Run: bun run src/scripts/seed.ts
- */
 import { auth } from '../modules/auth/auth'
 import { db } from '../db'
 import * as schema from '../db/schema'
@@ -48,10 +40,9 @@ async function ensureUserExists(userData: { email: string; password: string; nam
     })
     
     if (signUpResult && 'user' in signUpResult) {
-      console.log(`Created new test user: ${userData.email} (${signUpResult.user.id})`)
       return signUpResult.user.id
     }
-  } catch (error) {
+  } catch {
     // User likely exists
   }
 
@@ -65,8 +56,6 @@ async function ensureUserExists(userData: { email: string; password: string; nam
 
 async function cleanDatabase() {
   console.log('Cleaning existing data...')
-  
-  // Delete in order to satisfy foreign key constraints
   const tables = [
     schema.notifications,
     schema.commentMentions,
@@ -77,12 +66,15 @@ async function cleanDatabase() {
     schema.taskLabels,
     schema.taskAssignees,
     schema.activities,
+    schema.idempotencyKeys,
     schema.starredBoards,
     schema.tasks,
     schema.columns,
     schema.labels,
     schema.boardMembers,
     schema.boards,
+    schema.boardTemplates,
+    schema.taskTemplates,
     schema.members,
     schema.organizations,
     schema.sessions,
@@ -97,22 +89,18 @@ async function cleanDatabase() {
 }
 
 async function seed() {
-  console.log('--- Seeding database ---')
+  console.log('--- Seeding started ---')
 
   await cleanDatabase()
 
-  const ownerId = await ensureUserExists(TEST_USER)
-  const otherUserIds: string[] = []
-  
-  for (const userData of ADDITIONAL_USERS) {
-    const id = await ensureUserExists(userData)
-    otherUserIds.push(id)
-  }
+  console.log('Creating users...')
+  const allUserIds = await Promise.all([
+    ensureUserExists(TEST_USER),
+    ...ADDITIONAL_USERS.map(u => ensureUserExists(u))
+  ])
+  const ownerId = allUserIds[0]
 
-  const allUserIds = [ownerId, ...otherUserIds]
-
-  // 1. Create Organization
-  console.log('Creating organization...')
+  console.log('Creating organization and members...')
   const [org] = await db.insert(schema.organizations).values({
     name: 'Seed Workspace',
     slug: `seed-workspace-${Date.now()}`,
@@ -127,29 +115,44 @@ async function seed() {
     }))
   )
 
-  // --- Helper for creating a board ---
-  const createBoard = async (name: string, pos: string) => {
-    const [board] = await db.insert(schema.boards).values({
-      name,
-      organizationId: org.id,
-      ownerId: ownerId,
-      position: pos,
-      visibility: 'private',
-    }).returning()
-
-    await db.insert(schema.boardMembers).values(
-      allUserIds.map((id, index) => ({
-        boardId: board.id,
-        userId: id,
-        role: (index === 0 ? 'admin' : 'member') as 'admin' | 'member',
-      }))
-    )
-    return board
+  const priorities = ['low', 'medium', 'high', 'urgent', 'none'] as const
+  const getRandomDate = () => {
+    const dayOffset = Math.floor(Math.random() * 15) - 7
+    return new Date(Date.now() + dayOffset * 24 * 60 * 60 * 1000)
   }
 
-  const boardPositions = generatePositions(null, null, 2)
+  const taskLabelsToInsert: any[] = []
+  const taskAssigneesToInsert: any[] = []
+  const taskCommentsToInsert: any[] = []
+  const checklistsToInsert: any[] = []
 
-  // Labels for both boards
+  const prepareTaskData = (taskId: string, labels: any[]) => {
+    const numLabels = Math.floor(Math.random() * 4)
+    if (numLabels > 0) {
+      const shuffled = [...labels].sort(() => 0.5 - Math.random())
+      for (let j = 0; j < numLabels; j++) {
+        taskLabelsToInsert.push({ taskId, labelId: shuffled[j].id })
+      }
+    }
+
+    const numAssignees = Math.floor(Math.random() * 4)
+    if (numAssignees > 0) {
+      const shuffledUsers = [...allUserIds].sort(() => 0.5 - Math.random())
+      for (let j = 0; j < numAssignees; j++) {
+        taskAssigneesToInsert.push({ taskId, userId: shuffledUsers[j], assignedBy: ownerId })
+      }
+    }
+
+    const numComments = Math.floor(Math.random() * 4)
+    for (let j = 0; j < numComments; j++) {
+      taskCommentsToInsert.push({
+        taskId,
+        userId: allUserIds[Math.floor(Math.random() * allUserIds.length)],
+        content: COMMENTS_POOL[Math.floor(Math.random() * COMMENTS_POOL.length)],
+      })
+    }
+  }
+
   const labelData = [
     { name: 'Bug', color: '#e74c3c' },
     { name: 'Feature', color: '#2ecc71' },
@@ -159,10 +162,25 @@ async function seed() {
     { name: 'Docs', color: '#34495e' },
   ]
 
-  // 2. Create Small Board
-  console.log('Creating Small Board (2 cols, 3 cards each)...')
-  const smallBoard = await createBoard('Small Board', boardPositions[0])
+  console.log('Creating boards, columns and tasks...')
+  const boardPositions = generatePositions(null, null, 2)
   
+  const [smallBoard] = await db.insert(schema.boards).values({
+    name: 'Small Board',
+    organizationId: org.id,
+    ownerId: ownerId,
+    position: boardPositions[0],
+    visibility: 'private',
+  }).returning()
+
+  await db.insert(schema.boardMembers).values(
+    allUserIds.map((id, index) => ({
+      boardId: smallBoard.id,
+      userId: id,
+      role: (index === 0 ? 'admin' : 'member') as 'admin' | 'member',
+    }))
+  )
+
   const smallLabels = await db.insert(schema.labels).values(
     labelData.map(l => ({ ...l, boardId: smallBoard.id }))
   ).returning()
@@ -177,77 +195,44 @@ async function seed() {
     }))
   ).returning()
 
-  const priorities = ['low', 'medium', 'high', 'urgent', 'none'] as const
-
-  const getRandomDate = () => {
-    const dayOffset = Math.floor(Math.random() * 15) - 7 // -7 to +7 days
-    return new Date(Date.now() + dayOffset * 24 * 60 * 60 * 1000)
-  }
-
-  const addRandomDataToTask = async (taskId: string, labels: typeof smallLabels) => {
-    // Random Labels (0-3)
-    const numLabels = Math.floor(Math.random() * 4)
-    if (numLabels > 0) {
-      const shuffled = [...labels].sort(() => 0.5 - Math.random())
-      for (let j = 0; j < numLabels; j++) {
-        await db.insert(schema.taskLabels).values({
-          taskId: taskId,
-          labelId: shuffled[j].id,
-        })
-      }
-    }
-
-    // Random Assignees (0-3)
-    const numAssignees = Math.floor(Math.random() * 4)
-    if (numAssignees > 0) {
-      const shuffledUsers = [...allUserIds].sort(() => 0.5 - Math.random())
-      for (let j = 0; j < numAssignees; j++) {
-        await db.insert(schema.taskAssignees).values({
-          taskId: taskId,
-          userId: shuffledUsers[j],
-          assignedBy: ownerId,
-        })
-      }
-    }
-
-    // Random Comments (0-3)
-    const numComments = Math.floor(Math.random() * 4)
-    for (let j = 0; j < numComments; j++) {
-      await db.insert(schema.comments).values({
-        taskId: taskId,
-        userId: allUserIds[Math.floor(Math.random() * allUserIds.length)],
-        content: COMMENTS_POOL[Math.floor(Math.random() * COMMENTS_POOL.length)],
-      })
-    }
-  }
-
   for (const col of smallColumns) {
     const taskPositions = generatePositions(null, null, 3)
-    for (let i = 0; i < 3; i++) {
-      const [task] = await db.insert(schema.tasks).values({
+    const tasks = await db.insert(schema.tasks).values(
+      Array.from({ length: 3 }).map((_, i) => ({
         title: `Simple Task ${i + 1} in ${col.name}`,
         columnId: col.id,
         position: taskPositions[i],
         priority: priorities[Math.floor(Math.random() * priorities.length)],
         dueDate: Math.random() > 0.4 ? getRandomDate() : null,
-      }).returning()
-      
-      await addRandomDataToTask(task.id, smallLabels)
+      }))
+    ).returning()
+    
+    for (const task of tasks) {
+      prepareTaskData(task.id, smallLabels)
     }
   }
 
-  // 3. Create Big Board
-  console.log('Creating Big Board (10 cols, 15 cards each, detailed)...')
-  const bigBoard = await createBoard('Big Board', boardPositions[1])
+  const [bigBoard] = await db.insert(schema.boards).values({
+    name: 'Big Board',
+    organizationId: org.id,
+    ownerId: ownerId,
+    position: boardPositions[1],
+    visibility: 'private',
+  }).returning()
+
+  await db.insert(schema.boardMembers).values(
+    allUserIds.map((id, index) => ({
+      boardId: bigBoard.id,
+      userId: id,
+      role: (index === 0 ? 'admin' : 'member') as 'admin' | 'member',
+    }))
+  )
 
   const bigLabels = await db.insert(schema.labels).values(
     labelData.map(l => ({ ...l, boardId: bigBoard.id }))
   ).returning()
 
-  const bigColNames = [
-    'Backlog', 'Analysis', 'Design', 'Ready', 'In Dev', 
-    'Testing', 'Review', 'Staging', 'Prod', 'Done'
-  ]
+  const bigColNames = ['Backlog', 'Analysis', 'Design', 'Ready', 'In Dev', 'Testing', 'Review', 'Staging', 'Prod', 'Done']
   const bigColPositions = generatePositions(null, null, 10)
   const bigColumns = await db.insert(schema.columns).values(
     bigColNames.map((name, i) => ({
@@ -258,47 +243,55 @@ async function seed() {
   ).returning()
 
   for (const col of bigColumns) {
-    console.log(`  - Adding 15 tasks to column: ${col.name}`)
     const taskPositions = generatePositions(null, null, 15)
-    
-    for (let i = 0; i < 15; i++) {
-      const [task] = await db.insert(schema.tasks).values({
+    const tasks = await db.insert(schema.tasks).values(
+      Array.from({ length: 15 }).map((_, i) => ({
         title: `Detailed Task ${i + 1} in ${col.name}`,
-        description: `This is a detailed description for task ${i + 1}. It contains some random information to simulate a real-world task scenario on the big board.`,
+        description: `Description for task ${i + 1}.`,
         columnId: col.id,
         position: taskPositions[i],
         priority: priorities[Math.floor(Math.random() * priorities.length)],
         dueDate: Math.random() > 0.3 ? getRandomDate() : null,
-      }).returning()
+      }))
+    ).returning()
 
-      await addRandomDataToTask(task.id, bigLabels)
-
-      // Checklist (60% chance)
+    for (const task of tasks) {
+      prepareTaskData(task.id, bigLabels)
+      
       if (Math.random() > 0.4) {
-        const [checklist] = await db.insert(schema.checklists).values({
+        checklistsToInsert.push({
           taskId: task.id,
           title: 'Project Requirements',
           position: 'a',
-        }).returning()
-
-        const numItems = Math.floor(Math.random() * 5) + 2 // 2-6 items
-        const itemPositions = generatePositions(null, null, numItems)
-        for (let j = 0; j < numItems; j++) {
-          await db.insert(schema.checklistItems).values({
-            checklistId: checklist.id,
-            content: `Requirement step ${j + 1}`,
-            isCompleted: Math.random() > 0.6,
-            position: itemPositions[j],
-          })
-        }
+        })
       }
     }
   }
 
+  console.log('Performing final bulk inserts...')
+  if (taskLabelsToInsert.length > 0) await db.insert(schema.taskLabels).values(taskLabelsToInsert)
+  if (taskAssigneesToInsert.length > 0) await db.insert(schema.taskAssignees).values(taskAssigneesToInsert)
+  if (taskCommentsToInsert.length > 0) await db.insert(schema.comments).values(taskCommentsToInsert)
+  
+  if (checklistsToInsert.length > 0) {
+    const insertedChecklists = await db.insert(schema.checklists).values(checklistsToInsert).returning()
+    const checklistItemsData: any[] = []
+    for (const cl of insertedChecklists) {
+      const numItems = Math.floor(Math.random() * 5) + 2
+      const itemPositions = generatePositions(null, null, numItems)
+      for (let j = 0; j < numItems; j++) {
+        checklistItemsData.push({
+          checklistId: cl.id,
+          content: `Requirement step ${j + 1}`,
+          isCompleted: Math.random() > 0.6,
+          position: itemPositions[j],
+        })
+      }
+    }
+    if (checklistItemsData.length > 0) await db.insert(schema.checklistItems).values(checklistItemsData)
+  }
+
   console.log('--- Seeding complete! ---')
-  console.log('Test Users:')
-  console.log(`Owner: ${TEST_USER.email} / ${TEST_USER.password}`)
-  console.log(`Created 21 additional developers (dev1@kyte.dev to dev21@kyte.dev)`)
 }
 
 seed()

@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, varchar, text, integer, timestamp, uuid, boolean, primaryKey, jsonb } from 'drizzle-orm/pg-core'
+import { pgTable, pgEnum, varchar, text, integer, timestamp, uuid, boolean, primaryKey, jsonb, unique } from 'drizzle-orm/pg-core'
 
 /** Organization membership role */
 export const orgRoleEnum = pgEnum('org_role', ['owner', 'admin', 'member', 'viewer'])
@@ -347,6 +347,22 @@ export const taskTemplates = pgTable('task_templates', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+export const idempotencyStatusEnum = pgEnum('idempotency_status', ['pending', 'completed'])
+
+export const idempotencyKeys = pgTable('idempotency_keys', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  key: varchar('key', { length: 255 }).notNull(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  requestHash: text('request_hash').notNull(),
+  status: idempotencyStatusEnum().default('pending').notNull(),
+  responseStatus: integer('response_status'),
+  responseBody: jsonb('response_body'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+}, (table) => [
+  unique('idempotency_user_key_idx').on(table.userId, table.key)
+])
+
 export const table = {
   users, sessions, accounts, verifications,
   organizations, members,
@@ -358,4 +374,5 @@ export const table = {
   comments, commentMentions,
   activities, notifications,
   boardTemplates, taskTemplates,
+  idempotencyKeys,
 } as const
