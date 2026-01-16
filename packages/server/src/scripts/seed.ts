@@ -18,13 +18,26 @@ const TEST_USER = {
   name: 'Test User',
 }
 
-const SECOND_TEST_USER = {
-  email: 'test2@kyte.dev',
+const ADDITIONAL_USERS = Array.from({ length: 21 }, (_, i) => ({
+  email: `dev${i + 1}@kyte.dev`,
   password: 'password123',
-  name: 'Second Test User',
-}
+  name: `Developer ${String.fromCharCode(65 + i)}`,
+}))
 
-async function ensureUserExists(userData: typeof TEST_USER) {
+const COMMENTS_POOL = [
+  "Working on the fix now.",
+  "This looks like a priority.",
+  "Can we discuss this in the next sync?",
+  "I've updated the description with more details.",
+  "LGTM!",
+  "Merged to main.",
+  "Need more info on the reproduction steps.",
+  "I'll take a look at this tomorrow.",
+  "Great job on the initial implementation!",
+  "Is this blocking anyone?",
+]
+
+async function ensureUserExists(userData: { email: string; password: string; name: string }) {
   try {
     const signUpResult = await auth.api.signUpEmail({
       body: {
@@ -47,15 +60,56 @@ async function ensureUserExists(userData: typeof TEST_USER) {
   })
   
   if (!existingUser) throw new Error(`Failed to create or find test user: ${userData.email}`)
-  console.log(`Found existing test user: ${userData.email} (${existingUser.id})`)
   return existingUser.id
+}
+
+async function cleanDatabase() {
+  console.log('Cleaning existing data...')
+  
+  // Delete in order to satisfy foreign key constraints
+  const tables = [
+    schema.notifications,
+    schema.commentMentions,
+    schema.comments,
+    schema.attachments,
+    schema.checklistItems,
+    schema.checklists,
+    schema.taskLabels,
+    schema.taskAssignees,
+    schema.activities,
+    schema.starredBoards,
+    schema.tasks,
+    schema.columns,
+    schema.labels,
+    schema.boardMembers,
+    schema.boards,
+    schema.members,
+    schema.organizations,
+    schema.sessions,
+    schema.accounts,
+    schema.verifications,
+    schema.users,
+  ]
+
+  for (const table of tables) {
+    await db.delete(table)
+  }
 }
 
 async function seed() {
   console.log('--- Seeding database ---')
 
-  const userId = await ensureUserExists(TEST_USER)
-  const secondUserId = await ensureUserExists(SECOND_TEST_USER)
+  await cleanDatabase()
+
+  const ownerId = await ensureUserExists(TEST_USER)
+  const otherUserIds: string[] = []
+  
+  for (const userData of ADDITIONAL_USERS) {
+    const id = await ensureUserExists(userData)
+    otherUserIds.push(id)
+  }
+
+  const allUserIds = [ownerId, ...otherUserIds]
 
   // 1. Create Organization
   console.log('Creating organization...')
@@ -65,43 +119,54 @@ async function seed() {
     personal: true,
   }).returning()
 
-  await db.insert(schema.members).values([
-    {
+  await db.insert(schema.members).values(
+    allUserIds.map((id, index) => ({
       organizationId: org.id,
-      userId: userId,
-      role: 'owner',
-    },
-    {
-      organizationId: org.id,
-      userId: secondUserId,
-      role: 'member',
-    },
-  ])
+      userId: id,
+      role: (index === 0 ? 'owner' : 'member') as 'owner' | 'member',
+    }))
+  )
 
   // --- Helper for creating a board ---
   const createBoard = async (name: string, pos: string) => {
     const [board] = await db.insert(schema.boards).values({
       name,
       organizationId: org.id,
-      ownerId: userId,
+      ownerId: ownerId,
       position: pos,
       visibility: 'private',
     }).returning()
 
-    await db.insert(schema.boardMembers).values({
-      boardId: board.id,
-      userId: userId,
-      role: 'admin',
-    })
+    await db.insert(schema.boardMembers).values(
+      allUserIds.map((id, index) => ({
+        boardId: board.id,
+        userId: id,
+        role: (index === 0 ? 'admin' : 'member') as 'admin' | 'member',
+      }))
+    )
     return board
   }
 
   const boardPositions = generatePositions(null, null, 2)
 
+  // Labels for both boards
+  const labelData = [
+    { name: 'Bug', color: '#e74c3c' },
+    { name: 'Feature', color: '#2ecc71' },
+    { name: 'UI/UX', color: '#9b59b6' },
+    { name: 'Research', color: '#3498db' },
+    { name: 'Important', color: '#f1c40f' },
+    { name: 'Docs', color: '#34495e' },
+  ]
+
   // 2. Create Small Board
   console.log('Creating Small Board (2 cols, 3 cards each)...')
   const smallBoard = await createBoard('Small Board', boardPositions[0])
   
+  const smallLabels = await db.insert(schema.labels).values(
+    labelData.map(l => ({ ...l, boardId: smallBoard.id }))
+  ).returning()
+
   const smallColNames = ['To Do', 'Done']
   const smallColPositions = generatePositions(null, null, 2)
   const smallColumns = await db.insert(schema.columns).values(
@@ -112,15 +177,62 @@ async function seed() {
     }))
   ).returning()
 
+  const priorities = ['low', 'medium', 'high', 'urgent', 'none'] as const
+
+  const getRandomDate = () => {
+    const dayOffset = Math.floor(Math.random() * 15) - 7 // -7 to +7 days
+    return new Date(Date.now() + dayOffset * 24 * 60 * 60 * 1000)
+  }
+
+  const addRandomDataToTask = async (taskId: string, labels: typeof smallLabels) => {
+    // Random Labels (0-3)
+    const numLabels = Math.floor(Math.random() * 4)
+    if (numLabels > 0) {
+      const shuffled = [...labels].sort(() => 0.5 - Math.random())
+      for (let j = 0; j < numLabels; j++) {
+        await db.insert(schema.taskLabels).values({
+          taskId: taskId,
+          labelId: shuffled[j].id,
+        })
+      }
+    }
+
+    // Random Assignees (0-3)
+    const numAssignees = Math.floor(Math.random() * 4)
+    if (numAssignees > 0) {
+      const shuffledUsers = [...allUserIds].sort(() => 0.5 - Math.random())
+      for (let j = 0; j < numAssignees; j++) {
+        await db.insert(schema.taskAssignees).values({
+          taskId: taskId,
+          userId: shuffledUsers[j],
+          assignedBy: ownerId,
+        })
+      }
+    }
+
+    // Random Comments (0-3)
+    const numComments = Math.floor(Math.random() * 4)
+    for (let j = 0; j < numComments; j++) {
+      await db.insert(schema.comments).values({
+        taskId: taskId,
+        userId: allUserIds[Math.floor(Math.random() * allUserIds.length)],
+        content: COMMENTS_POOL[Math.floor(Math.random() * COMMENTS_POOL.length)],
+      })
+    }
+  }
+
   for (const col of smallColumns) {
     const taskPositions = generatePositions(null, null, 3)
     for (let i = 0; i < 3; i++) {
-      await db.insert(schema.tasks).values({
+      const [task] = await db.insert(schema.tasks).values({
         title: `Simple Task ${i + 1} in ${col.name}`,
         columnId: col.id,
         position: taskPositions[i],
-        priority: 'none',
-      })
+        priority: priorities[Math.floor(Math.random() * priorities.length)],
+        dueDate: Math.random() > 0.4 ? getRandomDate() : null,
+      }).returning()
+      
+      await addRandomDataToTask(task.id, smallLabels)
     }
   }
 
@@ -128,15 +240,6 @@ async function seed() {
   console.log('Creating Big Board (10 cols, 15 cards each, detailed)...')
   const bigBoard = await createBoard('Big Board', boardPositions[1])
 
-  // Labels for big board
-  const labelData = [
-    { name: 'Bug', color: '#e74c3c' },
-    { name: 'Feature', color: '#2ecc71' },
-    { name: 'UI/UX', color: '#9b59b6' },
-    { name: 'Research', color: '#3498db' },
-    { name: 'Important', color: '#f1c40f' },
-    { name: 'Docs', color: '#34495e' },
-  ]
   const bigLabels = await db.insert(schema.labels).values(
     labelData.map(l => ({ ...l, boardId: bigBoard.id }))
   ).returning()
@@ -154,8 +257,6 @@ async function seed() {
     }))
   ).returning()
 
-  const priorities = ['low', 'medium', 'high', 'urgent', 'none'] as const
-
   for (const col of bigColumns) {
     console.log(`  - Adding 15 tasks to column: ${col.name}`)
     const taskPositions = generatePositions(null, null, 15)
@@ -167,20 +268,10 @@ async function seed() {
         columnId: col.id,
         position: taskPositions[i],
         priority: priorities[Math.floor(Math.random() * priorities.length)],
-        dueDate: Math.random() > 0.3 ? new Date(Date.now() + Math.random() * 1000 * 60 * 60 * 24 * 14) : null, // 70% chance of due date within 2 weeks
+        dueDate: Math.random() > 0.3 ? getRandomDate() : null,
       }).returning()
 
-      // Labels (0-3)
-      const numLabels = Math.floor(Math.random() * 4)
-      if (numLabels > 0) {
-        const shuffled = [...bigLabels].sort(() => 0.5 - Math.random())
-        for (let j = 0; j < numLabels; j++) {
-          await db.insert(schema.taskLabels).values({
-            taskId: task.id,
-            labelId: shuffled[j].id,
-          })
-        }
-      }
+      await addRandomDataToTask(task.id, bigLabels)
 
       // Checklist (60% chance)
       if (Math.random() > 0.4) {
@@ -206,8 +297,8 @@ async function seed() {
 
   console.log('--- Seeding complete! ---')
   console.log('Test Users:')
-  console.log(`1. ${TEST_USER.email} / ${TEST_USER.password}`)
-  console.log(`2. ${SECOND_TEST_USER.email} / ${SECOND_TEST_USER.password}`)
+  console.log(`Owner: ${TEST_USER.email} / ${TEST_USER.password}`)
+  console.log(`Created 21 additional developers (dev1@kyte.dev to dev21@kyte.dev)`)
 }
 
 seed()

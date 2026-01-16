@@ -60,9 +60,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-1000" onClick={handleBackdropClick}>
-      <div className="bg-surface border-2 border-black rounded-none shadow-[15px_15px_0px_#000] p-10 w-full max-w-100 relative animate-in fade-in zoom-in duration-200">
+      <div className="bg-surface border border-black rounded-none shadow-brutal-xl p-10 w-full max-w-100 relative animate-in fade-in zoom-in duration-200">
         <button
-          className="absolute top-4 right-4 bg-white border-2 border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none"
+          className="absolute top-4 right-4 bg-white border border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none"
           onClick={onClose}
         >
           <X size={16} />
@@ -93,7 +93,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             required
             minLength={8}
           />
-          {error && <div className="text-black text-sm font-bold p-2 bg-danger-bg border-2 border-black rounded-none">{error}</div>}
+          {error && <div className="text-black text-sm font-bold p-2 bg-danger-bg border border-black rounded-none">{error}</div>}
           <Button
             type="submit"
             fullWidth

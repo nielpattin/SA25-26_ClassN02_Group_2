@@ -25,7 +25,7 @@ export function Select({ value, options, onChange, className = '' }: SelectProps
         ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-white border-2 border-black px-3 py-2.5 font-body text-[13px] font-bold text-black outline-none rounded-none text-left flex items-center justify-between transition-all shadow-brutal-sm hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5"
+        className="w-full cursor-pointer bg-white border border-black px-3 py-2.5 font-body text-[13px] font-bold text-black outline-none rounded-none text-left flex items-center justify-between transition-all shadow-brutal-sm hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5"
       >
         <span>{selectedOption?.name || 'Select option...'}</span>
         <ChevronDown size={16} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -46,7 +46,7 @@ export function Select({ value, options, onChange, className = '' }: SelectProps
                 onChange(option.id)
                 setIsOpen(false)
               }}
-              className={`w-full text-left px-3 py-2 font-body text-[13px] font-bold transition-all border-2 border-transparent hover:border-black hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm ${value === option.id ? 'bg-[#EEEEEE] border-black shadow-inner-brutal' : 'bg-white'}`}
+              className={`w-full text-left px-3 py-2 font-body text-[13px] font-bold transition-all border border-transparent hover:border-black hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm ${value === option.id ? 'bg-[#EEEEEE] border-black shadow-inner-brutal' : 'bg-white'}`}
             >
               {option.name}
             </button>

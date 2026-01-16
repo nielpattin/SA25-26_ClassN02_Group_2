@@ -1,5 +1,5 @@
+import { Check, X } from 'lucide-react'
 import { Avatar } from './ui/Avatar'
-import { Check } from 'lucide-react'
 
 interface Member {
   id: string
@@ -11,24 +11,33 @@ interface AssigneesProps {
   currentAssignees: string[]
   boardMembers: Member[]
   onToggle: (userId: string) => void
-  variant?: 'display' | 'picker'
+  variant?: 'sidebar-list' | 'picker'
 }
 
-export function AssigneeSection({ currentAssignees, boardMembers, onToggle, variant = 'display' }: AssigneesProps) {
-  const assignedMembers = boardMembers.filter(m => currentAssignees.includes(m.id))
+export function AssigneeSection({ currentAssignees = [], boardMembers = [], onToggle, variant = 'sidebar-list' }: AssigneesProps) {
+  const assignedMembers = (boardMembers || []).filter(m => (currentAssignees || []).includes(m.id))
 
-  if (variant === 'display') {
+  if (variant === 'sidebar-list') {
     if (assignedMembers.length === 0) return null
 
     return (
-      <div className="flex items-center gap-2">
-        <div className="flex flex-wrap gap-2">
-          {assignedMembers.map(member => (
-            <div key={member.id} className="relative flex" title={member.name || 'Unknown'}>
-              <Avatar src={member.image || undefined} fallback={member.name || 'Unknown'} size="sm" />
-            </div>
-          ))}
-        </div>
+      <div className="flex flex-col gap-2">
+        {assignedMembers.map(member => (
+          <div 
+            key={member.id}
+            className="flex items-center gap-3 p-2 bg-white border-2 border-black font-body text-[13px] font-extrabold uppercase shadow-brutal-sm hover:shadow-brutal-md hover:-translate-y-0.5 transition-all group"
+          >
+            <Avatar src={member.image || undefined} fallback={member.name || 'Unknown'} size="sm" />
+            <span className="flex-1 truncate text-black">{member.name || 'Unknown'}</span>
+            <button 
+              className="opacity-0 group-hover:opacity-100 p-1 bg-white border border-black hover:bg-text-danger hover:text-white transition-all cursor-pointer flex items-center justify-center"
+              onClick={() => onToggle(member.id)}
+              title="Remove member"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
       </div>
     )
   }
@@ -41,7 +50,7 @@ export function AssigneeSection({ currentAssignees, boardMembers, onToggle, vari
           return (
             <button
               key={member.id}
-              className={`flex items-center gap-3 p-2.5 bg-white border-2 border-black font-body text-[13px] font-extrabold uppercase transition-all text-left ${isAssigned ? 'bg-[#EEEEEE] shadow-inner-brutal' : 'hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-md'}`}
+              className={`flex cursor-pointer items-center gap-3 p-2.5 bg-white border border-black font-body text-[13px] font-extrabold uppercase transition-all text-left ${isAssigned ? 'bg-[#EEEEEE] shadow-inner-brutal' : 'hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-md'}`}
               onClick={() => onToggle(member.id)}
             >
               <Avatar src={member.image || undefined} fallback={member.name || 'Unknown'} size="sm" />

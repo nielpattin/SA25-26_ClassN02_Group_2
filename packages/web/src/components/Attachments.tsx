@@ -26,8 +26,8 @@ export function AttachmentSection({ attachments, onAdd, onDelete }: AttachmentsP
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2.5">
         {attachments.map((attachment) => (
-          <div key={attachment.id} className="flex items-center gap-4 p-3 bg-white border-2 border-black group shadow-brutal-sm hover:shadow-brutal-md transition-all">
-            <div className="w-10 h-10 bg-canvas border-2 border-black flex items-center justify-center text-black shrink-0">
+          <div key={attachment.id} className="flex items-center gap-4 p-3 bg-white border border-black group shadow-brutal-sm hover:shadow-brutal-md transition-all">
+            <div className="w-10 h-10 bg-canvas border border-black flex items-center justify-center text-black shrink-0">
               <Link size={18} />
             </div>
             <div className="flex-1 flex flex-col gap-0.5 min-w-0">
@@ -54,7 +54,7 @@ export function AttachmentSection({ attachments, onAdd, onDelete }: AttachmentsP
       </div>
 
       {isCreating && (
-        <div className="flex flex-col gap-4 p-5 border-2 border-black bg-white shadow-brutal-xl mt-2">
+        <div className="flex flex-col gap-4 p-5 border border-black bg-white shadow-brutal-xl mt-2">
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}

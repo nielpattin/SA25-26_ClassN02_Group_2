@@ -80,11 +80,11 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
 
   return createPortal(
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-11000" onClick={onCancel}>
-      <div className="w-[90%] max-w-100 bg-white border-2 border-black shadow-[15px_15px_0px_#000] flex flex-col rounded-none" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black">
+      <div className="w-[90%] max-w-100 bg-white border border-black shadow-brutal-xl flex flex-col rounded-none" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-black">
           <h2 className="m-0 font-heading text-[18px] font-extrabold uppercase text-black">Move Card</h2>
           <button 
-            className="bg-white border-2 border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none" 
+            className="bg-white border border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none" 
             onClick={onCancel}
           >
             <X size={16} />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Calendar, Type, Paperclip, MessageSquare, History, Tag, UserPlus, Move, Trash2, MoreHorizontal, Archive, Flag, Image, Users } from 'lucide-react'
+import { X, Calendar, Type, Paperclip, MessageSquare, History, Tag, Move, Trash2, MoreHorizontal, Archive, Flag, Image, Plus } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { Button } from './ui/Button'
@@ -41,10 +41,9 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   const [isPriorityOpen, setIsPriorityOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
   const [isCoverOpen, setIsCoverOpen] = useState(false)
-  const dateTriggerRef = useRef<HTMLButtonElement>(null)
   const mainDateTriggerRef = useRef<HTMLDivElement>(null)
   const priorityTriggerRef = useRef<HTMLButtonElement>(null)
-  const membersTriggerRef = useRef<HTMLButtonElement>(null)
+  const assignedTriggerRef = useRef<HTMLButtonElement>(null)
   const coverTriggerRef = useRef<HTMLButtonElement>(null)
   const [coverUrl, setCoverUrl] = useState('')
 
@@ -118,6 +117,13 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
       }))
     }
   })
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = 'auto'
+    }
+  }, [])
 
   useEffect(() => {
     if (card?.description) {
@@ -205,13 +211,13 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   ]
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-1000" onClick={onClose}>
-      <div className="bg-canvas border-2 border-black w-[95%] max-w-250 max-h-[90vh] flex flex-col relative shadow-[15px_15px_0px_#000] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-1000" onClick={onClose}>
+      <div className="bg-white border border-black w-[95%] max-w-250 max-h-[90vh] flex flex-col relative shadow-brutal-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {card.coverImageUrl && (
-          <div className="w-full h-50 relative overflow-hidden border-b-2 border-black bg-[#EEEEEE] shrink-0">
+          <div className="w-full h-50 relative overflow-hidden border-b border-black bg-[#EEEEEE] shrink-0">
             <img src={card.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
             <button
-              className="absolute top-3 right-3 bg-black text-white border-2 border-white p-2 cursor-pointer flex items-center justify-center hover:bg-[#E74C3C]"
+              className="absolute top-3 right-3 bg-black text-white border border-white p-2 cursor-pointer flex items-center justify-center hover:bg-[#E74C3C]"
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onClick={() => updateCard.mutate({ coverImageUrl: null } as any)}
             >
@@ -220,7 +226,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
           </div>
         )}
 
-        <div className="flex items-center justify-between pl-6 border-b-2 border-black h-16 bg-canvas shrink-0">
+        <div className="flex items-center justify-between border-b border-black h-16 shrink-0">
           <Input
             value={card.title}
             onChange={(e) => updateCard.mutate({ title: e.target.value })}
@@ -230,14 +236,14 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
           <div className="flex items-center gap-2 pr-4">
             <Dropdown
               trigger={
-                <button className="bg-white border-2 border-black text-black cursor-pointer w-10 h-10 flex items-center justify-center transition-all hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none">
+                <button className="bg-white border border-black text-black cursor-pointer w-10 h-10 flex items-center justify-center transition-all hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none">
                   <MoreHorizontal size={18} />
                 </button>
               }
               items={menuItems}
             />
             <button
-              className="bg-white border-2 border-black text-black cursor-pointer w-10 h-10 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none"
+              className="bg-white border border-black text-black cursor-pointer w-10 h-10 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none"
               onClick={onClose}
             >
               <X size={18} />
@@ -246,72 +252,70 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
         </div>
 
         <div className="flex flex-row min-h-0 flex-1 overflow-hidden bg-white">
-          <div className="flex-1 p-8 flex flex-col gap-6 overflow-y-auto border-r-2 border-black min-w-0">
-            {/* Labels & Members */}
-            <div className="flex flex-wrap gap-8">
-              <div className="flex flex-col gap-3">
-                <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60"><Tag size={14} /> Labels</h3>
-                <LabelSection
-                  cardLabels={card.labels}
-                  allLabels={boardLabels}
-                  onToggle={async (labelId) => {
-                    const currentLabels = card.labels || []
-                    if (currentLabels.includes(labelId)) {
-                      await api.labels.card({ cardId }).label({ labelId }).delete()
-                    } else {
-                      await api.labels.card({ cardId }).label({ labelId }).post()
-                    }
-                    queryClient.invalidateQueries({ queryKey: ['card', cardId] })
-                    queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-                  }}
-                  onAdd={async (name, color) => {
-                    await api.labels.post({ name, color, boardId })
-                    queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
-                  }}
-                  onDelete={async (labelId) => {
-                    await api.labels({ id: labelId }).delete()
-                    queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
-                    queryClient.invalidateQueries({ queryKey: ['card', cardId] })
-                    queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-                  }}
-                />
+          <div className="flex-1 p-8 flex flex-col gap-6 overflow-y-auto border-r border-black min-w-0">
+            {/* Metadata Grid */}
+            <div className="border-2 border-black shadow-brutal-md bg-white overflow-hidden shrink-0 mb-4">
+              <div className="grid grid-cols-2 border-b-2 border-black bg-accent">
+                <div className="p-1 px-3 border-r-2 border-black font-heading text-[10px] font-extrabold uppercase tracking-widest text-black flex items-center gap-2">
+                  <Tag size={12} strokeWidth={2.5} /> Labels
+                </div>
+                <div className="p-1 px-3 font-heading text-[10px] font-extrabold uppercase tracking-widest text-black flex items-center gap-2">
+                  <Calendar size={12} strokeWidth={2.5} /> Due Date
+                </div>
               </div>
-
-              <div className="flex flex-col gap-3">
-                <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60"><Users size={14} /> Members</h3>
-                <AssigneeSection
-                  currentAssignees={card.assignees || []}
-                  boardMembers={boardMembers}
-                  onToggle={(userId) => {
-                    if (userId === 'open-picker') {
-                      setIsMembersOpen(true)
-                    } else {
-                      toggleAssignee.mutate(userId)
-                    }
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Due Date */}
-            {card.dueDate && (
-              <div className="flex flex-col gap-3">
-                <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60"><Calendar size={14} /> Due Date</h3>
-                <div
-                  className="flex items-center gap-3 p-2 px-3 bg-white border-2 border-black w-fit cursor-pointer shadow-brutal-sm transition-all hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5"
-                  onClick={() => setIsDatePickerOpen(true)}
-                  ref={mainDateTriggerRef}>
-                  <div className="flex items-center gap-2 ">
-                    <span className="font-body text-[14px] font-bold text-black">
-                      {format(new Date(card.dueDate), 'PPP')}
-                    </span>
-                    {new Date(card.dueDate) < new Date() && (
-                      <span className="bg-[#E74C3C] text-white text-[10px] font-extrabold px-1.5 py-0.5 uppercase border-2 border-black">Overdue</span>
-                    )}
+              <div className="grid grid-cols-2 items-stretch">
+                <div className="p-2.5 border-r-2 border-black bg-white flex flex-col justify-center min-w-0 overflow-hidden">
+                  <LabelSection
+                    cardLabels={card.labels || []}
+                    allLabels={boardLabels || []}
+                    onToggle={async (labelId) => {
+                      const currentLabels = card.labels || []
+                      if (currentLabels.includes(labelId)) {
+                        await api.labels.card({ cardId }).label({ labelId }).delete()
+                      } else {
+                        await api.labels.card({ cardId }).label({ labelId }).post()
+                      }
+                      queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+                      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+                    }}
+                    onAdd={async (name, color) => {
+                      await api.labels.post({ name, color, boardId })
+                      queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
+                    }}
+                    onDelete={async (labelId) => {
+                      await api.labels({ id: labelId }).delete()
+                      queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
+                      queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+                      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+                    }}
+                  />
+                </div>
+                <div className="p-2.5 bg-white flex items-center justify-center min-w-0 overflow-hidden">
+                  <div
+                    className="h-12 px-4 bg-white border-2 border-black flex items-center justify-center cursor-pointer shadow-brutal-sm transition-all hover:shadow-brutal-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-none shrink-0"
+                    onClick={() => setIsDatePickerOpen(prev => !prev)}
+                    ref={mainDateTriggerRef}>
+                    <div className="flex items-center gap-3">
+                      {card.dueDate ? (
+                        <>
+                          <span className="font-body text-[14px] font-extrabold uppercase text-black">
+                            {format(new Date(card.dueDate), 'MMM d, yyyy')}
+                          </span>
+                          {new Date(card.dueDate) < new Date() && (
+                            <span className="bg-[#E74C3C] text-white text-[11px] font-extrabold px-2 py-0.5 uppercase border-2 border-black shadow-brutal-sm leading-none">Overdue</span>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-2 text-text-subtle">
+                          <Plus size={16} strokeWidth={3} />
+                          <span className="font-body text-[14px] font-extrabold uppercase">Set Date</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Description */}
             <div className="flex flex-col gap-3">
@@ -333,7 +337,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                 </div>
               ) : (
                 <div
-                  className="p-4 bg-[#F8F8F8] border-2 border-black text-[14px] leading-relaxed text-[#333333] cursor-pointer min-h-25 wrap-break-word shadow-brutal-sm hover:bg-[#EEEEEE] hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
+                  className="p-4 bg-[#F8F8F8] border border-black text-[14px] leading-relaxed text-[#333333] cursor-pointer min-h-25 wrap-break-word shadow-brutal-sm hover:bg-[#EEEEEE] hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
                   onClick={() => setIsEditingDescription(true)}
                 >
                   {card.description || 'Add a more detailed description...'}
@@ -382,44 +386,11 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
               <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60">Add to card</h3>
               <div className="flex flex-col gap-2">
                 <ChecklistCreator onCreate={(title) => createChecklist.mutate(title)} />
-                <Button
-                  variant="secondary"
-                  fullWidth
-                  onClick={() => setIsMembersOpen(true)}
-                  ref={membersTriggerRef}
-                >
-                  <UserPlus size={14} /> Members
-                </Button>
-
-                <Popover
-                  isOpen={isMembersOpen}
-                  onClose={() => setIsMembersOpen(false)}
-                  triggerRef={membersTriggerRef}
-                  title="Members"
-                >
-                  <AssigneeSection
-                    variant="picker"
-                    currentAssignees={card.assignees || []}
-                    boardMembers={boardMembers}
-                    onToggle={(userId) => toggleAssignee.mutate(userId)}
-                  />
-                </Popover>
-
-                {!card.dueDate && (
-                  <Button
-                    variant="secondary"
-                    fullWidth
-                    onClick={() => setIsDatePickerOpen(true)}
-                    ref={dateTriggerRef}
-                  >
-                    <Calendar size={14} /> Dates
-                  </Button>
-                )}
 
                 <Popover
                   isOpen={isDatePickerOpen}
                   onClose={() => setIsDatePickerOpen(false)}
-                  triggerRef={card.dueDate ? mainDateTriggerRef : dateTriggerRef}
+                  triggerRef={mainDateTriggerRef}
                   title="Dates"
                 >
                   <DatePicker
@@ -434,7 +405,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                 <Button
                   variant="secondary"
                   fullWidth
-                  onClick={() => setIsPriorityOpen(true)}
+                  onClick={() => setIsPriorityOpen(prev => !prev)}
                   ref={priorityTriggerRef}
                 >
                   <Flag size={14} /> Priority
@@ -449,13 +420,13 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                     {PRIORITIES.map(p => (
                       <button
                         key={p.id}
-                        className={`flex items-center gap-2.5 p-2 px-3 bg-white border-2 border-black font-body text-[13px] font-bold cursor-pointer transition-all text-left ${card.priority === p.id ? 'bg-[#EEEEEE] shadow-inner-brutal' : 'hover:bg-[#F4F4F4] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-md'}`}
+                        className={`flex items-center gap-2.5 p-2 px-3 bg-white border border-black font-body text-[13px] font-bold cursor-pointer transition-all text-left ${card.priority === p.id ? 'bg-[#EEEEEE] shadow-inner-brutal' : 'hover:bg-[#F4F4F4] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-md'}`}
                         onClick={() => {
                           updateCard.mutate({ priority: p.id as Card['priority'] })
                           setIsPriorityOpen(false)
                         }}
                       >
-                        <span className="w-3 h-3 border-2 border-black" style={{ backgroundColor: p.color }} />
+                        <span className="w-3 h-3 border border-black" style={{ backgroundColor: p.color }} />
                         {p.name}
                       </button>
                     ))}
@@ -466,7 +437,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                   ref={coverTriggerRef}
                   variant="secondary"
                   fullWidth
-                  onClick={() => setIsCoverOpen(true)}
+                  onClick={() => setIsCoverOpen(prev => !prev)}
                 >
                   <Image size={14} /> Cover
                 </Button>
@@ -518,9 +489,44 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
               </div>
             </div>
 
+            {/* Assigned Members Section */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60">Assigned</h3>
+                <button 
+                  ref={assignedTriggerRef}
+                  className="w-7 h-7 bg-white border border-black flex items-center justify-center cursor-pointer hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm transition-all"
+                  onClick={() => setIsMembersOpen(!isMembersOpen)}
+                >
+                  <Plus size={14} strokeWidth={3} />
+                </button>
+              </div>
+              
+              <Popover
+                isOpen={isMembersOpen}
+                onClose={() => setIsMembersOpen(false)}
+                triggerRef={assignedTriggerRef}
+                title="Members"
+              >
+                <AssigneeSection
+                  variant="picker"
+                  currentAssignees={card.assignees || []}
+                  boardMembers={boardMembers}
+                  onToggle={(userId) => toggleAssignee.mutate(userId)}
+                />
+              </Popover>
+
+              <AssigneeSection
+                variant="sidebar-list"
+                currentAssignees={card.assignees || []}
+                boardMembers={boardMembers}
+                onToggle={(userId) => toggleAssignee.mutate(userId)}
+              />
+            </div>
+
             <div className="flex flex-col gap-4">
               <h3 className="m-0 font-heading text-[11px] font-extrabold uppercase tracking-widest text-black flex items-center gap-1.5 opacity-60">Details</h3>
-              <div className="grid grid-cols-2 gap-4 p-4 bg-white border-2 border-black shadow-brutal-sm transition-all hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-white border border-black shadow-brutal-sm transition-all hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5">
                 <div className="flex flex-col gap-1">
                   <span className="text-[9px] font-extrabold uppercase text-text-subtle">Position</span>
                   <span className="text-[13px] font-extrabold text-black">{card.position}</span>

@@ -22,7 +22,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     const classes = [
-      'inline-flex items-center justify-center gap-2 rounded-none border-2 border-black font-extrabold uppercase transition-all outline-none whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none active:translate-x-0 active:translate-y-0 active:shadow-none',
+      'inline-flex items-center justify-center gap-2 rounded-none border border-black font-extrabold uppercase transition-all outline-none whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none active:translate-x-0 active:translate-y-0 active:shadow-none',
       variants[variant],
       sizes[size],
       fullWidth ? 'w-full' : '',

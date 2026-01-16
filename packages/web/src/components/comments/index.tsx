@@ -65,7 +65,7 @@ export function CommentSection({ cardId, comments, sessionUserId }: CommentSecti
               fallback={comment.userName || 'U'} 
               size="md" 
             />
-            <div className="flex-1 flex flex-col gap-2 p-4 bg-white border-2 border-black shadow-brutal-sm hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all">
+            <div className="flex-1 flex flex-col gap-2 p-4 bg-white border border-black shadow-brutal-sm hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="text-[13px] font-extrabold text-black uppercase tracking-wider">{comment.userName}</span>

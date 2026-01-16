@@ -91,7 +91,7 @@ export function Dropdown({ trigger, items, position = 'bottom-right', onOpenChan
       </div>
       {isOpen && createPortal(
         <div 
-          className={`absolute z-10000 bg-surface border-2 border-black shadow-brutal-md min-w-[200px] p-1 rounded-none transition-opacity duration-100 ${position}`}
+          className={`absolute z-10000 bg-surface border border-black shadow-brutal-md min-w-[200px] p-1 rounded-none transition-opacity duration-100 ${position}`}
           ref={menuRef}
           style={{ 
             top: coords.top, 

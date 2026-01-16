@@ -536,7 +536,7 @@ function BoardComponent() {
 
   return (
     <div className="h-screen bg-canvas p-0 font-body color-text flex flex-col overflow-hidden">
-      <header className="flex justify-between items-center px-6 py-4 shrink-0 bg-canvas border-b-2 border-black">
+      <header className="flex justify-between items-center px-6 py-4 shrink-0 bg-canvas border-b border-black">
         <div className="flex items-center gap-3">
           <Link to="/dashboard" className="text-black text-sm font-extrabold uppercase hover:bg-accent hover:px-1 hover:shadow-brutal-sm">Workspace</Link>
           <ChevronRight size={14} className="text-text-muted" />
@@ -593,12 +593,12 @@ function BoardComponent() {
 
       {draggedColumn && (
         <div 
-          className="fixed top-0 left-0 pointer-events-none z-1000 opacity-80 w-(--board-column-width,300px) bg-surface p-(--column-padding,16px) border-2 border-black shadow-brutal-2xl! will-change-transform rounded-none"
+          className="fixed top-0 left-0 pointer-events-none z-1000 opacity-80 w-(--board-column-width,300px) bg-surface p-(--column-padding,16px) border border-black shadow-brutal-2xl! will-change-transform rounded-none"
           ref={ghostRef}
         >
-          <h4 className="p-2 mb-5 font-heading text-(--column-header-size,14px) font-extrabold text-black shrink-0 flex items-center gap-2.5 border-b-2 border-black uppercase tracking-widest relative">
+          <h4 className="p-2 mb-5 font-heading text-(--column-header-size,14px) font-extrabold text-black shrink-0 flex items-center gap-2.5 border-b border-black uppercase tracking-widest relative">
             <span className="cursor-text flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{draggedColumn.name}</span>
-            <span className="ml-auto text-[11px] font-extrabold bg-accent px-2 py-0.5 border-2 border-black">{cardsByColumn[draggedColumn.id]?.length || 0}</span>
+            <span className="ml-auto text-[11px] font-extrabold bg-accent px-2 py-0.5 border border-black">{cardsByColumn[draggedColumn.id]?.length || 0}</span>
             <MoreHorizontal size={14} className="cursor-pointer text-text-muted" />
           </h4>
         </div>
@@ -606,7 +606,7 @@ function BoardComponent() {
 
        {draggedCardData && (
         <div className="fixed top-0 left-0 pointer-events-none z-1000 opacity-90 w-[calc(var(--board-column-width,300px)-48px)] will-change-transform" ref={cardGhostRef}>
-          <div className="rotate-2 shadow-brutal-2xl! border-2 border-black">
+          <div className="rotate-2 shadow-brutal-2xl! border border-black">
             <CardItem card={draggedCardData} onCardClick={() => {}} isAnyDragging={isAnyDragging} />
           </div>
         </div>
@@ -714,14 +714,14 @@ const BoardColumn = memo(({
 
   return (
     <div 
-      className={`w-(--board-column-width,300px) min-w-(--board-column-width,300px) max-h-full flex flex-col rounded-none p-4 border-2 relative ${isDragging ? 'border-dashed border-black/20 bg-black/5 shadow-none! translate-x-0! translate-y-0! opacity-100' : 'bg-surface border-black shadow-brutal-lg -translate-x-px -translate-y-px'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
+      className={`w-(--board-column-width,300px) min-w-(--board-column-width,300px) max-h-full flex flex-col rounded-none p-4 border relative ${isDragging ? 'border-dashed border-black/20 bg-black/5 shadow-none! translate-x-0! translate-y-0! opacity-100' : 'bg-surface border-black shadow-brutal-lg -translate-x-px -translate-y-px'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
       data-column-id={column.id}
       data-role="column"
     >
       <div className={`flex flex-col flex-1 min-h-0 ${isDragging ? 'invisible' : ''}`}>
         <div className="column-header-container">
           <h4 
-            className="p-2 mb-5 font-heading text-[14px] font-extrabold text-black shrink-0 flex items-center gap-2.5 border-b-2 border-black uppercase tracking-widest relative cursor-grab" 
+            className="p-2 mb-5 font-heading text-[14px] font-extrabold text-black shrink-0 flex items-center gap-2.5 border-b border-black uppercase tracking-widest relative cursor-grab" 
             onMouseDown={onDragStart} 
             data-role="column-header"
           >
@@ -752,7 +752,7 @@ const BoardColumn = memo(({
                 {column.name}
               </span>
             )}
-            <span className="ml-auto text-[11px] font-extrabold bg-accent px-2 py-0.5 border-2 border-black">{cards.length}</span>
+            <span className="ml-auto text-[11px] font-extrabold bg-accent px-2 py-0.5 border border-black">{cards.length}</span>
             <div onMouseDown={e => e.stopPropagation()} className="flex items-center">
               <Dropdown 
                 trigger={<MoreHorizontal size={14} className={`cursor-pointer ${isMenuOpen ? 'text-black' : 'text-text-muted'}`} />}
@@ -774,7 +774,7 @@ const BoardColumn = memo(({
               />
           ))}
           {cards.length === 0 && (
-            <div className="p-4 text-center text-text-subtle text-[12px] font-bold uppercase border-2 border-dashed border-black bg-black/5">No items</div>
+            <div className="p-4 text-center text-text-subtle text-[12px] font-bold uppercase border border-dashed border-black bg-black/5">No items</div>
           )}
         </div>
         <div className="pt-6 shrink-0">
@@ -833,7 +833,7 @@ const CardItem = memo(({
 
   return (
     <div 
-      className={`card-wrapper ${isDragging ? 'border-2 border-dashed border-black bg-black/5 shadow-none! relative rounded-none transition-none!' : ''}`}
+      className={`card-wrapper ${isDragging ? 'border border-dashed border-black bg-black/5 shadow-none! relative rounded-none transition-none!' : ''}`}
       onMouseDown={handleMouseDown}
       data-card-id={card.id}
       data-column-id={card.columnId}
@@ -841,14 +841,14 @@ const CardItem = memo(({
       data-state={isDragging ? 'placeholder' : undefined}
     >
       <div 
-        className={`p-3 bg-surface border-2 border-black text-[14px] cursor-pointer flex flex-col gap-2 transition-[transform,box-shadow,background-color] duration-200 shadow-brutal-sm ${isDragging ? 'invisible! transition-none!' : 'hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-lg'} ${isAnyDragging ? 'pointer-events-none' : ''}`} 
+        className={`p-3 bg-surface border border-black text-[14px] cursor-pointer flex flex-col gap-2 transition-[transform,box-shadow,background-color] duration-200 shadow-brutal-sm ${isDragging ? 'invisible! transition-none!' : 'hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-lg'} ${isAnyDragging ? 'pointer-events-none' : ''}`} 
         onClick={handleClick}
         data-role="card"
       >
         {card.labels && card.labels.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-1.5">
             {card.labels.map(l => (
-              <div key={l.id} className="h-2 w-10 rounded-none border-[1.5px] border-black shadow-[1px_1px_0px_#000] hover:scale-y-150 origin-top transition-transform" style={{ background: l.color }} />
+              <div key={l.id} className="h-2 w-10 rounded-none border border-black shadow-[1px_1px_0px_rgba(0,0,0,0.5)] hover:scale-y-150 origin-top transition-transform" style={{ background: l.color }} />
             ))}
           </div>
         )}
@@ -862,7 +862,7 @@ const CardItem = memo(({
               </span>
             )}
             {card.dueDate && (
-              <span className={`px-1.5 py-0.5 border-2 border-black ${isOverdue ? 'bg-[#E74C3C] text-white border-black' : isDueSoon ? 'bg-accent text-black border-black' : 'bg-white text-black border-transparent'}`}>
+              <span className={`px-1.5 py-0.5 border border-black ${isOverdue ? 'bg-[#E74C3C] text-white border-black' : isDueSoon ? 'bg-accent text-black border-black' : 'bg-white text-black border-transparent'}`}>
                 {new Date(card.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </span>
             )}

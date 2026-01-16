@@ -12,7 +12,7 @@ interface PopoverProps {
 
 export function Popover({ isOpen, onClose, children, triggerRef, title, matchTriggerWidth }: PopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null)
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, maxHeight: 0, shouldFlip: false })
   const [isReady, setIsReady] = useState(false)
 
   // Reset state when popover closes or trigger changes
@@ -41,6 +41,7 @@ export function Popover({ isOpen, onClose, children, triggerRef, title, matchTri
     // Safety buffer from screen edges
     const margin = 10
     const windowWidth = window.innerWidth
+    const windowHeight = window.innerHeight
     
     // Clamp to viewport if not matching width (if matching width, we assume trigger is visible and safe)
     if (!matchTriggerWidth) {
@@ -51,10 +52,26 @@ export function Popover({ isOpen, onClose, children, triggerRef, title, matchTri
       }
     }
 
+    // Check vertical space
+    const gap = 8
+    const spaceBelow = windowHeight - t.bottom - margin - gap
+    const spaceAbove = t.top - margin - gap
+    
+    // Default to below, but flip if space is limited and there's more space above
+    const shouldFlip = spaceBelow < 200 && spaceAbove > spaceBelow
+    
+    const top = shouldFlip 
+      ? t.top + window.scrollY - gap 
+      : t.bottom + window.scrollY + gap
+      
+    const maxHeight = shouldFlip ? spaceAbove : spaceBelow
+
     setCoords({
-      top: t.bottom + window.scrollY + 8,
+      top,
       left: left + window.scrollX,
-      width: t.width
+      width: t.width,
+      maxHeight,
+      shouldFlip
     })
     setIsReady(true)
   }, [isOpen, triggerRef, matchTriggerWidth])
@@ -108,12 +125,14 @@ export function Popover({ isOpen, onClose, children, triggerRef, title, matchTri
 
   return createPortal(
     <div 
-      className="bg-white border-2 border-black shadow-brutal-md min-w-70 z-20000 rounded-none transition-opacity duration-100" 
+      className="bg-white border border-black shadow-brutal-md min-w-70 z-20000 rounded-none transition-opacity duration-100 flex flex-col overscroll-behavior-contain" 
       ref={popoverRef} 
       style={{ 
         top: `${coords.top}px`, 
         left: `${coords.left}px`,
         width: matchTriggerWidth ? `${coords.width}px` : undefined,
+        maxHeight: `${coords.maxHeight}px`,
+        transform: coords.shouldFlip ? 'translateY(-100%)' : undefined,
         position: 'absolute',
         visibility: isReady ? 'visible' : 'hidden',
         opacity: isReady ? 1 : 0,
@@ -121,12 +140,12 @@ export function Popover({ isOpen, onClose, children, triggerRef, title, matchTri
       }}
     >
       {title && (
-        <div className="flex items-center justify-between px-4 py-3 border-b-2 border-black bg-white">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-black bg-white shrink-0">
           <span className="font-heading text-[12px] font-extrabold uppercase tracking-widest text-black">{title}</span>
           <button className="bg-transparent border-none text-black text-xl font-extrabold cursor-pointer leading-none p-1 hover:text-accent" onClick={onClose}>&times;</button>
         </div>
       )}
-      <div className="p-4">
+      <div className="p-4 overflow-y-auto">
         {children}
       </div>
     </div>,

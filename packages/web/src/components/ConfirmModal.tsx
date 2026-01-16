@@ -25,7 +25,7 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   return createPortal(
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-11000" onClick={onCancel}>
-      <div className="max-w-112.5 w-[90%] bg-white border-2 border-black shadow-[15px_15px_0px_#000] flex flex-col rounded-none" onClick={(e) => e.stopPropagation()}>
+      <div className="max-w-112.5 w-[90%] bg-white border border-black shadow-brutal-xl flex flex-col rounded-none" onClick={(e) => e.stopPropagation()}>
         <div className="p-8 flex flex-col gap-6">
           <h2 className="m-0 font-heading text-[20px] font-extrabold uppercase text-black">{title}</h2>
           <p className="m-0 text-[14px] font-semibold leading-relaxed text-black">{message}</p>
