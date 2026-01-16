@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
 import { app } from '../index'
+import { getAuthHeaders, ensureTestUser } from './helpers'
 
 describe('Checklists API', () => {
   let boardId: string
@@ -9,11 +10,13 @@ describe('Checklists API', () => {
   let itemId: string
 
   beforeAll(async () => {
+    await ensureTestUser()
+
     // Create a board
     const boardRes = await app.handle(
-      new Request('http://localhost/boards', {
+      new Request('http://localhost/v1/boards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: 'Test Board for Checklists' })
       })
     )
@@ -22,9 +25,9 @@ describe('Checklists API', () => {
 
     // Create a column
     const columnRes = await app.handle(
-      new Request('http://localhost/columns', {
+      new Request('http://localhost/v1/columns', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: 'Test Column', boardId, position: 'a0' })
       })
     )
@@ -33,9 +36,9 @@ describe('Checklists API', () => {
 
     // Create a card
     const cardRes = await app.handle(
-      new Request('http://localhost/tasks', {
+      new Request('http://localhost/v1/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ title: 'Test Card', columnId, position: 'a0' })
       })
     )
@@ -46,15 +49,18 @@ describe('Checklists API', () => {
   afterAll(async () => {
     // Cleanup: delete board (should cascade)
     await app.handle(
-      new Request(`http://localhost/boards/${boardId}`, { method: 'DELETE' })
+      new Request(`http://localhost/v1/boards/${boardId}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      })
     )
   })
 
   test('POST /checklists - create checklist', async () => {
     const res = await app.handle(
-      new Request('http://localhost/checklists', {
+      new Request('http://localhost/v1/checklists', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ title: 'Todo List', taskId, position: "a0" })
       })
     )
@@ -65,9 +71,11 @@ describe('Checklists API', () => {
     checklistId = checklist.id
   })
 
-  test('GET /checklists/card/:cardId - list checklists', async () => {
+  test('GET /checklists/task/:taskId - list checklists', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/checklists/card/${taskId}`)
+      new Request(`http://localhost/v1/checklists/task/${taskId}`, {
+        headers: getAuthHeaders()
+      })
     )
     expect(res.status).toBe(200)
     const checklists = await res.json()
@@ -77,9 +85,9 @@ describe('Checklists API', () => {
 
   test('PATCH /checklists/:id - update checklist', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/checklists/${checklistId}`, {
+      new Request(`http://localhost/v1/checklists/${checklistId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ title: 'Updated Todo List' })
       })
     )
@@ -90,9 +98,9 @@ describe('Checklists API', () => {
 
   test('POST /checklists/items - add item', async () => {
     const res = await app.handle(
-      new Request('http://localhost/checklists/items', {
+      new Request('http://localhost/v1/checklists/items', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ checklistId, content: 'First task', position: "a0" })
       })
     )
@@ -105,9 +113,9 @@ describe('Checklists API', () => {
 
   test('PATCH /checklists/items/:id - update item', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/checklists/items/${itemId}`, {
+      new Request(`http://localhost/v1/checklists/items/${itemId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ content: 'Updated task' })
       })
     )
@@ -118,8 +126,9 @@ describe('Checklists API', () => {
 
   test('POST /checklists/items/:id/toggle - toggle completion', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/checklists/items/${itemId}/toggle`, {
-        method: 'POST'
+      new Request(`http://localhost/v1/checklists/items/${itemId}/toggle`, {
+        method: 'POST',
+        headers: getAuthHeaders()
       })
     )
     expect(res.status).toBe(200)
@@ -128,8 +137,9 @@ describe('Checklists API', () => {
 
     // Toggle back
     const res2 = await app.handle(
-      new Request(`http://localhost/checklists/items/${itemId}/toggle`, {
-        method: 'POST'
+      new Request(`http://localhost/v1/checklists/items/${itemId}/toggle`, {
+        method: 'POST',
+        headers: getAuthHeaders()
       })
     )
     const item2 = await res2.json()
@@ -138,8 +148,9 @@ describe('Checklists API', () => {
 
   test('DELETE /checklists/items/:id - delete item', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/checklists/items/${itemId}`, {
-        method: 'DELETE'
+      new Request(`http://localhost/v1/checklists/items/${itemId}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
       })
     )
     expect(res.status).toBe(200)
@@ -147,8 +158,9 @@ describe('Checklists API', () => {
 
   test('DELETE /checklists/:id - delete checklist', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/checklists/${checklistId}`, {
-        method: 'DELETE'
+      new Request(`http://localhost/v1/checklists/${checklistId}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
       })
     )
     expect(res.status).toBe(200)

@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
 import { app } from '../index'
+import { getAuthHeaders, ensureTestUser } from './helpers'
 
 describe('Labels API', () => {
   let boardId: string
@@ -8,11 +9,13 @@ describe('Labels API', () => {
   let columnId: string
 
   beforeAll(async () => {
+    await ensureTestUser()
+
     // Create a board
     const boardRes = await app.handle(
-      new Request('http://localhost/boards', {
+      new Request('http://localhost/v1/boards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: 'Test Board for Labels' })
       })
     )
@@ -21,9 +24,9 @@ describe('Labels API', () => {
 
     // Create a column
     const columnRes = await app.handle(
-      new Request('http://localhost/columns', {
+      new Request('http://localhost/v1/columns', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: 'Test Column', boardId, position: 'a0' })
       })
     )
@@ -32,9 +35,9 @@ describe('Labels API', () => {
 
     // Create a card
     const cardRes = await app.handle(
-      new Request('http://localhost/tasks', {
+      new Request('http://localhost/v1/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ title: 'Test Card', columnId, position: 'a0' })
       })
     )
@@ -45,15 +48,18 @@ describe('Labels API', () => {
   afterAll(async () => {
     // Cleanup: delete board (should cascade)
     await app.handle(
-      new Request(`http://localhost/boards/${boardId}`, { method: 'DELETE' })
+      new Request(`http://localhost/v1/boards/${boardId}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      })
     )
   })
 
   test('POST /labels - create label', async () => {
     const res = await app.handle(
-      new Request('http://localhost/labels', {
+      new Request('http://localhost/v1/labels', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: 'Bug', color: '#FF0000', boardId })
       })
     )
@@ -67,7 +73,9 @@ describe('Labels API', () => {
 
   test('GET /labels/board/:boardId - list labels', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/labels/board/${boardId}`)
+      new Request(`http://localhost/v1/labels/board/${boardId}`, {
+        headers: getAuthHeaders()
+      })
     )
     expect(res.status).toBe(200)
     const labels = await res.json()
@@ -77,9 +85,9 @@ describe('Labels API', () => {
 
   test('PATCH /labels/:id - update label', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/labels/${labelId}`, {
+      new Request(`http://localhost/v1/labels/${labelId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: 'Critical Bug', color: '#FF5500' })
       })
     )
@@ -91,8 +99,9 @@ describe('Labels API', () => {
 
   test('POST /labels/card/:taskId/label/:labelId - attach label to task', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/labels/card/${taskId}/label/${labelId}`, {
-        method: 'POST'
+      new Request(`http://localhost/v1/labels/card/${taskId}/label/${labelId}`, {
+        method: 'POST',
+        headers: getAuthHeaders()
       })
     )
     expect(res.status).toBe(200)
@@ -103,8 +112,9 @@ describe('Labels API', () => {
 
   test('DELETE /labels/card/:taskId/label/:labelId - remove label from task', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/labels/card/${taskId}/label/${labelId}`, {
-        method: 'DELETE'
+      new Request(`http://localhost/v1/labels/card/${taskId}/label/${labelId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
       })
     )
     expect(res.status).toBe(200)
@@ -112,7 +122,10 @@ describe('Labels API', () => {
 
   test('DELETE /labels/:id - delete label', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/labels/${labelId}`, { method: 'DELETE' })
+      new Request(`http://localhost/v1/labels/${labelId}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      })
     )
     expect(res.status).toBe(200)
   })

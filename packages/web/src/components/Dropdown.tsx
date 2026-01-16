@@ -85,13 +85,13 @@ export function Dropdown({ trigger, items, position = 'bottom-right', onOpenChan
   }, [isOpen, onOpenChange])
 
   return (
-    <div className="inline-flex relative" ref={triggerRef}>
+    <div className="relative inline-flex" ref={triggerRef}>
       <div onClick={toggle} className="flex items-center justify-center">
         {trigger}
       </div>
       {isOpen && createPortal(
         <div 
-          className={`absolute z-10000 bg-surface border border-black shadow-brutal-md min-w-[200px] p-1 rounded-none transition-opacity duration-100 ${position}`}
+          className={`bg-surface shadow-brutal-md absolute z-10000 min-w-[200px] rounded-none border border-black p-1 transition-opacity duration-100 ${position}`}
           ref={menuRef}
           style={{ 
             top: coords.top, 
@@ -106,14 +106,14 @@ export function Dropdown({ trigger, items, position = 'bottom-right', onOpenChan
           {items.map((item, index) => (
             <div
               key={index}
-              className={`p-2.5 cursor-pointer flex items-center gap-2.5 font-heading text-[13px] font-extrabold uppercase transition-all hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-md ${item.variant === 'danger' ? 'text-text-danger hover:bg-text-danger hover:text-white' : 'text-black'}`}
+              className={`font-heading hover:bg-accent hover:shadow-brutal-md flex cursor-pointer items-center gap-2.5 p-2.5 text-[13px] font-extrabold uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 ${item.variant === 'danger' ? 'text-text-danger hover:bg-text-danger hover:text-white' : 'text-black'}`}
               onClick={() => {
                 item.onClick()
                 setIsOpen(false)
                 onOpenChange?.(false)
               }}
             >
-              {item.icon && <span className="flex items-center shrink-0">{item.icon}</span>}
+              {item.icon && <span className="flex shrink-0 items-center">{item.icon}</span>}
               <span className="flex-1">{item.label}</span>
             </div>
           ))}

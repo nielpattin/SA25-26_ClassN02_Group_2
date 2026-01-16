@@ -26,22 +26,22 @@ export function AttachmentSection({ attachments, onAdd, onDelete }: AttachmentsP
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2.5">
         {attachments.map((attachment) => (
-          <div key={attachment.id} className="flex items-center gap-4 p-3 bg-white border border-black group shadow-brutal-sm hover:shadow-brutal-md transition-all">
-            <div className="w-10 h-10 bg-canvas border border-black flex items-center justify-center text-black shrink-0">
+          <div key={attachment.id} className="group shadow-brutal-sm hover:shadow-brutal-md flex items-center gap-4 border border-black bg-white p-3 transition-all">
+            <div className="bg-canvas flex size-10 shrink-0 items-center justify-center border border-black text-black">
               <Link size={18} />
             </div>
-            <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-              <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-[14px] font-extrabold text-black uppercase tracking-tight truncate hover:underline underline-offset-4 decoration-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="truncate text-[14px] font-extrabold tracking-tight text-black uppercase decoration-2 underline-offset-4 hover:underline">
                 {attachment.name}
               </a>
-              <span className="text-[11px] font-extrabold text-black/40 uppercase tracking-widest">
+              <span className="text-[11px] font-extrabold tracking-widest text-black/40 uppercase">
                 {new Date(attachment.createdAt).toLocaleDateString()}
               </span>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8! p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:text-[#E74C3C]"
+              className="h-8 w-8! p-0 opacity-0 transition-opacity group-hover:opacity-100 hover:text-[#E74C3C]"
               onClick={() => onDelete(attachment.id)}
             >
               <Trash2 size={16} />
@@ -54,7 +54,7 @@ export function AttachmentSection({ attachments, onAdd, onDelete }: AttachmentsP
       </div>
 
       {isCreating && (
-        <div className="flex flex-col gap-4 p-5 border border-black bg-white shadow-brutal-xl mt-2">
+        <div className="shadow-brutal-xl mt-2 flex flex-col gap-4 border border-black bg-white p-5">
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}

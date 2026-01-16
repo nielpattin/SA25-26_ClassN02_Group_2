@@ -59,15 +59,15 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-1000" onClick={handleBackdropClick}>
-      <div className="bg-surface border border-black rounded-none shadow-brutal-xl p-10 w-full max-w-100 relative animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/80" onClick={handleBackdropClick}>
+      <div className="bg-surface shadow-brutal-xl animate-in fade-in zoom-in relative w-full max-w-100 rounded-none border border-black p-10 duration-200">
         <button
-          className="absolute top-4 right-4 bg-white border border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none"
+          className="hover:bg-text-danger hover:shadow-brutal-sm absolute top-4 right-4 flex size-8 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-0.5 hover:text-white active:translate-0 active:shadow-none"
           onClick={onClose}
         >
           <X size={16} />
         </button>
-        <h2 className="m-0 mb-6 text-2xl font-extrabold text-black text-center tracking-wider uppercase">{isLogin ? 'LOGIN' : 'SIGN UP'}</h2>
+        <h2 className="m-0 mb-6 text-center text-2xl font-extrabold tracking-wider text-black uppercase">{isLogin ? 'LOGIN' : 'SIGN UP'}</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {!isLogin && (
             <Input
@@ -93,7 +93,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             required
             minLength={8}
           />
-          {error && <div className="text-black text-sm font-bold p-2 bg-danger-bg border border-black rounded-none">{error}</div>}
+          {error && <div className="bg-danger-bg rounded-none border border-black p-2 text-sm font-bold text-black">{error}</div>}
           <Button
             type="submit"
             fullWidth
@@ -104,7 +104,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         </form>
         <button
           onClick={() => setIsLogin(!isLogin)}
-          className="w-full mt-4 p-2 bg-transparent border-none text-black text-[13px] font-bold uppercase cursor-pointer hover:underline"
+          className="mt-4 w-full cursor-pointer border-none bg-transparent p-2 text-[13px] font-bold text-black uppercase hover:underline"
         >
           {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Login'}
         </button>

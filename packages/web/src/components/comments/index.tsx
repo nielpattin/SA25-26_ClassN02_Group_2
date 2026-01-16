@@ -20,7 +20,7 @@ export function CommentSection({ cardId, comments, sessionUserId }: CommentSecti
 
   const createComment = useMutation({
     mutationFn: async (content: string) => {
-      const { error } = await api.comments.post({ taskId: cardId, content })
+      const { error } = await api.v1.comments.post({ taskId: cardId, content })
       if (error) throw error
     },
     onSuccess: () => {
@@ -31,7 +31,7 @@ export function CommentSection({ cardId, comments, sessionUserId }: CommentSecti
 
   const deleteComment = useMutation({
     mutationFn: async (commentId: string) => {
-      const { error } = await api.comments({ id: commentId }).delete()
+      const { error } = await api.v1.comments({ id: commentId }).delete()
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
@@ -59,17 +59,17 @@ export function CommentSection({ cardId, comments, sessionUserId }: CommentSecti
 
       <div className="flex flex-col gap-6">
         {comments.map((comment) => (
-          <div key={comment.id} className="flex gap-4 group">
+          <div key={comment.id} className="group flex gap-4">
             <Avatar 
               src={comment.userImage} 
               fallback={comment.userName || 'U'} 
               size="md" 
             />
-            <div className="flex-1 flex flex-col gap-2 p-4 bg-white border border-black shadow-brutal-sm hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all">
+            <div className="shadow-brutal-sm hover:shadow-brutal-md flex flex-1 flex-col gap-2 border border-black bg-white p-4 transition-all hover:-translate-0.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[13px] font-extrabold text-black uppercase tracking-wider">{comment.userName}</span>
-                  <span className="text-[11px] font-extrabold text-black/40 uppercase tracking-widest">
+                  <span className="text-[13px] font-extrabold tracking-wider text-black uppercase">{comment.userName}</span>
+                  <span className="text-[11px] font-extrabold tracking-widest text-black/40 uppercase">
                     {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                   </span>
                 </div>
@@ -77,14 +77,14 @@ export function CommentSection({ cardId, comments, sessionUserId }: CommentSecti
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6! p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:text-[#E74C3C]"
+                    className="h-6 w-6! p-0 opacity-0 transition-opacity group-hover:opacity-100 hover:text-[#E74C3C]"
                     onClick={() => deleteComment.mutate(comment.id)}
                   >
                     <Trash2 size={14} />
                   </Button>
                 )}
               </div>
-              <div className="text-[14px] font-semibold text-black leading-relaxed">{comment.content}</div>
+              <div className="text-[14px] leading-relaxed font-semibold text-black">{comment.content}</div>
             </div>
           </div>
         ))}

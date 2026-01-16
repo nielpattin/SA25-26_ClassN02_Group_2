@@ -12,7 +12,7 @@ export function Checkbox({ checked, onChange, disabled, className = '', size = 2
   return (
     <button
       type="button"
-      className={`bg-transparent border-none p-0 cursor-pointer flex items-center justify-center text-black transition-all active:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={`flex cursor-pointer items-center justify-center border-none bg-transparent p-0 text-black transition-all active:scale-110 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
       onClick={() => !disabled && onChange?.(!checked)}
       disabled={disabled}
     >

@@ -3,7 +3,7 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
-import tailwindCanonical from 'eslint-plugin-tailwind-canonical-classes'
+import betterTailwind from 'eslint-plugin-better-tailwindcss'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -16,11 +16,11 @@ export default defineConfig([
   {
     files: ['**/*.{ts,tsx}'],
     plugins: {
-      'tailwind-canonical': tailwindCanonical,
+      'better-tailwind': betterTailwind,
     },
     extends: [
       js.configs.recommended,
-      tseslint.configs.recommended,
+      ...tseslint.configs.recommended,
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
@@ -29,8 +29,14 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      'tailwind-canonical/tailwind-canonical-classes': ['warn', {
-        cssPath: path.resolve(__dirname, 'src/index.css'),
+      'better-tailwind/no-conflicting-classes': ['error', {
+        entryPoint: path.resolve(__dirname, 'src/index.css'),
+      }],
+      'better-tailwind/no-duplicate-classes': 'error',
+      'better-tailwind/enforce-consistent-class-order': 'warn',
+      'better-tailwind/no-unnecessary-whitespace': 'warn',
+      'better-tailwind/enforce-canonical-classes': ['warn', {
+        entryPoint: path.resolve(__dirname, 'src/index.css'),
       }],
     },
   },

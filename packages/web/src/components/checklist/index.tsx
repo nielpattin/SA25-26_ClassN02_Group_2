@@ -29,7 +29,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
 
   const updateChecklist = useMutation({
     mutationFn: async (title: string) => {
-      const { error } = await api.checklists({ id: checklist.id }).patch({ title })
+      const { error } = await api.v1.checklists({ id: checklist.id }).patch({ title })
       if (error) throw error
     },
     onSuccess: () => {
@@ -40,7 +40,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
 
   const deleteChecklist = useMutation({
     mutationFn: async () => {
-      const { error } = await api.checklists({ id: checklist.id }).delete()
+      const { error } = await api.v1.checklists({ id: checklist.id }).delete()
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
@@ -48,7 +48,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
 
   const addItem = useMutation({
     mutationFn: async (content: string) => {
-      const { error } = await api.checklists.items.post({
+      const { error } = await api.v1.checklists.items.post({
         checklistId: checklist.id,
         content
       })
@@ -63,7 +63,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
 
   const toggleItem = useMutation({
     mutationFn: async (itemId: string) => {
-      const { error } = await api.checklists.items({ id: itemId }).toggle.post()
+      const { error } = await api.v1.checklists.items({ id: itemId }).toggle.post()
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
@@ -71,7 +71,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
 
   const updateItem = useMutation({
     mutationFn: async ({ itemId, content }: { itemId: string; content: string }) => {
-      const { error } = await api.checklists.items({ id: itemId }).patch({ content })
+      const { error } = await api.v1.checklists.items({ id: itemId }).patch({ content })
       if (error) throw error
     },
     onSuccess: () => {
@@ -82,16 +82,16 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
 
   const deleteItem = useMutation({
     mutationFn: async (itemId: string) => {
-      const { error } = await api.checklists.items({ id: itemId }).delete()
+      const { error } = await api.v1.checklists.items({ id: itemId }).delete()
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
   })
 
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className="flex w-full flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-4 group">
+        <div className="group flex items-center gap-4">
           <div className="flex-1">
             {isEditingTitle ? (
               <div className="flex flex-col gap-2">
@@ -130,16 +130,16 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
                 </div>
               </div>
             ) : (
-              <span className="font-heading text-[14px] font-extrabold uppercase tracking-widest text-black cursor-pointer hover:underline underline-offset-4" onClick={() => setIsEditingTitle(true)}>
+              <span className="font-heading cursor-pointer text-[14px] font-extrabold tracking-widest text-black uppercase underline-offset-4 hover:underline" onClick={() => setIsEditingTitle(true)}>
                 {checklist.title}
               </span>
             )}
           </div>
           <div className="flex items-center gap-4 pt-1">
-            <span className="text-[11px] font-extrabold text-black/40 uppercase leading-none">{Math.round(progress)}%</span>
+            <span className="text-[11px] leading-none font-extrabold text-black/40 uppercase">{Math.round(progress)}%</span>
             <button
               onClick={() => deleteChecklist.mutate()}
-              className="bg-white border border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm opacity-0 group-hover:opacity-100"
+              className="hover:bg-text-danger hover:shadow-brutal-sm flex h-8 w-8 cursor-pointer items-center justify-center border border-black bg-white text-black opacity-0 transition-all group-hover:opacity-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:text-white"
             >
               <X size={14} />
             </button>
@@ -150,9 +150,9 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
 
       <div className="flex flex-col gap-1">
         {items.map((item: ChecklistItem) => (
-          <div key={item.id} className="flex flex-col gap-2 p-2 bg-white border border-black shadow-brutal-sm transition-all hover:shadow-brutal-md hover:-translate-x-0.5 hover:-translate-y-0.5 group">
+          <div key={item.id} className="shadow-brutal-sm hover:shadow-brutal-md group flex flex-col gap-2 border border-black bg-white p-2 transition-all hover:-translate-x-0.5 hover:-translate-y-0.5">
             <div className="flex items-center gap-4">
-              <div className={`flex items-center gap-4 flex-1 ${item.isCompleted && editingItemId !== item.id ? 'opacity-60' : ''}`}>
+              <div className={`flex flex-1 items-center gap-4 ${item.isCompleted && editingItemId !== item.id ? 'opacity-60' : ''}`}>
                 <Checkbox
                   checked={item.isCompleted}
                   onChange={() => toggleItem.mutate(item.id)}
@@ -173,7 +173,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
                     />
                   ) : (
                     <span
-                      className={`text-[14px] font-semibold text-black leading-tight cursor-pointer decoration-2 ${item.isCompleted ? 'line-through decoration-black/30' : ''}`}
+                      className={`cursor-pointer text-[14px] leading-tight font-semibold text-black decoration-2 ${item.isCompleted ? 'line-through decoration-black/30' : ''}`}
                       onClick={() => {
                         setEditingItemId(item.id)
                         setEditedItemContent(item.content)
@@ -186,13 +186,13 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
               </div>
               <button
                 onClick={() => deleteItem.mutate(item.id)}
-                className="bg-white border border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm opacity-0 group-hover:opacity-100 shrink-0"
+                className="hover:bg-text-danger hover:shadow-brutal-sm flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center border border-black bg-white text-black opacity-0 transition-all group-hover:opacity-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:text-white"
               >
                 <X size={14} />
               </button>
             </div>
             {editingItemId === item.id && (
-              <div className="flex gap-2 ml-9">
+              <div className="ml-9 flex gap-2">
                 <Button
                   size="sm"
                   onClick={() => {
@@ -276,7 +276,7 @@ export function ChecklistCreator({ onCreate }: { onCreate: (title: string) => vo
   }
 
   return (
-    <div className="flex flex-col gap-3 p-4 border border-black bg-white shadow-brutal-md">
+    <div className="shadow-brutal-md flex flex-col gap-3 border border-black bg-white p-4">
       <Input
         value={title}
         onChange={(e) => setTitle(e.target.value)}

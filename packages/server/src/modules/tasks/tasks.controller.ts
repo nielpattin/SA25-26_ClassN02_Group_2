@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { taskService } from './tasks.service'
-import { auth } from '../auth/auth'
+import { authPlugin } from '../auth'
 import {
   CreateTaskBody,
   UpdateTaskBody,
@@ -13,10 +13,7 @@ import {
 } from './tasks.model'
 
 export const taskController = new Elysia({ prefix: '/tasks' })
-  .derive(async ({ request }) => {
-    const session = await auth.api.getSession({ headers: request.headers })
-    return { session }
-  })
+  .use(authPlugin)
   // Task CRUD
   .get('/:id', ({ params: { id } }) => taskService.getTaskById(id), {
     params: TaskParams,

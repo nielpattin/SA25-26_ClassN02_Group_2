@@ -125,7 +125,7 @@ export function Popover({ isOpen, onClose, children, triggerRef, title, matchTri
 
   return createPortal(
     <div 
-      className="bg-white border border-black shadow-brutal-md min-w-70 z-20000 rounded-none transition-opacity duration-100 flex flex-col overscroll-behavior-contain" 
+      className="shadow-brutal-md overscroll-behavior-contain z-20000 flex min-w-70 flex-col rounded-none border border-black bg-white transition-opacity duration-100" 
       ref={popoverRef} 
       style={{ 
         top: `${coords.top}px`, 
@@ -140,12 +140,12 @@ export function Popover({ isOpen, onClose, children, triggerRef, title, matchTri
       }}
     >
       {title && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-black bg-white shrink-0">
-          <span className="font-heading text-[12px] font-extrabold uppercase tracking-widest text-black">{title}</span>
-          <button className="bg-transparent border-none text-black text-xl font-extrabold cursor-pointer leading-none p-1 hover:text-accent" onClick={onClose}>&times;</button>
+        <div className="flex shrink-0 items-center justify-between border-b border-black bg-white px-4 py-3">
+          <span className="font-heading text-[12px] font-extrabold tracking-widest text-black uppercase">{title}</span>
+          <button className="hover:text-accent cursor-pointer border-none bg-transparent p-1 text-xl leading-none font-extrabold text-black" onClick={onClose}>&times;</button>
         </div>
       )}
-      <div className="p-4 overflow-y-auto">
+      <div className="overflow-y-auto p-4">
         {children}
       </div>
     </div>,

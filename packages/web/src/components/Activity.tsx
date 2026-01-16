@@ -89,17 +89,17 @@ export function ActivitySection({ activities }: ActivityProps) {
   return (
     <div className="flex flex-col gap-5">
       {displayedActivities.map((activity) => (
-        <div key={activity.id} className="flex gap-3.5 items-start">
+        <div key={activity.id} className="flex items-start gap-3.5">
           <Avatar 
             src={activity.userImage} 
             fallback={activity.userName || 'U'} 
             size="sm" 
           />
           <div className="flex flex-col gap-1">
-            <p className="m-0 text-[13px] leading-tight text-black font-semibold">
+            <p className="m-0 text-[13px] leading-tight font-semibold text-black">
               <strong className="font-extrabold">{activity.userName}</strong> {formatActivityMessage(activity)}
             </p>
-            <span className="text-[11px] font-extrabold text-black/40 uppercase tracking-widest">
+            <span className="text-[11px] font-extrabold tracking-widest text-black/40 uppercase">
               {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
             </span>
           </div>
@@ -111,7 +111,7 @@ export function ActivitySection({ activities }: ActivityProps) {
           variant="secondary" 
           size="sm" 
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-fit self-start mt-2"
+          className="mt-2 w-fit self-start"
         >
           {isExpanded ? 'Show less' : `Show more (${activities.length - 3} more)`}
         </Button>

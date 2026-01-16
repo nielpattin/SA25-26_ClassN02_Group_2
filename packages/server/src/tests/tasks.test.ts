@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
 import { app } from '../index'
+import { getAuthHeaders, ensureTestUser } from './helpers'
 
 describe('Tasks API', () => {
   let boardId: string
@@ -7,11 +8,13 @@ describe('Tasks API', () => {
   let taskId: string
 
   beforeAll(async () => {
+    await ensureTestUser()
+
     // Create a board
     const boardRes = await app.handle(
-      new Request('http://localhost/boards', {
+      new Request('http://localhost/v1/boards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: 'Test Board for Tasks' })
       })
     )
@@ -20,9 +23,9 @@ describe('Tasks API', () => {
 
     // Create a column
     const columnRes = await app.handle(
-      new Request('http://localhost/columns', {
+      new Request('http://localhost/v1/columns', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: 'Test Column', boardId, position: 'a0' })
       })
     )
@@ -33,15 +36,18 @@ describe('Tasks API', () => {
   afterAll(async () => {
     // Cleanup: delete board (should cascade)
     await app.handle(
-      new Request(`http://localhost/boards/${boardId}`, { method: 'DELETE' })
+      new Request(`http://localhost/v1/boards/${boardId}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      })
     )
   })
 
   test('POST /tasks - create task', async () => {
     const res = await app.handle(
-      new Request('http://localhost/tasks', {
+      new Request('http://localhost/v1/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           title: 'Test Task',
           description: 'Test description',
@@ -54,12 +60,14 @@ describe('Tasks API', () => {
     const task = await res.json()
     expect(task.title).toBe('Test Task')
     expect(task.description).toBe('Test description')
-    let taskId = task.id
+    taskId = task.id
   })
 
   test('GET /tasks/:id - get single task', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/tasks/${taskId}`)
+      new Request(`http://localhost/v1/tasks/${taskId}`, {
+        headers: getAuthHeaders()
+      })
     )
     expect(res.status).toBe(200)
     const task = await res.json()
@@ -72,7 +80,9 @@ describe('Tasks API', () => {
 
   test('GET /tasks/column/:columnId - list tasks by column', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/tasks/column/${columnId}`)
+      new Request(`http://localhost/v1/tasks/column/${columnId}`, {
+        headers: getAuthHeaders()
+      })
     )
     expect(res.status).toBe(200)
     const tasks = await res.json()
@@ -83,9 +93,9 @@ describe('Tasks API', () => {
   test('PATCH /tasks/:id - update task with due date', async () => {
     const dueDate = new Date('2025-12-31').toISOString()
     const res = await app.handle(
-      new Request(`http://localhost/tasks/${taskId}`, {
+      new Request(`http://localhost/v1/tasks/${taskId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           title: 'Updated Task',
           dueDate
@@ -100,9 +110,9 @@ describe('Tasks API', () => {
 
   test('PATCH /tasks/:id - clear due date', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/tasks/${taskId}`, {
+      new Request(`http://localhost/v1/tasks/${taskId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ dueDate: null })
       })
     )
@@ -113,7 +123,10 @@ describe('Tasks API', () => {
 
   test('DELETE /tasks/:id - delete task', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/tasks/${taskId}`, { method: 'DELETE' })
+      new Request(`http://localhost/v1/tasks/${taskId}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      })
     )
     expect(res.status).toBe(200)
   })

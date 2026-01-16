@@ -1,13 +1,10 @@
 import { Elysia, t } from 'elysia'
 import { labelService } from './labels.service'
-import { auth } from '../auth/auth'
+import { authPlugin } from '../auth'
 import { CreateLabelBody, UpdateLabelBody } from './labels.model'
 
 export const labelController = new Elysia({ prefix: '/labels' })
-  .derive(async ({ request }) => {
-    const session = await auth.api.getSession({ headers: request.headers })
-    return { session }
-  })
+  .use(authPlugin)
   .get('/board/:boardId', async ({ params }) => {
     return labelService.getByBoardId(params.boardId)
   }, {

@@ -1,5 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { templateService } from './templates.service'
+import { authPlugin } from '../auth'
 import {
   CreateBoardTemplateBody, UpdateBoardTemplateBody,
   CreateTaskTemplateBody, UpdateTaskTemplateBody,
@@ -7,10 +8,14 @@ import {
 } from './templates.model'
 
 export const templateController = new Elysia({ prefix: '/templates' })
+  .use(authPlugin)
   // Board Templates
-  .get('/boards', async ({ query }) => {
-    const userId = 'temp-user-id'
-    return templateService.getBoardTemplates(userId, query.organizationId)
+  .get('/boards', async ({ query, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return templateService.getBoardTemplates(session.user.id, query.organizationId)
   }, {
     query: t.Object({ organizationId: t.Optional(t.String()) }),
   })
@@ -21,9 +26,12 @@ export const templateController = new Elysia({ prefix: '/templates' })
     params: TemplateParams,
   })
 
-  .post('/boards', async ({ body, set }) => {
-    const userId = 'temp-user-id'
-    const template = await templateService.createBoardTemplate({ ...body, createdBy: userId })
+  .post('/boards', async ({ body, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    const template = await templateService.createBoardTemplate({ ...body, createdBy: session.user.id })
     set.status = 201
     return template
   }, {
@@ -56,9 +64,12 @@ export const templateController = new Elysia({ prefix: '/templates' })
     params: TemplateParams,
   })
 
-  .post('/tasks', async ({ body, set }) => {
-    const userId = 'temp-user-id'
-    const template = await templateService.createTaskTemplate({ ...body, createdBy: userId })
+  .post('/tasks', async ({ body, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    const template = await templateService.createTaskTemplate({ ...body, createdBy: session.user.id })
     set.status = 201
     return template
   }, {

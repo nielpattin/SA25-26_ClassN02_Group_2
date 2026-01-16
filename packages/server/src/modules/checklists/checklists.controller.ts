@@ -1,13 +1,10 @@
 import { Elysia, t } from 'elysia'
 import { checklistService } from './checklists.service'
-import { auth } from '../auth/auth'
+import { authPlugin } from '../auth'
 import { CreateChecklistBody, UpdateChecklistBody, CreateChecklistItemBody, UpdateChecklistItemBody } from './checklists.model'
 
 export const checklistController = new Elysia({ prefix: '/checklists' })
-  .derive(async ({ request }) => {
-    const session = await auth.api.getSession({ headers: request.headers })
-    return { session }
-  })
+  .use(authPlugin)
   .get('/task/:taskId', async ({ params }) => {
     return checklistService.getByTaskId(params.taskId)
   }, {

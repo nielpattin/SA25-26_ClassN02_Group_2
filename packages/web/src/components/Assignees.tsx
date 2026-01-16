@@ -25,12 +25,12 @@ export function AssigneeSection({ currentAssignees = [], boardMembers = [], onTo
         {assignedMembers.map(member => (
           <div 
             key={member.id}
-            className="flex items-center gap-3 p-2 bg-white border-2 border-black font-body text-[13px] font-extrabold uppercase shadow-brutal-sm hover:shadow-brutal-md hover:-translate-y-0.5 transition-all group"
+            className="font-body shadow-brutal-sm hover:shadow-brutal-md group flex items-center gap-3 border-2 border-black bg-white p-2 text-[13px] font-extrabold uppercase transition-all hover:-translate-y-0.5"
           >
             <Avatar src={member.image || undefined} fallback={member.name || 'Unknown'} size="sm" />
             <span className="flex-1 truncate text-black">{member.name || 'Unknown'}</span>
             <button 
-              className="opacity-0 group-hover:opacity-100 p-1 bg-white border border-black hover:bg-text-danger hover:text-white transition-all cursor-pointer flex items-center justify-center"
+              className="hover:bg-text-danger flex cursor-pointer items-center justify-center border border-black bg-white p-1 opacity-0 transition-all group-hover:opacity-100 hover:text-white"
               onClick={() => onToggle(member.id)}
               title="Remove member"
             >
@@ -43,14 +43,14 @@ export function AssigneeSection({ currentAssignees = [], boardMembers = [], onTo
   }
 
   return (
-    <div className="flex flex-col p-1 min-w-60">
+    <div className="flex min-w-60 flex-col p-1">
       <div className="flex flex-col gap-1">
         {boardMembers.map(member => {
           const isAssigned = currentAssignees.includes(member.id)
           return (
             <button
               key={member.id}
-              className={`flex cursor-pointer items-center gap-3 p-2.5 bg-white border border-black font-body text-[13px] font-extrabold uppercase transition-all text-left ${isAssigned ? 'bg-[#EEEEEE] shadow-inner-brutal' : 'hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-md'}`}
+              className={`font-body flex cursor-pointer items-center gap-3 border border-black bg-white p-2.5 text-left text-[13px] font-extrabold uppercase transition-all ${isAssigned ? 'shadow-inner-brutal bg-[#EEEEEE]' : 'hover:bg-accent hover:shadow-brutal-md hover:-translate-0.5'}`}
               onClick={() => onToggle(member.id)}
             >
               <Avatar src={member.image || undefined} fallback={member.name || 'Unknown'} size="sm" />

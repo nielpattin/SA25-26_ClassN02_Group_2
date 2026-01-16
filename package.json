@@ -12,6 +12,7 @@
     "db:migrate": "bun run --filter @kyte/server db:migrate",
     "db:push": "bun run --filter @kyte/server db:push",
     "db:studio": "bun run --filter @kyte/server db:studio",
+    "test": "bun run --filter @kyte/server test",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
   },

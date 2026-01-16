@@ -40,16 +40,16 @@ export function LabelSection({ cardLabels = [], allLabels, onToggle, onAdd, onDe
           const isActive = (cardLabels || []).includes(label.id)
           const textColor = getContrastColor(label.color)
           return (
-            <div key={label.id} className="relative flex group">
+            <div key={label.id} className="group relative flex">
               <button
-                className={`${labelPillBase} ${isActive ? 'shadow-brutal-sm opacity-100' : 'opacity-60 hover:opacity-100 shadow-none'} ${textColor}`}
+                className={`${labelPillBase} ${isActive ? 'shadow-brutal-sm opacity-100' : 'opacity-60 shadow-none hover:opacity-100'} ${textColor}`}
                 style={{ '--label-color': label.color } as React.CSSProperties}
                 onClick={() => onToggle(label.id)}
               >
                 {label.name}
               </button>
               <button 
-                className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-black text-white border border-black flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-2 p-0 transition-opacity" 
+                className="absolute -top-1 -right-1 z-2 flex h-3.5 w-3.5 cursor-pointer items-center justify-center border border-black bg-black p-0 text-white opacity-0 transition-opacity group-hover:opacity-100" 
                 onClick={(e) => {
                   e.stopPropagation()
                   onDelete(label.id)
@@ -67,7 +67,7 @@ export function LabelSection({ cardLabels = [], allLabels, onToggle, onAdd, onDe
       </div>
 
       {isCreating && (
-        <div className="flex flex-col gap-4 p-5 border border-black bg-white shadow-brutal-xl mt-2">
+        <div className="shadow-brutal-xl mt-2 flex flex-col gap-4 border border-black bg-white p-5">
           <Input
             value={newLabelName}
             onChange={(e) => setNewLabelName(e.target.value)}
@@ -78,7 +78,7 @@ export function LabelSection({ cardLabels = [], allLabels, onToggle, onAdd, onDe
             {colors.map(color => (
               <div
                 key={color}
-                className={`w-7 h-7 border border-black cursor-pointer transition-all ${selectedColor === color ? 'shadow-[3px_3px_0px_rgba(0,0,0,0.5)] -translate-x-0.5 -translate-y-0.5' : ''}`}
+                className={`h-7 w-7 cursor-pointer border border-black transition-all ${selectedColor === color ? '-translate-x-0.5 -translate-y-0.5 shadow-[3px_3px_0px_rgba(0,0,0,0.5)]' : ''}`}
                 style={{ backgroundColor: color }}
                 onClick={() => setSelectedColor(color)}
               />

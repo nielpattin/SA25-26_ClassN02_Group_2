@@ -8,9 +8,9 @@ export function Progress({ value, max = 100, className = '' }: ProgressProps) {
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100)
 
   return (
-    <div className={`h-[10px] bg-[#EEEEEE] border border-black overflow-hidden rounded-none shadow-brutal-sm ${className}`}>
+    <div className={`shadow-brutal-sm h-[10px] overflow-hidden rounded-none border border-black bg-[#EEEEEE] ${className}`}>
       <div 
-        className="h-full bg-accent border-r border-black transition-[width] duration-300 ease-in-out" 
+        className="bg-accent h-full border-r border-black transition-[width] duration-300 ease-in-out" 
         style={{ width: `${percentage}%` }} 
       />
     </div>

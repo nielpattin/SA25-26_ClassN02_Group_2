@@ -16,7 +16,7 @@ export function DatePicker({ initialDate, onSave }: DatePickerProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <label className="font-heading text-[11px] font-extrabold uppercase tracking-widest text-black/60">Due Date</label>
+        <label className="font-heading text-[11px] font-extrabold tracking-widest text-black/60 uppercase">Due Date</label>
         <Input
           type="date"
           value={date}

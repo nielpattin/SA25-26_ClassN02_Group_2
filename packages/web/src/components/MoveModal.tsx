@@ -26,7 +26,7 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
   const { data: columns = [] } = useQuery<Column[]>({
     queryKey: ['columns', selectedBoardId],
     queryFn: async () => {
-      const { data, error } = await api.columns.board({ boardId: selectedBoardId }).get()
+      const { data, error } = await api.v1.columns.board({ boardId: selectedBoardId }).get()
       if (error) throw error
       return data as unknown as Column[]
     },
@@ -37,7 +37,7 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
   const { data: tasks = [] } = useQuery<Card[]>({
     queryKey: ['tasks', selectedColumnId],
     queryFn: async () => {
-      const { data, error } = await api.tasks.column({ columnId: selectedColumnId }).get()
+      const { data, error } = await api.v1.tasks.column({ columnId: selectedColumnId }).get()
       if (error) throw error
       // Filter out current card if it's in this column
       return (data as unknown as Card[]).filter(t => t.id !== cardId)
@@ -79,20 +79,20 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
   }
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-11000" onClick={onCancel}>
-      <div className="w-[90%] max-w-100 bg-white border border-black shadow-brutal-xl flex flex-col rounded-none" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black">
-          <h2 className="m-0 font-heading text-[18px] font-extrabold uppercase text-black">Move Card</h2>
+    <div className="fixed inset-0 z-11000 flex items-center justify-center bg-black/80" onClick={onCancel}>
+      <div className="shadow-brutal-xl flex w-[90%] max-w-100 flex-col rounded-none border border-black bg-white" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-black px-6 py-4">
+          <h2 className="font-heading m-0 text-[18px] font-extrabold text-black uppercase">Move Card</h2>
           <button 
-            className="bg-white border border-black text-black cursor-pointer w-8 h-8 flex items-center justify-center transition-all hover:bg-text-danger hover:text-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-sm active:translate-x-0 active:translate-y-0 active:shadow-none" 
+            className="hover:bg-text-danger hover:shadow-brutal-sm flex h-8 w-8 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:text-white active:translate-0 active:shadow-none" 
             onClick={onCancel}
           >
             <X size={16} />
           </button>
         </div>
-        <div className="p-8 flex flex-col gap-6">
+        <div className="flex flex-col gap-6 p-8">
           <div className="flex flex-col gap-2">
-            <label className="font-heading text-[11px] font-extrabold uppercase tracking-widest text-black/60">Board</label>
+            <label className="font-heading text-[11px] font-extrabold tracking-widest text-black/60 uppercase">Board</label>
             <Select 
               value={selectedBoardId}
               options={boards}
@@ -101,16 +101,16 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
           </div>
 
           <div className="flex gap-4">
-            <div className="flex flex-col gap-2 flex-2">
-              <label className="font-heading text-[11px] font-extrabold uppercase tracking-widest text-black/60">Column</label>
+            <div className="flex flex-2 flex-col gap-2">
+              <label className="font-heading text-[11px] font-extrabold tracking-widest text-black/60 uppercase">Column</label>
               <Select 
                 value={selectedColumnId}
                 options={columns}
                 onChange={setSelectedColumnId}
               />
             </div>
-            <div className="flex flex-col gap-2 flex-1">
-              <label className="font-heading text-[11px] font-extrabold uppercase tracking-widest text-black/60">Position</label>
+            <div className="flex flex-1 flex-col gap-2">
+              <label className="font-heading text-[11px] font-extrabold tracking-widest text-black/60 uppercase">Position</label>
               <Input
                 type="number"
                 min={1}
@@ -121,7 +121,7 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
             </div>
           </div>
           
-          <div className="flex flex-col gap-3 mt-2">
+          <div className="mt-2 flex flex-col gap-3">
             <Button 
               fullWidth 
               onClick={handleMove}

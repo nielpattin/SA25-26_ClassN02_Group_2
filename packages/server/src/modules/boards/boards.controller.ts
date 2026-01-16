@@ -1,6 +1,6 @@
 import { Elysia } from 'elysia'
 import { boardService } from './boards.service'
-import { auth } from '../auth/auth'
+import { authPlugin } from '../auth'
 import {
   CreateBoardBody,
   UpdateBoardBody,
@@ -12,11 +12,7 @@ import {
 } from './boards.model'
 
 export const boardController = new Elysia({ prefix: '/boards' })
-  // Add session derive to this controller
-  .derive(async ({ request }) => {
-    const session = await auth.api.getSession({ headers: request.headers })
-    return { session }
-  })
+  .use(authPlugin)
   // Board CRUD
   .get('/', ({ session, set }) => {
     if (!session) {
@@ -76,17 +72,21 @@ export const boardController = new Elysia({ prefix: '/boards' })
   })
 
   // Starring (user-specific, requires auth context)
-  .post('/:id/star', ({ params: { id } }) => {
-    // TODO: Get userId from auth context
-    const userId = 'placeholder-user-id'
-    return boardService.starBoard(userId, id)
+  .post('/:id/star', ({ params: { id }, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.starBoard(session.user.id, id)
   }, {
     params: StarBoardParams,
   })
-  .delete('/:id/star', ({ params: { id } }) => {
-    // TODO: Get userId from auth context
-    const userId = 'placeholder-user-id'
-    return boardService.unstarBoard(userId, id)
+  .delete('/:id/star', ({ params: { id }, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.unstarBoard(session.user.id, id)
   }, {
     params: StarBoardParams,
   })

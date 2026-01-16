@@ -42,7 +42,7 @@ function BoardComponent() {
   const { data: board, isLoading: boardLoading } = useQuery({
     queryKey: ['board', boardId],
     queryFn: async () => {
-      const { data, error } = await api.boards({ id: boardId }).get()
+      const { data, error } = await api.v1.boards({ id: boardId }).get()
       if (error) throw error
       return data
     },
@@ -51,7 +51,7 @@ function BoardComponent() {
   const { data: serverColumns = [], isLoading: columnsLoading } = useQuery({
     queryKey: ['columns', boardId],
     queryFn: async () => {
-      const { data, error } = await api.columns.board({ boardId }).get()
+      const { data, error } = await api.v1.columns.board({ boardId }).get()
       if (error) throw error
       return (data || []).sort((a, b) => {
         if (a.position !== b.position) return a.position < b.position ? -1 : 1
@@ -63,7 +63,7 @@ function BoardComponent() {
   const { data: allCards = [] } = useQuery({
     queryKey: ['cards', boardId],
     queryFn: async () => {
-      const { data, error } = await api.tasks.board({ boardId }).enriched.get()
+      const { data, error } = await api.v1.tasks.board({ boardId }).enriched.get()
       if (error) throw error
       return (data || []).sort((a, b) => {
         if (a.position !== b.position) return a.position < b.position ? -1 : 1
@@ -76,7 +76,7 @@ function BoardComponent() {
   const { data: allBoards = [] } = useQuery({
     queryKey: ['boards'],
     queryFn: async () => {
-      const { data, error } = await api.boards.get()
+      const { data, error } = await api.v1.boards.get()
       if (error) throw error
       return (data || []) as Board[]
     },
@@ -400,7 +400,7 @@ function BoardComponent() {
         const beforeCol = finalColumns[finalIndex - 1]
         const afterCol = finalColumns[finalIndex + 1]
         
-        api.columns({ id: draggedColumnId }).move.patch({
+        api.v1.columns({ id: draggedColumnId }).move.patch({
           beforeColumnId: beforeCol?.id,
           afterColumnId: afterCol?.id
         }).then(({ error }) => {
@@ -432,7 +432,7 @@ function BoardComponent() {
         const beforeCard = colCards[inColIdx - 1]
         const afterCard = colCards[inColIdx + 1]
 
-        api.tasks({ id: draggedCardId }).move.patch({
+        api.v1.tasks({ id: draggedCardId }).move.patch({
           columnId: colId,
           beforeTaskId: beforeCard?.id,
           afterTaskId: afterCard?.id
@@ -491,21 +491,21 @@ function BoardComponent() {
 
   const handleAddTask = useCallback(async (columnId: string, title: string) => {
 
-    const { error } = await api.tasks.post({ title, columnId })
+    const { error } = await api.v1.tasks.post({ title, columnId })
     if (!error) {
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
     }
   }, [boardId, queryClient])
 
   const handleRenameColumn = useCallback(async (columnId: string, newName: string) => {
-    const { error } = await api.columns({ id: columnId }).patch({ name: newName })
+    const { error } = await api.v1.columns({ id: columnId }).patch({ name: newName })
     if (!error) {
       queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
     }
   }, [boardId, queryClient])
 
   const handleArchiveColumn = useCallback(async (columnId: string) => {
-    const { error } = await api.columns({ id: columnId }).archive.post()
+    const { error } = await api.v1.columns({ id: columnId }).archive.post()
     if (!error) {
       queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
@@ -513,7 +513,7 @@ function BoardComponent() {
   }, [boardId, queryClient])
 
   const handleCopyColumn = useCallback(async (columnId: string) => {
-    const { error } = await api.columns({ id: columnId }).copy.post()
+    const { error } = await api.v1.columns({ id: columnId }).copy.post()
     if (!error) {
       queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
@@ -521,33 +521,33 @@ function BoardComponent() {
   }, [boardId, queryClient])
 
   const handleMoveColumnToBoard = useCallback(async (columnId: string, targetBoardId: string) => {
-    const { error } = await api.columns({ id: columnId })['move-to-board'].patch({ targetBoardId })
+    const { error } = await api.v1.columns({ id: columnId })['move-to-board'].patch({ targetBoardId })
     if (!error) {
       queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
     }
   }, [boardId, queryClient])
 
-  if (boardLoading || columnsLoading) return <div className="h-screen flex items-center justify-center text-black font-heading font-extrabold uppercase bg-canvas">Loading workspace...</div>
-  if (!board) return <div className="h-screen flex items-center justify-center text-black font-heading font-extrabold uppercase bg-canvas">Error: Page not found</div>
+  if (boardLoading || columnsLoading) return <div className="font-heading bg-canvas flex h-screen items-center justify-center font-extrabold text-black uppercase">Loading workspace...</div>
+  if (!board) return <div className="font-heading bg-canvas flex h-screen items-center justify-center font-extrabold text-black uppercase">Error: Page not found</div>
 
   const draggedColumn = draggedColumnId ? displayColumns.find(c => c.id === draggedColumnId) : null
   const isAnyDragging = !!draggedCardId || !!draggedColumnId
 
   return (
-    <div className="h-screen bg-canvas p-0 font-body color-text flex flex-col overflow-hidden">
-      <header className="flex justify-between items-center px-6 py-4 shrink-0 bg-canvas border-b border-black">
+    <div className="bg-canvas font-body color-text flex h-screen flex-col overflow-hidden p-0">
+      <header className="bg-canvas flex shrink-0 items-center justify-between border-b border-black px-6 py-4">
         <div className="flex items-center gap-3">
-          <Link to="/dashboard" className="text-black text-sm font-extrabold uppercase hover:bg-accent hover:px-1 hover:shadow-brutal-sm">Workspace</Link>
+          <Link to="/dashboard" className="hover:bg-accent hover:shadow-brutal-sm text-sm font-extrabold text-black uppercase hover:px-1">Workspace</Link>
           <ChevronRight size={14} className="text-text-muted" />
-          <h1 className="m-0 font-heading text-[18px] font-bold text-black">{board.name}</h1>
+          <h1 className="font-heading m-0 text-[18px] font-bold text-black">{board.name}</h1>
         </div>
         <div className="header-right">
         </div>
       </header>
 
       <div 
-        className={`flex px-16 py-12 gap-(--board-gap,24px) overflow-x-auto overflow-y-hidden flex-1 items-start bg-canvas cursor-grab ${isScrolling ? 'cursor-grabbing' : ''} ${draggedColumnId ? 'cursor-grabbing' : ''} ${draggedCardId ? 'cursor-grabbing' : ''}`}
+        className={`bg-canvas flex flex-1 cursor-grab items-start gap-(--board-gap,24px) overflow-x-auto overflow-y-hidden px-16 py-12 ${isScrolling ? 'cursor-grabbing' : ''} ${draggedColumnId ? 'cursor-grabbing' : ''} ${draggedCardId ? 'cursor-grabbing' : ''}`}
         ref={scrollContainerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -575,13 +575,13 @@ function BoardComponent() {
         ))}
         <div className={`w-(--board-column-width,300px) min-w-(--board-column-width,300px) shrink-0 px-1 ${isAnyDragging ? 'pointer-events-none' : ''}`}>
           <Input 
-            className="shadow-brutal-md font-heading text-[13px] font-extrabold uppercase tracking-wider hover:-translate-x-px hover:-translate-y-px hover:shadow-brutal-xl! focus:bg-accent focus:shadow-brutal-lg" 
+            className="shadow-brutal-md font-heading hover:shadow-brutal-xl! focus:bg-accent focus:shadow-brutal-lg text-[13px] font-extrabold tracking-wider uppercase hover:-translate-px" 
             placeholder="+ Add a group" 
             value={newColumnName}
             onChange={e => setNewColumnName(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter' && newColumnName) {
-                api.columns.post({ name: newColumnName, boardId }).then(() => {
+                api.v1.columns.post({ name: newColumnName, boardId }).then(() => {
                   queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
                   setNewColumnName('')
                 })
@@ -593,20 +593,20 @@ function BoardComponent() {
 
       {draggedColumn && (
         <div 
-          className="fixed top-0 left-0 pointer-events-none z-1000 opacity-80 w-(--board-column-width,300px) bg-surface p-(--column-padding,16px) border border-black shadow-brutal-2xl! will-change-transform rounded-none"
+          className="bg-surface shadow-brutal-2xl! pointer-events-none fixed top-0 left-0 z-1000 w-(--board-column-width,300px) rounded-none border border-black p-(--column-padding,16px) opacity-80 will-change-transform"
           ref={ghostRef}
         >
-          <h4 className="p-2 mb-5 font-heading text-(--column-header-size,14px) font-extrabold text-black shrink-0 flex items-center gap-2.5 border-b border-black uppercase tracking-widest relative">
-            <span className="cursor-text flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{draggedColumn.name}</span>
-            <span className="ml-auto text-[11px] font-extrabold bg-accent px-2 py-0.5 border border-black">{cardsByColumn[draggedColumn.id]?.length || 0}</span>
-            <MoreHorizontal size={14} className="cursor-pointer text-text-muted" />
+          <h4 className="font-heading relative mb-5 flex shrink-0 items-center gap-2.5 border-b border-black p-2 text-(length:--column-header-size,14px) font-extrabold tracking-widest text-black uppercase">
+            <span className="flex-1 cursor-text truncate">{draggedColumn.name}</span>
+            <span className="bg-accent ml-auto border border-black px-2 py-0.5 text-[11px] font-extrabold">{cardsByColumn[draggedColumn.id]?.length || 0}</span>
+            <MoreHorizontal size={14} className="text-text-muted cursor-pointer" />
           </h4>
         </div>
       )}
 
        {draggedCardData && (
-        <div className="fixed top-0 left-0 pointer-events-none z-1000 opacity-90 w-[calc(var(--board-column-width,300px)-48px)] will-change-transform" ref={cardGhostRef}>
-          <div className="rotate-2 shadow-brutal-2xl! border border-black">
+        <div className="pointer-events-none fixed top-0 left-0 z-1000 w-[calc(var(--board-column-width,300px)-48px)] opacity-90 will-change-transform" ref={cardGhostRef}>
+          <div className="shadow-brutal-2xl! rotate-2 border border-black">
             <CardItem card={draggedCardData} onCardClick={() => {}} isAnyDragging={isAnyDragging} />
           </div>
         </div>
@@ -714,21 +714,21 @@ const BoardColumn = memo(({
 
   return (
     <div 
-      className={`w-(--board-column-width,300px) min-w-(--board-column-width,300px) max-h-full flex flex-col rounded-none p-4 border relative ${isDragging ? 'border-dashed border-black/20 bg-black/5 shadow-none! translate-x-0! translate-y-0! opacity-100' : 'bg-surface border-black shadow-brutal-lg -translate-x-px -translate-y-px'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
+      className={`relative flex max-h-full w-(--board-column-width,300px) min-w-(--board-column-width,300px) flex-col rounded-none border p-4 ${isDragging ? 'translate-0! border-dashed border-black/20 bg-black/5 opacity-100 shadow-none!' : 'bg-surface shadow-brutal-lg -translate-x-px -translate-y-px border-black'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
       data-column-id={column.id}
       data-role="column"
     >
-      <div className={`flex flex-col flex-1 min-h-0 ${isDragging ? 'invisible' : ''}`}>
+      <div className={`flex min-h-0 flex-1 flex-col ${isDragging ? 'invisible' : ''}`}>
         <div className="column-header-container">
           <h4 
-            className="p-2 mb-5 font-heading text-[14px] font-extrabold text-black shrink-0 flex items-center gap-2.5 border-b border-black uppercase tracking-widest relative cursor-grab" 
+            className="font-heading relative mb-5 flex shrink-0 cursor-grab items-center gap-2.5 border-b border-black p-2 text-(length:--column-header-size,14px) font-extrabold tracking-widest text-black uppercase" 
             onMouseDown={onDragStart} 
             data-role="column-header"
           >
             {isEditingName ? (
               <input
                 ref={nameInputRef}
-                className="flex-1 bg-transparent border-none font-inherit text-inherit uppercase tracking-inherit outline-none p-0 m-0 w-full m-0 w-full"
+                className="font-inherit tracking-inherit m-0 w-full flex-1 border-none bg-transparent p-0 text-inherit uppercase outline-none"
                 value={nameValue}
                 onChange={e => setNameValue(e.target.value)}
                 onBlur={handleRenameSubmit}
@@ -743,7 +743,7 @@ const BoardColumn = memo(({
               />
             ) : (
               <span 
-                className="cursor-text flex-1 overflow-hidden text-ellipsis whitespace-nowrap" 
+                className="flex-1 cursor-text truncate" 
                 onClick={(e) => {
                   e.stopPropagation()
                   setIsEditingName(true)
@@ -752,7 +752,7 @@ const BoardColumn = memo(({
                 {column.name}
               </span>
             )}
-            <span className="ml-auto text-[11px] font-extrabold bg-accent px-2 py-0.5 border border-black">{cards.length}</span>
+            <span className="bg-accent ml-auto border border-black px-2 py-0.5 text-[11px] font-extrabold">{cards.length}</span>
             <div onMouseDown={e => e.stopPropagation()} className="flex items-center">
               <Dropdown 
                 trigger={<MoreHorizontal size={14} className={`cursor-pointer ${isMenuOpen ? 'text-black' : 'text-text-muted'}`} />}
@@ -762,7 +762,7 @@ const BoardColumn = memo(({
             </div>
           </h4>
         </div>
-        <div className="px-1 pt-1 pb-3 flex flex-col overflow-y-auto flex-1 min-h-5 gap-4">
+        <div className="flex min-h-5 flex-1 flex-col gap-4 overflow-y-auto px-1 pt-1 pb-3">
           {cards.map((card) => (
               <CardItem 
                 key={card.id} 
@@ -774,14 +774,14 @@ const BoardColumn = memo(({
               />
           ))}
           {cards.length === 0 && (
-            <div className="p-4 text-center text-text-subtle text-[12px] font-bold uppercase border border-dashed border-black bg-black/5">No items</div>
+            <div className="text-text-subtle border border-dashed border-black bg-black/5 p-4 text-center text-[12px] font-bold uppercase">No items</div>
           )}
         </div>
-        <div className="pt-6 shrink-0">
+        <div className="shrink-0 pt-6">
           {isAddingTask ? (
             <Input
               ref={inputRef}
-              className="shadow-brutal-md font-heading text-[13px] font-extrabold uppercase tracking-wider"
+              className="shadow-brutal-md font-heading text-[13px] font-extrabold tracking-wider uppercase"
               placeholder="What needs to be done?"
               value={newTaskTitle}
               onChange={e => setNewTaskTitle(e.target.value)}
@@ -833,7 +833,7 @@ const CardItem = memo(({
 
   return (
     <div 
-      className={`card-wrapper ${isDragging ? 'border border-dashed border-black bg-black/5 shadow-none! relative rounded-none transition-none!' : ''}`}
+      className={`card-wrapper ${isDragging ? 'relative rounded-none border border-dashed border-black bg-black/5 shadow-none! transition-none!' : ''}`}
       onMouseDown={handleMouseDown}
       data-card-id={card.id}
       data-column-id={card.columnId}
@@ -841,18 +841,18 @@ const CardItem = memo(({
       data-state={isDragging ? 'placeholder' : undefined}
     >
       <div 
-        className={`p-3 bg-surface border border-black text-[14px] cursor-pointer flex flex-col gap-2 transition-[transform,box-shadow,background-color] duration-200 shadow-brutal-sm ${isDragging ? 'invisible! transition-none!' : 'hover:bg-accent hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-lg'} ${isAnyDragging ? 'pointer-events-none' : ''}`} 
+        className={`bg-surface shadow-brutal-sm flex cursor-pointer flex-col gap-2 border border-black p-3 text-[14px] transition-[transform,box-shadow,background-color] duration-200 ${isDragging ? 'invisible! transition-none!' : 'hover:bg-accent hover:shadow-brutal-lg hover:-translate-x-0.5 hover:-translate-y-0.5'} ${isAnyDragging ? 'pointer-events-none' : ''}`} 
         onClick={handleClick}
         data-role="card"
       >
         {card.labels && card.labels.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-1.5">
+          <div className="mb-1.5 flex flex-wrap gap-1">
             {card.labels.map(l => (
-              <div key={l.id} className="h-2 w-10 rounded-none border border-black shadow-[1px_1px_0px_rgba(0,0,0,0.5)] hover:scale-y-150 origin-top transition-transform" style={{ background: l.color }} />
+              <div key={l.id} className="h-2 w-10 origin-top rounded-none border border-black shadow-[1px_1px_0px_rgba(0,0,0,0.5)] transition-transform hover:scale-y-150" style={{ background: l.color }} />
             ))}
           </div>
         )}
-        <div className="text-black leading-tight font-bold">{card.title}</div>
+        <div className="leading-tight font-bold text-black">{card.title}</div>
         {(card.checklistProgress || card.dueDate) && (
           <div className="flex items-center gap-3 text-[11px] font-bold text-black uppercase">
             {card.checklistProgress && (
@@ -862,7 +862,7 @@ const CardItem = memo(({
               </span>
             )}
             {card.dueDate && (
-              <span className={`px-1.5 py-0.5 border border-black ${isOverdue ? 'bg-[#E74C3C] text-white border-black' : isDueSoon ? 'bg-accent text-black border-black' : 'bg-white text-black border-transparent'}`}>
+              <span className={`border border-black px-1.5 py-0.5 ${isOverdue ? 'bg-[#E74C3C] text-white' : isDueSoon ? 'bg-accent text-black' : 'border-transparent bg-white text-black'}`}>
                 {new Date(card.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </span>
             )}

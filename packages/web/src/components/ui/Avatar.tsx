@@ -13,9 +13,9 @@ export function Avatar({ src, fallback, size = 'md', className = '' }: AvatarPro
   }
 
   return (
-    <div className={`bg-accent border border-black flex items-center justify-center text-black font-extrabold overflow-hidden shrink-0 rounded-none ${sizes[size]} ${className}`}>
+    <div className={`bg-accent flex shrink-0 items-center justify-center overflow-hidden rounded-none border border-black font-extrabold text-black ${sizes[size]} ${className}`}>
       {src ? (
-        <img src={src} alt={fallback} className="w-full h-full object-cover" />
+        <img src={src} alt={fallback} className="h-full w-full object-cover" />
       ) : (
         <span className="uppercase">{fallback.charAt(0).toUpperCase()}</span>
       )}

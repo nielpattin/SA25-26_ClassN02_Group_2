@@ -11,16 +11,12 @@ import { commentController } from './modules/comments'
 import { userController } from './modules/users'
 import { organizationController } from './modules/organizations'
 import { activityController } from './modules/activities'
+import { templateController } from './modules/templates'
+import { notificationController } from './modules/notifications'
 import { wsManager } from './websocket/manager'
 
-export const app = new Elysia()
-  .use(cors({
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  }))
-  .use(authPlugin)
+// API v1 - groups all domain controllers under /v1 prefix
+const v1 = new Elysia({ prefix: '/v1' })
   .use(boardController)
   .use(columnController)
   .use(taskController)
@@ -31,6 +27,18 @@ export const app = new Elysia()
   .use(userController)
   .use(organizationController)
   .use(activityController)
+  .use(templateController)
+  .use(notificationController)
+
+export const app = new Elysia()
+  .use(cors({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }))
+  .use(authPlugin)
+  .use(v1)
   .ws('/ws', {
     body: t.Object({
       type: t.String(),
