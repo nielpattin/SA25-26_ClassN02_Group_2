@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia'
 import { boardService } from './boards.service'
 import { authPlugin } from '../auth'
+import { UnauthorizedError } from '../../shared/errors'
 import {
   CreateBoardBody,
   UpdateBoardBody,
@@ -13,21 +14,15 @@ import {
 
 export const boardController = new Elysia({ prefix: '/boards' })
   .use(authPlugin)
-  .get('/', ({ session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .get('/', ({ session }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.getUserBoards(session.user.id)
   })
   .get('/:id', ({ params: { id } }) => boardService.getBoardById(id), {
     params: BoardParams,
   })
-  .post('/', ({ session, set, body }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/', ({ session, body }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.createBoard({
       ...body,
       ownerId: session.user.id,
@@ -35,40 +30,28 @@ export const boardController = new Elysia({ prefix: '/boards' })
   }, {
     body: CreateBoardBody,
   })
-  .patch('/:id', ({ params: { id }, body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .patch('/:id', ({ params: { id }, body, session }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.updateBoard(id, body, session.user.id)
   }, {
     params: BoardParams,
     body: UpdateBoardBody,
   })
-  .delete('/:id', ({ params: { id }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .delete('/:id', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.deleteBoard(id, session.user.id)
   }, {
     params: BoardParams,
   })
 
-  .post('/:id/archive', ({ params: { id }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/:id/archive', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.archiveBoard(id, session.user.id)
   }, {
     params: BoardParams,
   })
-  .post('/:id/restore', ({ params: { id }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/:id/restore', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.restoreBoard(id, session.user.id)
   }, {
     params: BoardParams,
@@ -77,50 +60,35 @@ export const boardController = new Elysia({ prefix: '/boards' })
   .get('/:id/members', ({ params: { id } }) => boardService.getMembers(id), {
     params: BoardParams,
   })
-  .post('/:id/members', ({ params: { id }, body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/:id/members', ({ params: { id }, body, session }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.addMember(id, body.userId, session.user.id, body.role)
   }, {
     params: BoardParams,
     body: AddMemberBody,
   })
-  .patch('/:id/members/:userId', ({ params: { id, userId }, body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .patch('/:id/members/:userId', ({ params: { id, userId }, body, session }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.updateMemberRole(id, userId, session.user.id, body.role)
   }, {
     params: BoardMemberParams,
     body: UpdateMemberRoleBody,
   })
-  .delete('/:id/members/:userId', ({ params: { id, userId }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .delete('/:id/members/:userId', ({ params: { id, userId }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.removeMember(id, userId, session.user.id)
   }, {
     params: BoardMemberParams,
   })
 
-  .post('/:id/star', ({ params: { id }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/:id/star', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.starBoard(session.user.id, id)
   }, {
     params: StarBoardParams,
   })
-  .delete('/:id/star', ({ params: { id }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .delete('/:id/star', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return boardService.unstarBoard(session.user.id, id)
   }, {
     params: StarBoardParams,

@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { taskService } from './tasks.service'
 import { authPlugin } from '../auth'
+import { UnauthorizedError } from '../../shared/errors'
 import {
   CreateTaskBody,
   UpdateTaskBody,
@@ -24,11 +25,8 @@ export const taskController = new Elysia({ prefix: '/tasks' })
   .get('/board/:boardId/enriched', ({ params: { boardId } }) => taskService.getTasksByBoardIdEnriched(boardId), {
     params: TaskBoardParams,
   })
-  .post('/', ({ body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/', ({ body, session }) => {
+    if (!session) throw new UnauthorizedError()
     const { dueDate, ...rest } = body
     return taskService.createTask({
       ...rest,
@@ -37,11 +35,8 @@ export const taskController = new Elysia({ prefix: '/tasks' })
   }, {
     body: CreateTaskBody,
   })
-  .patch('/:id', ({ params: { id }, body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .patch('/:id', ({ params: { id }, body, session }) => {
+    if (!session) throw new UnauthorizedError()
     const { dueDate, ...rest } = body
     return taskService.updateTask(id, {
       ...rest,
@@ -51,50 +46,35 @@ export const taskController = new Elysia({ prefix: '/tasks' })
     params: TaskParams,
     body: UpdateTaskBody,
   })
-  .delete('/:id', ({ params: { id }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .delete('/:id', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return taskService.deleteTask(id, session.user.id)
   }, {
     params: TaskParams,
   })
-  .patch('/:id/move', ({ params: { id }, body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .patch('/:id/move', ({ params: { id }, body, session }) => {
+    if (!session) throw new UnauthorizedError()
     return taskService.moveTask(id, session.user.id, body.columnId, body.beforeTaskId, body.afterTaskId)
   }, {
     params: TaskParams,
     body: MoveTaskBody,
   })
-  .post('/:id/copy', ({ params: { id }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/:id/copy', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return taskService.copyTask(id, session.user.id)
   }, {
     params: TaskParams,
   })
 
   // Archive/Restore
-  .post('/:id/archive', ({ params: { id }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/:id/archive', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return taskService.archiveTask(id, session.user.id)
   }, {
     params: TaskParams,
   })
-  .post('/:id/restore', ({ params: { id }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/:id/restore', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return taskService.restoreTask(id, session.user.id)
   }, {
     params: TaskParams,
@@ -104,21 +84,15 @@ export const taskController = new Elysia({ prefix: '/tasks' })
   .get('/:id/assignees', ({ params: { id } }) => taskService.getAssignees(id), {
     params: TaskParams,
   })
-  .post('/:id/assignees', ({ params: { id }, body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/:id/assignees', ({ params: { id }, body, session }) => {
+    if (!session) throw new UnauthorizedError()
     return taskService.addAssignee(id, body.userId, session.user.id)
   }, {
     params: TaskParams,
     body: AddAssigneeBody,
   })
-  .delete('/:id/assignees/:userId', ({ params: { id, userId }, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .delete('/:id/assignees/:userId', ({ params: { id, userId }, session }) => {
+    if (!session) throw new UnauthorizedError()
     return taskService.removeAssignee(id, userId, session.user.id)
   }, {
     params: TaskAssigneeParams,

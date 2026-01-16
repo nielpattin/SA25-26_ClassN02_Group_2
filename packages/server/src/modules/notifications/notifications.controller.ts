@@ -1,34 +1,26 @@
 import { Elysia, t } from 'elysia'
 import { notificationService } from './notifications.service'
 import { authPlugin } from '../auth'
+import { UnauthorizedError } from '../../shared/errors'
 import { NotificationParams } from './notifications.model'
 
 export const notificationController = new Elysia({ prefix: '/notifications' })
   .use(authPlugin)
-  .get('/', async ({ query, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .get('/', async ({ query, session }) => {
+    if (!session) throw new UnauthorizedError()
     const limit = query.limit ? parseInt(query.limit) : 50
     return notificationService.getByUserId(session.user.id, limit)
   }, {
     query: t.Object({ limit: t.Optional(t.String()) }),
   })
 
-  .get('/unread', async ({ session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .get('/unread', async ({ session }) => {
+    if (!session) throw new UnauthorizedError()
     return notificationService.getUnread(session.user.id)
   })
 
-  .get('/unread/count', async ({ session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .get('/unread/count', async ({ session }) => {
+    if (!session) throw new UnauthorizedError()
     return { count: await notificationService.countUnread(session.user.id) }
   })
 
@@ -38,11 +30,8 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
     params: NotificationParams,
   })
 
-  .post('/read-all', async ({ session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/read-all', async ({ session }) => {
+    if (!session) throw new UnauthorizedError()
     await notificationService.markAllAsRead(session.user.id)
     return { success: true }
   })

@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { templateService } from './templates.service'
 import { authPlugin } from '../auth'
+import { UnauthorizedError } from '../../shared/errors'
 import {
   CreateBoardTemplateBody, UpdateBoardTemplateBody,
   CreateTaskTemplateBody, UpdateTaskTemplateBody,
@@ -10,11 +11,8 @@ import {
 export const templateController = new Elysia({ prefix: '/templates' })
   .use(authPlugin)
   // Board Templates
-  .get('/boards', async ({ query, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .get('/boards', async ({ query, session }) => {
+    if (!session) throw new UnauthorizedError()
     return templateService.getBoardTemplates(session.user.id, query.organizationId)
   }, {
     query: t.Object({ organizationId: t.Optional(t.String()) }),
@@ -27,10 +25,7 @@ export const templateController = new Elysia({ prefix: '/templates' })
   })
 
   .post('/boards', async ({ body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+    if (!session) throw new UnauthorizedError()
     const template = await templateService.createBoardTemplate({ ...body, createdBy: session.user.id })
     set.status = 201
     return template
@@ -65,10 +60,7 @@ export const templateController = new Elysia({ prefix: '/templates' })
   })
 
   .post('/tasks', async ({ body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+    if (!session) throw new UnauthorizedError()
     const template = await templateService.createTaskTemplate({ ...body, createdBy: session.user.id })
     set.status = 201
     return template

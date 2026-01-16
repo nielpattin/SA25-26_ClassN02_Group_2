@@ -17,6 +17,9 @@ import { wsManager } from './websocket/manager'
 import { initWebSocketBridge } from './websocket/bridge'
 import { initActivitySubscriber } from './modules/activities/activity.subscriber'
 
+import { activityRepository } from './modules/activities/activities.repository'
+import { AppError } from './shared/errors'
+
 initWebSocketBridge()
 initActivitySubscriber()
 
@@ -36,6 +39,40 @@ const v1 = new Elysia({ prefix: '/v1' })
   .use(notificationController)
 
 export const app = new Elysia()
+  .onError(({ code, error, set }) => {
+    if (error instanceof AppError) {
+      set.status = error.status
+      return {
+        success: false,
+        error: {
+          code: error.code,
+          message: error.message,
+          details: error.details
+        }
+      }
+    }
+
+    if (code === 'VALIDATION') {
+      set.status = 400
+      return {
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          details: error.all
+        }
+      }
+    }
+
+    set.status = 500
+    return {
+      success: false,
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Something went wrong'
+      }
+    }
+  })
   .use(cors({
     origin: 'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -47,15 +84,29 @@ export const app = new Elysia()
   .ws('/ws', {
     body: t.Object({
       type: t.String(),
-      boardId: t.String()
+      boardId: t.String(),
+      since: t.Optional(t.String())
     }),
-    open(ws) {
-      console.log('WS Opened')
-    },
-    message(ws, { type, boardId }) {
+    message(ws, { type, boardId, since }) {
       if (type === 'subscribe') {
         ws.subscribe(`board:${boardId}`)
-        console.log(`Subscribed to board:${boardId}`)
+      }
+
+      if (type === 'sync' && since) {
+        const sinceDate = new Date(since)
+        if (!isNaN(sinceDate.getTime())) {
+           activityRepository.findByBoardIdSince(boardId, sinceDate)
+             .then(activities => {
+               ws.send(JSON.stringify({
+                 type: 'sync:response',
+                 boardId,
+                 data: activities
+               }))
+             })
+             .catch(() => {
+               ws.send(JSON.stringify({ type: 'error', message: 'Sync failed' }))
+             })
+        }
       }
     }
   })

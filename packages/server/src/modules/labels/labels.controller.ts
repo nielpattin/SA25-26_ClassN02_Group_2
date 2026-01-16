@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { labelService } from './labels.service'
 import { authPlugin } from '../auth'
+import { UnauthorizedError } from '../../shared/errors'
 import { CreateLabelBody, UpdateLabelBody } from './labels.model'
 
 export const labelController = new Elysia({ prefix: '/labels' })
@@ -36,21 +37,15 @@ export const labelController = new Elysia({ prefix: '/labels' })
     params: t.Object({ id: t.String() })
   })
 
-  .post('/card/:cardId/label/:labelId', async ({ params, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .post('/card/:cardId/label/:labelId', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
     return labelService.addToTask(params.cardId, params.labelId, session.user.id)
   }, {
     params: t.Object({ cardId: t.String(), labelId: t.String() })
   })
 
-  .delete('/card/:cardId/label/:labelId', async ({ params, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .delete('/card/:cardId/label/:labelId', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
     return labelService.removeFromTask(params.cardId, params.labelId, session.user.id)
   }, {
     params: t.Object({ cardId: t.String(), labelId: t.String() })

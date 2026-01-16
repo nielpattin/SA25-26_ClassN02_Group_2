@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia'
 import { commentService } from './comments.service'
 import { authPlugin } from '../auth'
+import { UnauthorizedError, NotFoundError, ForbiddenError } from '../../shared/errors'
 import { CreateCommentBody, UpdateCommentBody, CommentParams, TaskCommentsParams } from './comments.model'
 
 export const commentController = new Elysia({ prefix: '/comments' })
@@ -18,10 +19,7 @@ export const commentController = new Elysia({ prefix: '/comments' })
   })
 
   .post('/', async ({ body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+    if (!session) throw new UnauthorizedError()
     const comment = await commentService.create({ ...body, userId: session.user.id })
     set.status = 201
     return comment
@@ -29,40 +27,22 @@ export const commentController = new Elysia({ prefix: '/comments' })
     body: CreateCommentBody,
   })
 
-  .patch('/:id', async ({ params, body, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .patch('/:id', async ({ params, body, session }) => {
+    if (!session) throw new UnauthorizedError()
     const comment = await commentService.getById(params.id)
-    if (!comment) {
-      set.status = 404
-      return { error: 'Not found' }
-    }
-    if (comment.userId !== session.user.id) {
-      set.status = 403
-      return { error: 'Forbidden' }
-    }
+    if (!comment) throw new NotFoundError('Comment not found')
+    if (comment.userId !== session.user.id) throw new ForbiddenError()
     return commentService.update(params.id, body)
   }, {
     params: CommentParams,
     body: UpdateCommentBody,
   })
 
-  .delete('/:id', async ({ params, session, set }) => {
-    if (!session) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
+  .delete('/:id', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
     const comment = await commentService.getById(params.id)
-    if (!comment) {
-      set.status = 404
-      return { error: 'Not found' }
-    }
-    if (comment.userId !== session.user.id) {
-      set.status = 403
-      return { error: 'Forbidden' }
-    }
+    if (!comment) throw new NotFoundError('Comment not found')
+    if (comment.userId !== session.user.id) throw new ForbiddenError()
     return commentService.delete(params.id)
   }, {
     params: CommentParams,
