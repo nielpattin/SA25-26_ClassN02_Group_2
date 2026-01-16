@@ -1,15 +1,14 @@
 import { columnRepository } from './columns.repository'
 import { taskRepository } from '../tasks/tasks.repository'
-import { wsManager } from '../../websocket/manager'
+import { eventBus } from '../../events/bus'
 import { generatePosition, needsRebalancing } from '../../shared/position'
 
 export const columnService = {
   getColumnsByBoardId: (boardId: string) => columnRepository.findByBoardId(boardId),
 
-  createColumn: async (data: { name: string; position?: string; boardId: string }) => {
+  createColumn: async (data: { name: string; position?: string; boardId: string }, userId: string) => {
     let position = data.position
 
-    // Auto-generate position at end if not provided
     if (!position) {
       const lastPosition = await columnRepository.getLastPositionInBoard(data.boardId)
       position = generatePosition(lastPosition, null)
@@ -20,20 +19,28 @@ export const columnService = {
       position,
       boardId: data.boardId,
     })
-    wsManager.broadcast(`board:${data.boardId}`, { type: 'column:created', data: column })
+    
+    eventBus.emitDomain('column.created', { column, boardId: data.boardId, userId })
+    
     return column
   },
 
-  updateColumn: async (id: string, data: { name?: string; position?: string }) => {
+  updateColumn: async (id: string, data: { name?: string; position?: string }, userId: string) => {
+    const oldColumn = await columnRepository.findById(id)
     const column = await columnRepository.update(id, data)
-    wsManager.broadcast(`board:${column.boardId}`, { type: 'column:updated', data: column })
+    
+    const changes: any = {}
+    if (data.name && data.name !== oldColumn?.name) changes.name = { before: oldColumn?.name, after: data.name }
+
+    eventBus.emitDomain('column.updated', { column, boardId: column.boardId, userId, changes })
     return column
   },
 
   moveColumn: async (
     columnId: string,
-    beforeColumnId?: string,
-    afterColumnId?: string
+    beforeColumnId: string | undefined,
+    afterColumnId: string | undefined,
+    userId: string
   ) => {
     const column = await columnRepository.findById(columnId)
     if (!column) throw new Error('Column not found')
@@ -48,22 +55,21 @@ export const columnService = {
 
     const updatedColumn = await columnRepository.update(columnId, { position: newPosition })
 
-    // Check if rebalancing is needed
     if (needsRebalancing(newPosition)) {
       await columnRepository.rebalanceBoard(column.boardId)
     }
 
-    wsManager.broadcast(`board:${column.boardId}`, { type: 'column:moved', data: updatedColumn })
+    eventBus.emitDomain('column.moved', { column: updatedColumn, boardId: column.boardId, userId })
     return updatedColumn
   },
 
-  archiveColumn: async (id: string) => {
+  archiveColumn: async (id: string, userId: string) => {
     const column = await columnRepository.archive(id)
-    wsManager.broadcast(`board:${column.boardId}`, { type: 'column:deleted', data: { id } })
+    eventBus.emitDomain('column.archived', { column, boardId: column.boardId, userId })
     return column
   },
 
-  copyColumn: async (id: string) => {
+  copyColumn: async (id: string, userId: string) => {
     const originalColumn = await columnRepository.findById(id)
     if (!originalColumn) throw new Error('Column not found')
 
@@ -89,11 +95,11 @@ export const columnService = {
       })
     }
 
-    wsManager.broadcast(`board:${originalColumn.boardId}`, { type: 'column:created', data: newColumn })
+    eventBus.emitDomain('column.created', { column: newColumn, boardId: newColumn.boardId, userId })
     return newColumn
   },
 
-  moveColumnToBoard: async (id: string, targetBoardId: string) => {
+  moveColumnToBoard: async (id: string, targetBoardId: string, userId: string) => {
     const column = await columnRepository.findById(id)
     if (!column) throw new Error('Column not found')
 
@@ -106,15 +112,15 @@ export const columnService = {
       position 
     })
 
-    wsManager.broadcast(`board:${oldBoardId}`, { type: 'column:deleted', data: { id } })
-    wsManager.broadcast(`board:${targetBoardId}`, { type: 'column:created', data: updatedColumn })
+    eventBus.emitDomain('column.deleted', { columnId: id, boardId: oldBoardId, userId })
+    eventBus.emitDomain('column.created', { column: updatedColumn, boardId: targetBoardId, userId })
 
     return updatedColumn
   },
 
-  deleteColumn: async (id: string) => {
+  deleteColumn: async (id: string, userId: string) => {
     const column = await columnRepository.delete(id)
-    wsManager.broadcast(`board:${column.boardId}`, { type: 'column:deleted', data: { id } })
+    eventBus.emitDomain('column.deleted', { columnId: id, boardId: column.boardId, userId })
     return column
   },
 }

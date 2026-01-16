@@ -14,6 +14,11 @@ import { activityController } from './modules/activities'
 import { templateController } from './modules/templates'
 import { notificationController } from './modules/notifications'
 import { wsManager } from './websocket/manager'
+import { initWebSocketBridge } from './websocket/bridge'
+import { initActivitySubscriber } from './modules/activities/activity.subscriber'
+
+initWebSocketBridge()
+initActivitySubscriber()
 
 // API v1 - groups all domain controllers under /v1 prefix
 const v1 = new Elysia({ prefix: '/v1' })

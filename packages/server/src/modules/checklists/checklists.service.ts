@@ -1,18 +1,17 @@
 import { checklistRepository } from './checklists.repository'
 import { taskRepository } from '../tasks/tasks.repository'
-import { activityService } from '../activities/activities.service'
+import { eventBus } from '../../events/bus'
 import type { CreateChecklistInput, UpdateChecklistInput, CreateChecklistItemInput, UpdateChecklistItemInput } from './checklists.model'
 
 export const checklistService = {
   getByTaskId: async (taskId: string) => {
     const lists = await checklistRepository.findByTaskId(taskId)
-    const listsWithItems = await Promise.all(
+    return Promise.all(
       lists.map(async (list) => ({
         ...list,
         items: await checklistRepository.findItemsByChecklistId(list.id)
       }))
     )
-    return listsWithItems
   },
 
   getById: async (id: string) => {
@@ -26,15 +25,7 @@ export const checklistService = {
     const checklist = await checklistRepository.create(data)
     const boardId = await taskRepository.getBoardIdFromTask(data.taskId)
     if (boardId) {
-      await activityService.log({
-        boardId,
-        taskId: data.taskId,
-        userId,
-        action: 'created',
-        targetType: 'checklist',
-        targetId: checklist.id,
-        changes: { title: data.title }
-      })
+      eventBus.emitDomain('checklist.created', { checklist, taskId: data.taskId, userId, boardId })
     }
     return checklist
   },
@@ -43,15 +34,7 @@ export const checklistService = {
     const checklist = await checklistRepository.update(id, data)
     const boardId = await taskRepository.getBoardIdFromTask(checklist.taskId)
     if (boardId) {
-      await activityService.log({
-        boardId,
-        taskId: checklist.taskId,
-        userId,
-        action: 'updated',
-        targetType: 'checklist',
-        targetId: id,
-        changes: data
-      })
+      eventBus.emitDomain('checklist.updated', { checklist, taskId: checklist.taskId, userId, boardId, changes: data })
     }
     return checklist
   },
@@ -62,35 +45,18 @@ export const checklistService = {
     const boardId = await taskRepository.getBoardIdFromTask(checklist.taskId)
     await checklistRepository.delete(id)
     if (boardId) {
-      await activityService.log({
-        boardId,
-        taskId: checklist.taskId,
-        userId,
-        action: 'deleted',
-        targetType: 'checklist',
-        targetId: id,
-        changes: { title: checklist.title }
-      })
+      eventBus.emitDomain('checklist.deleted', { checklist, taskId: checklist.taskId, userId, boardId })
     }
     return checklist
   },
 
-  // Items
   createItem: async (data: CreateChecklistItemInput, userId: string) => {
     const item = await checklistRepository.createItem(data)
     const checklist = await checklistRepository.findById(data.checklistId)
     if (checklist) {
       const boardId = await taskRepository.getBoardIdFromTask(checklist.taskId)
       if (boardId) {
-        await activityService.log({
-          boardId,
-          taskId: checklist.taskId,
-          userId,
-          action: 'created',
-          targetType: 'checklist_item',
-          targetId: item.id,
-          changes: { content: data.content }
-        })
+        eventBus.emitDomain('checklist.item.created', { item, taskId: checklist.taskId, userId, boardId })
       }
     }
     return item
@@ -102,15 +68,7 @@ export const checklistService = {
     if (checklist) {
       const boardId = await taskRepository.getBoardIdFromTask(checklist.taskId)
       if (boardId) {
-        await activityService.log({
-          boardId,
-          taskId: checklist.taskId,
-          userId,
-          action: 'updated',
-          targetType: 'checklist_item',
-          targetId: id,
-          changes: data
-        })
+        eventBus.emitDomain('checklist.item.updated', { item, taskId: checklist.taskId, userId, boardId, changes: data })
       }
     }
     return item
@@ -124,15 +82,7 @@ export const checklistService = {
     if (checklist) {
       const boardId = await taskRepository.getBoardIdFromTask(checklist.taskId)
       if (boardId) {
-        await activityService.log({
-          boardId,
-          taskId: checklist.taskId,
-          userId,
-          action: 'deleted',
-          targetType: 'checklist_item',
-          targetId: id,
-          changes: { content: item.content }
-        })
+        eventBus.emitDomain('checklist.item.deleted', { item, taskId: checklist.taskId, userId, boardId })
       }
     }
     return item
@@ -146,14 +96,12 @@ export const checklistService = {
     if (checklist) {
       const boardId = await taskRepository.getBoardIdFromTask(checklist.taskId)
       if (boardId) {
-        await activityService.log({
-          boardId,
-          taskId: checklist.taskId,
-          userId,
-          action: updated.isCompleted ? 'completed' : 'uncompleted',
-          targetType: 'checklist_item',
-          targetId: id,
-          changes: { content: item.content }
+        eventBus.emitDomain('checklist.item.updated', { 
+          item: updated, 
+          taskId: checklist.taskId, 
+          userId, 
+          boardId, 
+          changes: { isCompleted: updated.isCompleted } 
         })
       }
     }

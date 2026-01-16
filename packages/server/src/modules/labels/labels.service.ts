@@ -1,7 +1,6 @@
 import { labelRepository } from './labels.repository'
 import { taskRepository } from '../tasks/tasks.repository'
-import { wsManager } from '../../websocket/manager'
-import { activityService } from '../activities/activities.service'
+import { eventBus } from '../../events/bus'
 import type { CreateLabelInput, UpdateLabelInput } from './labels.model'
 
 export const labelService = {
@@ -31,18 +30,12 @@ export const labelService = {
     const label = await labelRepository.findById(labelId)
 
     if (boardId) {
-      wsManager.broadcast(`board:${boardId}`, { 
-        type: 'task:updated',
-        data: { id: taskId }
-      })
-      await activityService.log({
-        boardId,
-        taskId,
-        userId: actorId,
-        action: 'label_added',
-        targetType: 'label',
-        targetId: labelId,
-        changes: { name: label?.name }
+      eventBus.emitDomain('label.added', { 
+        taskId, 
+        labelId, 
+        userId: actorId, 
+        boardId, 
+        labelName: label?.name 
       })
     }
     return result
@@ -54,18 +47,12 @@ export const labelService = {
     const label = await labelRepository.findById(labelId)
 
     if (boardId) {
-      wsManager.broadcast(`board:${boardId}`, { 
-        type: 'task:updated',
-        data: { id: taskId }
-      })
-      await activityService.log({
-        boardId,
-        taskId,
-        userId: actorId,
-        action: 'label_removed',
-        targetType: 'label',
-        targetId: labelId,
-        changes: { name: label?.name }
+      eventBus.emitDomain('label.removed', { 
+        taskId, 
+        labelId, 
+        userId: actorId, 
+        boardId, 
+        labelName: label?.name 
       })
     }
     return result

@@ -1,6 +1,6 @@
 import { boardRepository } from './boards.repository'
 import { organizationRepository } from '../organizations/organizations.repository'
-import { wsManager } from '../../websocket/manager'
+import { eventBus } from '../../events/bus'
 
 export const boardService = {
   getAllBoards: () => boardRepository.findAll(),
@@ -34,7 +34,9 @@ export const boardService = {
       ...data,
       organizationId: orgId,
     })
-    wsManager.broadcast(`board:${board.id}`, { type: 'board:created', data: board })
+    
+    eventBus.emitDomain('board.created', { board, userId: data.ownerId })
+    
     return board
   },
 
@@ -43,57 +45,72 @@ export const boardService = {
     description?: string
     visibility?: 'private' | 'organization' | 'public'
     position?: string
-  }) => {
+  }, userId: string) => {
+    const oldBoard = await boardRepository.findById(id)
     const board = await boardRepository.update(id, data)
-    wsManager.broadcast(`board:${id}`, { type: 'board:updated', data: board })
+    
+    const changes: any = {}
+    if (data.name && data.name !== oldBoard?.name) changes.name = { before: oldBoard?.name, after: data.name }
+    if (data.description !== undefined && data.description !== oldBoard?.description) changes.description = { before: oldBoard?.description, after: data.description }
+    if (data.visibility && data.visibility !== oldBoard?.visibility) changes.visibility = { before: oldBoard?.visibility, after: data.visibility }
+
+    eventBus.emitDomain('board.updated', { board, userId, changes })
     return board
   },
 
-  archiveBoard: async (id: string) => {
+  archiveBoard: async (id: string, userId: string) => {
     const board = await boardRepository.archive(id)
-    wsManager.broadcast(`board:${id}`, { type: 'board:archived', data: board })
+    eventBus.emitDomain('board.archived', { board, userId })
     return board
   },
 
-  restoreBoard: async (id: string) => {
+  restoreBoard: async (id: string, userId: string) => {
     const board = await boardRepository.restore(id)
-    wsManager.broadcast(`board:${id}`, { type: 'board:restored', data: board })
+    eventBus.emitDomain('board.restored', { board, userId })
     return board
   },
 
-  deleteBoard: async (id: string) => {
+  deleteBoard: async (id: string, userId: string) => {
     const board = await boardRepository.delete(id)
-    wsManager.broadcast(`board:${id}`, { type: 'board:deleted', data: { id } })
+    eventBus.emitDomain('board.deleted', { boardId: id, userId })
     return board
   },
 
   // Board Members
   getMembers: (boardId: string) => boardRepository.getMembers(boardId),
 
-  addMember: async (boardId: string, userId: string, role: 'admin' | 'member' | 'viewer' = 'member') => {
+  addMember: async (boardId: string, userId: string, actorId: string, role: 'admin' | 'member' | 'viewer' = 'member') => {
     const member = await boardRepository.addMember(boardId, userId, role)
-    wsManager.broadcast(`board:${boardId}`, { type: 'board:member:added', data: member })
+    eventBus.emitDomain('board.member.added', { boardId, member, userId, actorId })
     return member
   },
 
-  updateMemberRole: async (boardId: string, memberId: string, role: 'admin' | 'member' | 'viewer') => {
+  updateMemberRole: async (boardId: string, memberId: string, actorId: string, role: 'admin' | 'member' | 'viewer') => {
     const member = await boardRepository.updateMemberRole(memberId, role)
-    wsManager.broadcast(`board:${boardId}`, { type: 'board:member:updated', data: member })
+    eventBus.emitDomain('board.member.updated', { boardId, member, userId: member.userId, actorId })
     return member
   },
 
-  removeMember: async (boardId: string, userId: string) => {
+  removeMember: async (boardId: string, userId: string, actorId: string) => {
     const member = await boardRepository.removeMember(boardId, userId)
-    wsManager.broadcast(`board:${boardId}`, { type: 'board:member:removed', data: { boardId, userId } })
+    eventBus.emitDomain('board.member.removed', { boardId, userId, actorId })
     return member
   },
 
   // Starred Boards
   getStarredBoards: (userId: string) => boardRepository.getStarredByUserId(userId),
 
-  starBoard: (userId: string, boardId: string) => boardRepository.star(userId, boardId),
+  starBoard: async (userId: string, boardId: string) => {
+    const result = await boardRepository.star(userId, boardId)
+    eventBus.emitDomain('board.starred', { boardId, userId })
+    return result
+  },
 
-  unstarBoard: (userId: string, boardId: string) => boardRepository.unstar(userId, boardId),
+  unstarBoard: async (userId: string, boardId: string) => {
+    const result = await boardRepository.unstar(userId, boardId)
+    eventBus.emitDomain('board.unstarred', { boardId, userId })
+    return result
+  },
 
   isStarred: (userId: string, boardId: string) => boardRepository.isStarred(userId, boardId),
 }

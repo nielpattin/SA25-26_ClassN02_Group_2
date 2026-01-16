@@ -13,7 +13,6 @@ import {
 
 export const boardController = new Elysia({ prefix: '/boards' })
   .use(authPlugin)
-  // Board CRUD
   .get('/', ({ session, set }) => {
     if (!session) {
       set.status = 401
@@ -36,42 +35,78 @@ export const boardController = new Elysia({ prefix: '/boards' })
   }, {
     body: CreateBoardBody,
   })
-  .patch('/:id', ({ params: { id }, body }) => boardService.updateBoard(id, body), {
+  .patch('/:id', ({ params: { id }, body, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.updateBoard(id, body, session.user.id)
+  }, {
     params: BoardParams,
     body: UpdateBoardBody,
   })
-  .delete('/:id', ({ params: { id } }) => boardService.deleteBoard(id), {
+  .delete('/:id', ({ params: { id }, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.deleteBoard(id, session.user.id)
+  }, {
     params: BoardParams,
   })
 
-  // Archive/Restore
-  .post('/:id/archive', ({ params: { id } }) => boardService.archiveBoard(id), {
+  .post('/:id/archive', ({ params: { id }, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.archiveBoard(id, session.user.id)
+  }, {
     params: BoardParams,
   })
-  .post('/:id/restore', ({ params: { id } }) => boardService.restoreBoard(id), {
+  .post('/:id/restore', ({ params: { id }, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.restoreBoard(id, session.user.id)
+  }, {
     params: BoardParams,
   })
 
-  // Board Members
   .get('/:id/members', ({ params: { id } }) => boardService.getMembers(id), {
     params: BoardParams,
   })
-  .post('/:id/members', ({ params: { id }, body }) =>
-    boardService.addMember(id, body.userId, body.role), {
+  .post('/:id/members', ({ params: { id }, body, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.addMember(id, body.userId, session.user.id, body.role)
+  }, {
     params: BoardParams,
     body: AddMemberBody,
   })
-  .patch('/:id/members/:userId', ({ params: { id, userId }, body }) =>
-    boardService.updateMemberRole(id, userId, body.role), {
+  .patch('/:id/members/:userId', ({ params: { id, userId }, body, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.updateMemberRole(id, userId, session.user.id, body.role)
+  }, {
     params: BoardMemberParams,
     body: UpdateMemberRoleBody,
   })
-  .delete('/:id/members/:userId', ({ params: { id, userId } }) =>
-    boardService.removeMember(id, userId), {
+  .delete('/:id/members/:userId', ({ params: { id, userId }, session, set }) => {
+    if (!session) {
+      set.status = 401
+      return { error: 'Unauthorized' }
+    }
+    return boardService.removeMember(id, userId, session.user.id)
+  }, {
     params: BoardMemberParams,
   })
 
-  // Starring (user-specific, requires auth context)
   .post('/:id/star', ({ params: { id }, session, set }) => {
     if (!session) {
       set.status = 401

@@ -1,7 +1,7 @@
 import { attachmentRepository } from './attachments.repository'
 import type { CreateAttachmentInput } from './attachments.model'
 import { taskRepository } from '../tasks/tasks.repository'
-import { wsManager } from '../../websocket/manager'
+import { eventBus } from '../../events/bus'
 
 export const attachmentService = {
   getByTaskId: async (taskId: string) => {
@@ -12,19 +12,31 @@ export const attachmentService = {
     return attachmentRepository.getById(id)
   },
 
-  create: async (data: CreateAttachmentInput) => {
+  create: async (data: CreateAttachmentInput, userId: string) => {
     const attachment = await attachmentRepository.create(data)
     const boardId = await taskRepository.getBoardIdFromTask(data.taskId)
-    if (boardId) wsManager.broadcast(`board:${boardId}`, { type: 'task:updated' })
+    
+    if (boardId) {
+      eventBus.emitDomain('attachment.added', { attachment, userId, boardId })
+    }
     return attachment
   },
 
-  delete: async (id: string) => {
+  delete: async (id: string, userId: string) => {
     const attachment = await attachmentRepository.getById(id)
     if (!attachment) return null
+    
     const boardId = await taskRepository.getBoardIdFromTask(attachment.taskId)
     const result = await attachmentRepository.delete(id)
-    if (boardId) wsManager.broadcast(`board:${boardId}`, { type: 'task:updated' })
+    
+    if (boardId) {
+       eventBus.emitDomain('attachment.deleted', { 
+         attachmentId: id, 
+         taskId: attachment.taskId, 
+         userId, 
+         boardId 
+       })
+    }
     return result
   },
 }
