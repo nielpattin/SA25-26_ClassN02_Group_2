@@ -1,8 +1,11 @@
 import { Elysia, t } from 'elysia'
 import { organizationService } from './organizations.service'
 import { CreateOrganizationBody, UpdateOrganizationBody, AddMemberBody } from './organizations.model'
+import { authPlugin } from '../auth'
+import { UnauthorizedError } from '../../shared/errors'
 
 export const organizationController = new Elysia({ prefix: '/organizations' })
+  .use(authPlugin)
   .get('/', async () => {
     return organizationService.getAll()
   })
@@ -19,8 +22,9 @@ export const organizationController = new Elysia({ prefix: '/organizations' })
     params: t.Object({ slug: t.String() })
   })
 
-  .post('/', async ({ body }) => {
-    return organizationService.create(body)
+  .post('/', async ({ body, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return organizationService.create(body, session.user.id)
   }, {
     body: CreateOrganizationBody
   })

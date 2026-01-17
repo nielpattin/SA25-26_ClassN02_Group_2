@@ -13,8 +13,8 @@ export const organizationService = {
     return organizationRepository.getBySlug(slug)
   },
 
-  async create(data: CreateOrganizationInput) {
-    return organizationRepository.create(data)
+  async create(data: CreateOrganizationInput, userId: string) {
+    return organizationRepository.create(data, userId)
   },
 
   async update(id: string, data: UpdateOrganizationInput) {

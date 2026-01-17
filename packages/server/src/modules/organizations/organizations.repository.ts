@@ -18,11 +18,20 @@ export const organizationRepository = {
     return org
   },
 
-  async create(data: CreateOrganizationInput) {
-    const [org] = await db.insert(organizations).values({
-      ...data,
-    }).returning()
-    return org
+  async create(data: CreateOrganizationInput, userId: string) {
+    return db.transaction(async (tx) => {
+      const [org] = await tx.insert(organizations).values({
+        ...data,
+      }).returning()
+
+      await tx.insert(members).values({
+        organizationId: org.id,
+        userId: userId,
+        role: 'owner'
+      })
+
+      return org
+    })
   },
 
   async update(id: string, data: UpdateOrganizationInput) {

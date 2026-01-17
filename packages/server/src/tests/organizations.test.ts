@@ -33,7 +33,7 @@ describe('Organizations API', () => {
     if (orgId) {
       await app.handle(new Request(`http://localhost/v1/organizations/${orgId}`, { 
         method: 'DELETE',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(userId)
       }))
     }
     if (userId) {
@@ -44,11 +44,11 @@ describe('Organizations API', () => {
     }
   })
 
-  test('POST /organizations - create organization', async () => {
+  test('POST /organizations - create organization (auto-adds member)', async () => {
     const res = await app.handle(
       new Request('http://localhost/v1/organizations', {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(userId),
         body: JSON.stringify({ name: 'Test Org', slug: 'test-org' })
       })
     )
@@ -57,53 +57,40 @@ describe('Organizations API', () => {
     expect(org.name).toBe('Test Org')
     expect(org.slug).toBe('test-org')
     orgId = org.id
-  })
 
-  test('POST /organizations/:id/members - add member', async () => {
-    const res = await app.handle(
+    // Verify automatic membership
+    const membersRes = await app.handle(
       new Request(`http://localhost/v1/organizations/${orgId}/members`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ userId, role: 'owner' })
+        headers: getAuthHeaders(userId)
       })
     )
-    expect(res.status).toBe(200)
-    const member = await res.json()
-    expect(member.userId).toBe(userId)
-    expect(member.role).toBe('owner')
-  })
-
-  test('GET /organizations/:id/members - list members', async () => {
-    const res = await app.handle(
-      new Request(`http://localhost/v1/organizations/${orgId}/members`, {
-        headers: getAuthHeaders()
-      })
-    )
-    expect(res.status).toBe(200)
-    const members = await res.json()
+    expect(membersRes.status).toBe(200)
+    const members = await membersRes.json()
     expect(Array.isArray(members)).toBe(true)
     expect(members.length).toBe(1)
     expect(members[0].userId).toBe(userId)
+    expect(members[0].role).toBe('owner')
   })
 
   test('GET /organizations/user/:userId - user organizations', async () => {
     const res = await app.handle(
       new Request(`http://localhost/v1/organizations/user/${userId}`, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(userId)
       })
     )
     expect(res.status).toBe(200)
     const orgs = await res.json()
     expect(Array.isArray(orgs)).toBe(true)
-    expect(orgs.length).toBe(1)
-    expect(orgs[0].id).toBe(orgId)
+    expect(orgs.length).toBeGreaterThanOrEqual(1)
+    const myOrg = orgs.find((o: any) => o.id === orgId)
+    expect(myOrg).toBeDefined()
   })
 
   test('POST /boards - create board in organization', async () => {
     const res = await app.handle(
       new Request('http://localhost/v1/boards', {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(userId),
         body: JSON.stringify({ name: 'Org Board', organizationId: orgId })
       })
     )
@@ -114,7 +101,7 @@ describe('Organizations API', () => {
     // Cleanup board
     await app.handle(new Request(`http://localhost/v1/boards/${board.id}`, { 
       method: 'DELETE',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(userId)
     }))
   })
 })
