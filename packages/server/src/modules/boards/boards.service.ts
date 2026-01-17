@@ -45,9 +45,11 @@ export const boardService = {
     description?: string
     visibility?: 'private' | 'organization' | 'public'
     position?: string
+    version?: number
   }, userId: string) => {
     const oldBoard = await boardRepository.findById(id)
-    const board = await boardRepository.update(id, data)
+    const { version, ...updateData } = data
+    const board = await boardRepository.update(id, updateData, version)
     
     const changes: any = {}
     if (data.name && data.name !== oldBoard?.name) changes.name = { before: oldBoard?.name, after: data.name }

@@ -25,9 +25,10 @@ export const columnService = {
     return column
   },
 
-  updateColumn: async (id: string, data: { name?: string; position?: string }, userId: string) => {
+  updateColumn: async (id: string, data: { name?: string; position?: string; version?: number }, userId: string) => {
     const oldColumn = await columnRepository.findById(id)
-    const column = await columnRepository.update(id, data)
+    const { version, ...updateData } = data
+    const column = await columnRepository.update(id, updateData, version)
     
     const changes: any = {}
     if (data.name && data.name !== oldColumn?.name) changes.name = { before: oldColumn?.name, after: data.name }
@@ -40,7 +41,8 @@ export const columnService = {
     columnId: string,
     beforeColumnId: string | undefined,
     afterColumnId: string | undefined,
-    userId: string
+    userId: string,
+    version?: number
   ) => {
     const column = await columnRepository.findById(columnId)
     if (!column) throw new Error('Column not found')
@@ -53,7 +55,7 @@ export const columnService = {
 
     const newPosition = generatePosition(before, after)
 
-    const updatedColumn = await columnRepository.update(columnId, { position: newPosition })
+    const updatedColumn = await columnRepository.update(columnId, { position: newPosition }, version)
 
     if (needsRebalancing(newPosition)) {
       await columnRepository.rebalanceBoard(column.boardId)

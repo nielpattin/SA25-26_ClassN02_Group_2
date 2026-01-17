@@ -16,11 +16,13 @@ export const CreateColumnBody = t.Object({
 export const UpdateColumnBody = t.Object({
   name: t.Optional(ColumnSchema.name),
   position: t.Optional(ColumnSchema.position),
+  version: t.Optional(t.Number()),
 })
 
 export const MoveColumnBody = t.Object({
   beforeColumnId: t.Optional(t.String({ format: 'uuid' })),
   afterColumnId: t.Optional(t.String({ format: 'uuid' })),
+  version: t.Optional(t.Number()),
 })
 
 export const MoveToBoardBody = t.Object({

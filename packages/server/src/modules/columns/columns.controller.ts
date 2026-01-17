@@ -31,7 +31,7 @@ export const columnController = new Elysia({ prefix: '/columns' })
   })
   .patch('/:id/move', ({ params: { id }, body, session }) => {
     if (!session) throw new UnauthorizedError()
-    return columnService.moveColumn(id, body.beforeColumnId, body.afterColumnId, session.user.id)
+    return columnService.moveColumn(id, body.beforeColumnId, body.afterColumnId, session.user.id, body.version)
   }, {
     params: ColumnParams,
     body: MoveColumnBody,

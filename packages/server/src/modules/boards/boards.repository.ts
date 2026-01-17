@@ -1,6 +1,7 @@
 import { db } from '../../db'
 import { boards, boardMembers, starredBoards, users, members, organizations } from '../../db/schema'
 import { eq, sql, and, isNull, or, inArray } from 'drizzle-orm'
+import { ConflictError, NotFoundError } from '../../shared/errors'
 
 export const boardRepository = {
   findAll: () => db.select().from(boards).where(isNull(boards.archivedAt)),
@@ -57,11 +58,25 @@ export const boardRepository = {
     description?: string
     visibility?: 'private' | 'organization' | 'public'
     position?: string
-  }) => {
+  }, expectedVersion?: number) => {
+    const whereClause = expectedVersion
+      ? and(eq(boards.id, id), eq(boards.version, expectedVersion))
+      : eq(boards.id, id)
+
     const [board] = await db.update(boards).set({
       ...data,
+      version: sql`${boards.version} + 1`,
       updatedAt: new Date(),
-    }).where(eq(boards.id, id)).returning()
+    }).where(whereClause).returning()
+
+    if (!board && expectedVersion) {
+      const existing = await db.select({ id: boards.id }).from(boards).where(eq(boards.id, id))
+      if (existing.length > 0) {
+        throw new ConflictError('Board has been modified by another user')
+      }
+      throw new NotFoundError('Board not found')
+    }
+
     return board
   },
 

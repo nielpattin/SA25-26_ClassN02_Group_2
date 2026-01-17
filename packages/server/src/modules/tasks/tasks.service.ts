@@ -42,9 +42,11 @@ export const taskService = {
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
     dueDate?: Date | null
     coverImageUrl?: string | null
+    version?: number
   }, userId: string) => {
     const oldTask = await taskRepository.findById(id)
-    const task = await taskRepository.update(id, data)
+    const { version, ...updateData } = data
+    const task = await taskRepository.update(id, updateData, version)
     
     if (task.columnId) {
       const boardId = await taskRepository.getBoardIdFromColumn(task.columnId)
@@ -101,7 +103,8 @@ export const taskService = {
     userId: string,
     targetColumnId?: string,
     beforeTaskId?: string,
-    afterTaskId?: string
+    afterTaskId?: string,
+    version?: number
   ) => {
     const task = await taskRepository.findById(taskId)
     if (!task) throw new Error('Task not found')
@@ -121,7 +124,7 @@ export const taskService = {
     const updatedTask = await taskRepository.update(taskId, {
       position: newPosition,
       columnId,
-    })
+    }, version)
 
     if (needsRebalancing(newPosition)) {
       await taskRepository.rebalanceColumn(columnId)

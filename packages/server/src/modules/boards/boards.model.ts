@@ -20,6 +20,7 @@ export const UpdateBoardBody = t.Object({
   description: t.Optional(t.String()),
   visibility: t.Optional(BoardSchema.visibility),
   position: t.Optional(t.String()),
+  version: t.Optional(t.Number()),
 })
 
 export const BoardParams = t.Object({

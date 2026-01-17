@@ -2,6 +2,7 @@ import { db } from '../../db'
 import { tasks, columns, labels, taskLabels, taskAssignees, checklists, checklistItems, attachments, users } from '../../db/schema'
 import { eq, asc, desc, sql, and, isNull } from 'drizzle-orm'
 import { generatePosition, generatePositions } from '../../shared/position'
+import { ConflictError, NotFoundError } from '../../shared/errors'
 
 export const taskRepository = {
   findById: async (id: string) => {
@@ -50,11 +51,25 @@ export const taskRepository = {
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
     dueDate?: Date | null
     coverImageUrl?: string | null
-  }) => {
+  }, expectedVersion?: number) => {
+    const whereClause = expectedVersion
+      ? and(eq(tasks.id, id), eq(tasks.version, expectedVersion))
+      : eq(tasks.id, id)
+
     const [task] = await db.update(tasks).set({
       ...data,
+      version: sql`${tasks.version} + 1`,
       updatedAt: new Date(),
-    }).where(eq(tasks.id, id)).returning()
+    }).where(whereClause).returning()
+
+    if (!task && expectedVersion) {
+      const existing = await db.select({ id: tasks.id }).from(tasks).where(eq(tasks.id, id))
+      if (existing.length > 0) {
+        throw new ConflictError('Task has been modified by another user')
+      }
+      throw new NotFoundError('Task not found')
+    }
+
     return task
   },
 

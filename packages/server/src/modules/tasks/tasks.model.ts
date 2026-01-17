@@ -34,6 +34,7 @@ export const UpdateTaskBody = t.Object({
   dueDate: t.Optional(TaskSchema.dueDate),
   priority: t.Optional(t.Nullable(TaskSchema.priority)),
   coverImageUrl: t.Optional(t.Nullable(t.String())),
+  version: t.Optional(t.Number()),
 })
 
 export const TaskParams = t.Object({
@@ -62,4 +63,5 @@ export const MoveTaskBody = t.Object({
   columnId: t.Optional(TaskSchema.columnId),
   beforeTaskId: t.Optional(t.String({ format: 'uuid' })),
   afterTaskId: t.Optional(t.String({ format: 'uuid' })),
+  version: t.Optional(t.Number()),
 })

@@ -1,7 +1,8 @@
 import { db } from '../../db'
 import { columns } from '../../db/schema'
-import { eq, asc, desc, and, isNull } from 'drizzle-orm'
+import { eq, asc, desc, and, isNull, sql } from 'drizzle-orm'
 import { generatePositions } from '../../shared/position'
+import { ConflictError, NotFoundError } from '../../shared/errors'
 
 export const columnRepository = {
   findById: async (id: string) => {
@@ -19,8 +20,24 @@ export const columnRepository = {
     return column
   },
 
-  update: async (id: string, data: { name?: string; position?: string; boardId?: string; archivedAt?: Date | null }) => {
-    const [column] = await db.update(columns).set(data).where(eq(columns.id, id)).returning()
+  update: async (id: string, data: { name?: string; position?: string; boardId?: string; archivedAt?: Date | null }, expectedVersion?: number) => {
+    const whereClause = expectedVersion
+      ? and(eq(columns.id, id), eq(columns.version, expectedVersion))
+      : eq(columns.id, id)
+
+    const [column] = await db.update(columns).set({
+      ...data,
+      version: sql`${columns.version} + 1`
+    }).where(whereClause).returning()
+
+    if (!column && expectedVersion) {
+      const existing = await db.select({ id: columns.id }).from(columns).where(eq(columns.id, id))
+      if (existing.length > 0) {
+        throw new ConflictError('Column has been modified by another user')
+      }
+      throw new NotFoundError('Column not found')
+    }
+
     return column
   },
 
