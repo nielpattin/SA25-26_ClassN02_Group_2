@@ -21,12 +21,14 @@ export const idempotencyPlugin = new Elysia({ name: 'idempotency' })
     const key = request.headers.get('Idempotency-Key')
     if (!key || !session?.user) return
 
-    let body: unknown = null
-    try {
-      const cloned = request.clone()
-      body = await cloned.json()
-    } catch {
-      // Body might be empty
+    let body: unknown = context.body
+    if (!body) {
+      try {
+        const cloned = request.clone()
+        body = await cloned.json()
+      } catch {
+        // Body might be empty
+      }
     }
 
     const userId = session.user.id
