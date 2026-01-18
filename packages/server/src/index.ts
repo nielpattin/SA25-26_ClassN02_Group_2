@@ -14,6 +14,7 @@ import { workspaceController } from './modules/workspaces'
 import { activityController } from './modules/activities'
 import { templateController } from './modules/templates'
 import { notificationController } from './modules/notifications'
+import { configController } from './modules/config/config.controller'
 import { wsManager } from './websocket/manager'
 import { initWebSocketBridge } from './websocket/bridge'
 import { initActivitySubscriber } from './modules/activities/activity.subscriber'
@@ -80,6 +81,7 @@ export const app = new Elysia()
     .use(activityController)
     .use(templateController)
     .use(notificationController)
+    .use(configController)
   )
   .ws('/ws', {
     body: t.Object({

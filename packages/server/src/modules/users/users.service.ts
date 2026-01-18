@@ -1,5 +1,6 @@
 import { userRepository } from './users.repository'
-import type { CreateUserInput, UpdateUserInput } from './users.model'
+import type { CreateUserInput, UpdateUserInput, UpdateUserPreferencesInput } from './users.model'
+
 export const userService = {
   async getAll() {
     return userRepository.getAll()
@@ -19,6 +20,10 @@ export const userService = {
 
   async update(id: string, data: UpdateUserInput) {
     return userRepository.update(id, data)
+  },
+
+  async updatePreferences(id: string, data: UpdateUserPreferencesInput) {
+    return userRepository.updatePreferences(id, data)
   },
 
   async delete(id: string) {
