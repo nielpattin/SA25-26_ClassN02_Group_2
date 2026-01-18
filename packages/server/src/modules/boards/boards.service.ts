@@ -1,5 +1,5 @@
 import { boardRepository } from './boards.repository'
-import { organizationRepository } from '../organizations/organizations.repository'
+import { workspaceRepository } from '../workspaces/workspaces.repository'
 import { eventBus } from '../../events/bus'
 
 export const boardService = {
@@ -9,30 +9,30 @@ export const boardService = {
 
   getBoardById: (id: string) => boardRepository.findById(id),
 
-  getBoardsByOrganizationId: (organizationId: string) =>
-    boardRepository.findByOrganizationId(organizationId),
+  getBoardsByWorkspaceId: (workspaceId: string) =>
+    boardRepository.findByWorkspaceId(workspaceId),
 
   createBoard: async (data: {
     name: string
     description?: string
-    organizationId?: string
+    workspaceId?: string
     ownerId: string
-    visibility?: 'private' | 'organization' | 'public'
+    visibility?: 'private' | 'workspace' | 'public'
   }) => {
-    let orgId = data.organizationId
+    let workspaceId = data.workspaceId
 
-    // If no org specified, find user's personal org
-    if (!orgId) {
-      const userOrgs = await organizationRepository.getUserOrganizations(data.ownerId)
-      const personalOrg = userOrgs.find(o => o.organization.personal)
-      if (personalOrg) {
-        orgId = personalOrg.organization.id
+    // If no workspace specified, find user's personal workspace
+    if (!workspaceId) {
+      const userWorkspaces = await workspaceRepository.getUserWorkspaces(data.ownerId)
+      const personalWorkspace = userWorkspaces.find(o => (o as any).workspace.personal)
+      if (personalWorkspace) {
+        workspaceId = (personalWorkspace as any).workspace.id
       }
     }
 
     const board = await boardRepository.create({
       ...data,
-      organizationId: orgId,
+      workspaceId: workspaceId,
     })
     
     eventBus.emitDomain('board.created', { board, userId: data.ownerId })
@@ -43,7 +43,7 @@ export const boardService = {
   updateBoard: async (id: string, data: {
     name?: string
     description?: string
-    visibility?: 'private' | 'organization' | 'public'
+    visibility?: 'private' | 'workspace' | 'public'
     position?: string
     version?: number
   }, userId: string) => {

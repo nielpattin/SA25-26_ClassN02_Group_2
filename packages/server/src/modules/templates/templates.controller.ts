@@ -13,9 +13,9 @@ export const templateController = new Elysia({ prefix: '/templates' })
   // Board Templates
   .get('/boards', async ({ query, session }) => {
     if (!session) throw new UnauthorizedError()
-    return templateService.getBoardTemplates(session.user.id, query.organizationId)
+    return templateService.getBoardTemplates(session.user.id, query.workspaceId)
   }, {
-    query: t.Object({ organizationId: t.Optional(t.String()) }),
+    query: t.Object({ workspaceId: t.Optional(t.String()) }),
   })
 
   .get('/boards/:id', async ({ params }) => {

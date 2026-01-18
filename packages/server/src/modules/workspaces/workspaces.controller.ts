@@ -1,74 +1,76 @@
 import { Elysia, t } from 'elysia'
-import { organizationService } from './organizations.service'
-import { CreateOrganizationBody, UpdateOrganizationBody, AddMemberBody } from './organizations.model'
+import { workspaceService } from './workspaces.service'
+import { CreateWorkspaceBody, UpdateWorkspaceBody, AddMemberBody } from './workspaces.model'
 import { authPlugin } from '../auth'
 import { UnauthorizedError } from '../../shared/errors'
 
-export const organizationController = new Elysia({ prefix: '/organizations' })
+export const workspaceController = new Elysia({ prefix: '/workspaces' })
   .use(authPlugin)
   .get('/', async () => {
-    return organizationService.getAll()
+    return workspaceService.getAll()
   })
 
   .get('/:id', async ({ params }) => {
-    return organizationService.getById(params.id)
+    return workspaceService.getById(params.id)
   }, {
     params: t.Object({ id: t.String() })
   })
 
   .get('/slug/:slug', async ({ params }) => {
-    return organizationService.getBySlug(params.slug)
+    return workspaceService.getBySlug(params.slug)
   }, {
     params: t.Object({ slug: t.String() })
   })
 
   .post('/', async ({ body, session }) => {
     if (!session) throw new UnauthorizedError()
-    return organizationService.create(body, session.user.id)
+    return workspaceService.create(body, session.user.id)
   }, {
-    body: CreateOrganizationBody
+    body: CreateWorkspaceBody
   })
 
   .patch('/:id', async ({ params, body }) => {
-    return organizationService.update(params.id, body)
+    return workspaceService.update(params.id, body)
   }, {
     params: t.Object({ id: t.String() }),
-    body: UpdateOrganizationBody
+    body: UpdateWorkspaceBody
   })
 
   .delete('/:id', async ({ params }) => {
-    return organizationService.delete(params.id)
+    return workspaceService.delete(params.id)
   }, {
     params: t.Object({ id: t.String() })
   })
 
   .get('/:id/members', async ({ params }) => {
-    return organizationService.getMembers(params.id)
+    return workspaceService.getMembers(params.id)
   }, {
     params: t.Object({ id: t.String() })
   })
 
-  .post('/:id/members', async ({ params, body }) => {
-    return organizationService.addMember(params.id, body)
+  .post('/:id/members', async ({ params, body, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return workspaceService.addMember(params.id, body, session.user.id)
   }, {
     params: t.Object({ id: t.String() }),
     body: AddMemberBody
   })
 
-  .delete('/:id/members/:userId', async ({ params }) => {
-    return organizationService.removeMember(params.id, params.userId)
+  .delete('/:id/members/:userId', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return workspaceService.removeMember(params.id, params.userId, session.user.id)
   }, {
     params: t.Object({ id: t.String(), userId: t.String() })
   })
 
   .get('/:id/boards', async ({ params }) => {
-    return organizationService.getBoards(params.id)
+    return workspaceService.getBoards(params.id)
   }, {
     params: t.Object({ id: t.String() })
   })
 
   .get('/user/:userId', async ({ params }) => {
-    return organizationService.getUserOrganizations(params.userId)
+    return workspaceService.getUserWorkspaces(params.userId)
   }, {
     params: t.Object({ userId: t.String() })
   })

@@ -1,5 +1,5 @@
 import { Sidebar } from './Sidebar'
-import { OrganizationProvider } from '../../context/OrganizationContext'
+import { WorkspaceProvider } from '../../context/WorkspaceContext'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -7,13 +7,13 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <OrganizationProvider>
+    <WorkspaceProvider>
       <div className="bg-canvas flex min-h-screen">
         <Sidebar />
         <main className="ml-64 flex-1 transition-all duration-300 ease-in-out">
           {children}
         </main>
       </div>
-    </OrganizationProvider>
+    </WorkspaceProvider>
   )
 }

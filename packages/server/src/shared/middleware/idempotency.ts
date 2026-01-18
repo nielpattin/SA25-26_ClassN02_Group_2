@@ -13,14 +13,24 @@ async function generateRequestHash(method: string, path: string, body: unknown):
 }
 
 export const idempotencyPlugin = new Elysia({ name: 'idempotency' })
-  .onBeforeHandle({ as: 'global' }, async (context: any) => {
-    const { request, session, set, path } = context
+  .onBeforeHandle({ as: 'scoped' }, async (context: any) => {
+    const { request, path } = context
+    
+    // 1. Quick path check
     if (!path.startsWith('/v1')) return
+    
+    // 2. Header check - return immediately if no key
+    const key = request.headers.get('Idempotency-Key')
+    if (!key) return
+
+    // 3. Method check
     if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(request.method)) return
 
-    const key = request.headers.get('Idempotency-Key')
-    if (!key || !session?.user) return
+    // 4. Session check
+    const session = context.session
+    if (!session?.user) return
 
+    // 5. Body access - ONLY reached if Idempotency-Key is present
     let body: unknown = context.body
     if (!body) {
       try {
@@ -41,7 +51,7 @@ export const idempotencyPlugin = new Elysia({ name: 'idempotency' })
         if (existing.requestHash !== requestHash) {
           throw new BadRequestError('Idempotency Key reuse detected with different request parameters')
         }
-        set.status = existing.responseStatus || 200
+        context.set.status = existing.responseStatus || 200
         return existing.responseBody
       }
 
@@ -55,9 +65,10 @@ export const idempotencyPlugin = new Elysia({ name: 'idempotency' })
       throw new ConflictError('A request with this Idempotency-Key is already in progress')
     }
   })
-  .onAfterHandle({ as: 'global' }, async (context: any) => {
+  .onAfterHandle({ as: 'scoped' }, async (context: any) => {
     const { request, response, session, path } = context
     if (!path.startsWith('/v1')) return
+    
     const key = request.headers.get('Idempotency-Key')
     if (!key || !session?.user) return
 
@@ -69,7 +80,7 @@ export const idempotencyPlugin = new Elysia({ name: 'idempotency' })
 
     await idempotencyRepository.resolve(session.user.id, key, status, response)
   })
-  .onError({ as: 'global' }, async (context: any) => {
+  .onError({ as: 'scoped' }, async (context: any) => {
      const { request, session, code, path } = context
      if (!path.startsWith('/v1')) return
      

@@ -2,9 +2,9 @@ import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
 import { app } from '../index'
 import { getAuthHeaders, ensureTestUser } from './helpers'
 
-describe('Organizations API', () => {
+describe('Workspaces API', () => {
   let userId: string
-  let orgId: string
+  let workspaceId: string
 
   beforeAll(async () => {
     await ensureTestUser()
@@ -30,8 +30,8 @@ describe('Organizations API', () => {
 
   afterAll(async () => {
     // Cleanup
-    if (orgId) {
-      await app.handle(new Request(`http://localhost/v1/organizations/${orgId}`, { 
+    if (workspaceId) {
+      await app.handle(new Request(`http://localhost/v1/workspaces/${workspaceId}`, { 
         method: 'DELETE',
         headers: getAuthHeaders(userId)
       }))
@@ -44,23 +44,23 @@ describe('Organizations API', () => {
     }
   })
 
-  test('POST /organizations - create organization (auto-adds member)', async () => {
+  test('POST /workspaces - create workspace (auto-adds member)', async () => {
     const res = await app.handle(
-      new Request('http://localhost/v1/organizations', {
+      new Request('http://localhost/v1/workspaces', {
         method: 'POST',
         headers: getAuthHeaders(userId),
-        body: JSON.stringify({ name: 'Test Org', slug: 'test-org' })
+        body: JSON.stringify({ name: 'Test Workspace', slug: 'test-workspace' })
       })
     )
     expect(res.status).toBe(200)
-    const org = await res.json()
-    expect(org.name).toBe('Test Org')
-    expect(org.slug).toBe('test-org')
-    orgId = org.id
+    const workspace = await res.json()
+    expect(workspace.name).toBe('Test Workspace')
+    expect(workspace.slug).toBe('test-workspace')
+    workspaceId = workspace.id
 
     // Verify automatic membership
     const membersRes = await app.handle(
-      new Request(`http://localhost/v1/organizations/${orgId}/members`, {
+      new Request(`http://localhost/v1/workspaces/${workspaceId}/members`, {
         headers: getAuthHeaders(userId)
       })
     )
@@ -72,31 +72,31 @@ describe('Organizations API', () => {
     expect(members[0].role).toBe('owner')
   })
 
-  test('GET /organizations/user/:userId - user organizations', async () => {
+  test('GET /workspaces/user/:userId - user workspaces', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/v1/organizations/user/${userId}`, {
+      new Request(`http://localhost/v1/workspaces/user/${userId}`, {
         headers: getAuthHeaders(userId)
       })
     )
     expect(res.status).toBe(200)
-    const orgs = await res.json()
-    expect(Array.isArray(orgs)).toBe(true)
-    expect(orgs.length).toBeGreaterThanOrEqual(1)
-    const myOrg = orgs.find((o: any) => o.id === orgId)
-    expect(myOrg).toBeDefined()
+    const workspaces = await res.json()
+    expect(Array.isArray(workspaces)).toBe(true)
+    expect(workspaces.length).toBeGreaterThanOrEqual(1)
+    const myWorkspace = workspaces.find((o: any) => o.id === workspaceId)
+    expect(myWorkspace).toBeDefined()
   })
 
-  test('POST /boards - create board in organization', async () => {
+  test('POST /boards - create board in workspace', async () => {
     const res = await app.handle(
       new Request('http://localhost/v1/boards', {
         method: 'POST',
         headers: getAuthHeaders(userId),
-        body: JSON.stringify({ name: 'Org Board', organizationId: orgId })
+        body: JSON.stringify({ name: 'Workspace Board', workspaceId: workspaceId })
       })
     )
     expect(res.status).toBe(200)
     const board = await res.json()
-    expect(board.organizationId).toBe(orgId)
+    expect(board.workspaceId).toBe(workspaceId)
     
     // Cleanup board
     await app.handle(new Request(`http://localhost/v1/boards/${board.id}`, { 

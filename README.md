@@ -7,7 +7,7 @@ Kanban board application.
 - **Kanban Boards**: Drag-and-drop task management.
 - **Real-time**: Instant updates via WebSockets.
 - **Details**: Markdown, checklists, labels, due dates.
-- **Management**: Workspaces, organizations, permissions.
+- **Management**: Workspaces, teams, permissions.
 - **Type-Safety**: End-to-end via Eden Treaty.
 - **Auth**: Better Auth.
 

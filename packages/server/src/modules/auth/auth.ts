@@ -40,7 +40,7 @@ export const auth = betterAuth({
         after: async (user) => {
           // Create personal workspace for new user
           const slug = `personal-${user.id.slice(0, 8)}`
-          const [org] = await db.insert(schema.organizations).values({
+          const [workspace] = await db.insert(schema.workspaces).values({
             name: 'Personal',
             slug,
             personal: true,
@@ -48,7 +48,7 @@ export const auth = betterAuth({
 
           // Add user as owner
           await db.insert(schema.members).values({
-            organizationId: org.id,
+            workspaceId: workspace.id,
             userId: user.id,
             role: 'owner',
           })

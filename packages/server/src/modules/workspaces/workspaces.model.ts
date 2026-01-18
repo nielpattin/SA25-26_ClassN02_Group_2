@@ -1,14 +1,14 @@
 import { t } from 'elysia'
 
 // Enum types matching PostgreSQL enums
-export const OrgRoleSchema = t.Union([
+export const WorkspaceRoleSchema = t.Union([
   t.Literal('owner'),
   t.Literal('admin'),
   t.Literal('member'),
   t.Literal('viewer')
 ])
 
-export const OrganizationSchema = t.Object({
+export const WorkspaceSchema = t.Object({
   id: t.String({ format: 'uuid' }),
   name: t.String({ minLength: 1 }),
   slug: t.String({ minLength: 1 }),
@@ -16,13 +16,13 @@ export const OrganizationSchema = t.Object({
   createdAt: t.Date()
 })
 
-export const CreateOrganizationBody = t.Object({
+export const CreateWorkspaceBody = t.Object({
   name: t.String({ minLength: 1 }),
   slug: t.String({ minLength: 1 }),
   personal: t.Optional(t.Boolean())
 })
 
-export const UpdateOrganizationBody = t.Object({
+export const UpdateWorkspaceBody = t.Object({
   name: t.Optional(t.String({ minLength: 1 })),
   slug: t.Optional(t.String({ minLength: 1 })),
   personal: t.Optional(t.Boolean())
@@ -30,19 +30,20 @@ export const UpdateOrganizationBody = t.Object({
 
 export const MemberSchema = t.Object({
   id: t.String({ format: 'uuid' }),
-  organizationId: t.String({ format: 'uuid' }),
+  workspaceId: t.String({ format: 'uuid' }),
   userId: t.String(),
-  role: OrgRoleSchema,
+  role: WorkspaceRoleSchema,
   createdAt: t.Date()
 })
 
 export const AddMemberBody = t.Object({
-  userId: t.String(),
-  role: OrgRoleSchema
+  userId: t.Optional(t.String()),
+  email: t.Optional(t.String({ format: 'email' })),
+  role: t.Optional(WorkspaceRoleSchema)
 })
 
-export type Organization = typeof OrganizationSchema.static
-export type CreateOrganizationInput = typeof CreateOrganizationBody.static
-export type UpdateOrganizationInput = typeof UpdateOrganizationBody.static
+export type Workspace = typeof WorkspaceSchema.static
+export type CreateWorkspaceInput = typeof CreateWorkspaceBody.static
+export type UpdateWorkspaceInput = typeof UpdateWorkspaceBody.static
 export type Member = typeof MemberSchema.static
 export type AddMemberInput = typeof AddMemberBody.static

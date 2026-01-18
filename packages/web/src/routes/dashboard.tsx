@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { AuthModal } from '../components/auth/AuthModal'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
-import { useOrganization } from '../context/OrganizationContext'
+import { useWorkspace } from '../context/WorkspaceContext'
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardComponent,
@@ -65,29 +65,29 @@ function DashboardComponent() {
 function BoardsDashboard() {
   const queryClient = useQueryClient()
   const [newBoardName, setNewBoardName] = useState('')
-  const { currentOrganization, isLoading: isOrgLoading } = useOrganization()
+  const { currentWorkspace, isLoading: isWorkspaceLoading } = useWorkspace()
 
   const { data: boards, isLoading: isBoardsLoading } = useQuery({
-    queryKey: ['boards', currentOrganization?.id],
+    queryKey: ['boards', currentWorkspace?.id],
     queryFn: async () => {
-      if (!currentOrganization?.id) return []
+      if (!currentWorkspace?.id) return []
       
-      // Use the organization-specific endpoint
-      const { data, error } = await api.v1.organizations({ id: currentOrganization.id }).boards.get()
+      // Use the workspace-specific endpoint
+      const { data, error } = await api.v1.workspaces({ id: currentWorkspace.id }).boards.get()
       
       if (error) throw error
       return data
     },
-    enabled: !!currentOrganization?.id,
+    enabled: !!currentWorkspace?.id,
   })
 
   const createBoard = useMutation({
     mutationFn: async (name: string) => {
-      if (!currentOrganization) throw new Error('No organization selected')
+      if (!currentWorkspace) throw new Error('No workspace selected')
       
       const { data, error } = await api.v1.boards.post({ 
         name,
-        organizationId: currentOrganization.id
+        workspaceId: currentWorkspace.id
       })
       if (error) throw error
       return data
@@ -109,7 +109,7 @@ function BoardsDashboard() {
     },
   })
 
-  if (isOrgLoading || (isBoardsLoading && currentOrganization)) {
+  if (isWorkspaceLoading || (isBoardsLoading && currentWorkspace)) {
      return <div className="font-heading p-12 font-extrabold text-black uppercase">Loading workspace...</div>
   }
 
@@ -117,10 +117,10 @@ function BoardsDashboard() {
     <div className="p-12 lg:px-16">
       <header className="mb-10">
         <h1 className="font-heading m-0 text-[32px] font-bold tracking-tight text-black uppercase">
-          {currentOrganization?.personal ? 'My Boards' : `${currentOrganization?.name} Boards`}
+          {currentWorkspace?.personal ? 'My Boards' : `${currentWorkspace?.name} Boards`}
         </h1>
         <p className="mt-2 text-sm font-medium text-gray-500 uppercase">
-          {currentOrganization?.personal ? 'Personal Workspace' : 'Team Workspace'}
+          {currentWorkspace?.personal ? 'Personal Workspace' : 'Team Workspace'}
         </p>
       </header>
 

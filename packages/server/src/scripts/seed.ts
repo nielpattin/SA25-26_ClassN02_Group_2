@@ -76,7 +76,7 @@ async function cleanDatabase() {
     schema.boardTemplates,
     schema.taskTemplates,
     schema.members,
-    schema.organizations,
+    schema.workspaces,
     schema.sessions,
     schema.accounts,
     schema.verifications,
@@ -100,8 +100,8 @@ async function seed() {
   ])
   const ownerId = allUserIds[0]
 
-  console.log('Creating organization and members...')
-  const [org] = await db.insert(schema.organizations).values({
+  console.log('Creating workspace and members...')
+  const [workspace] = await db.insert(schema.workspaces).values({
     name: 'Seed Workspace',
     slug: `seed-workspace-${Date.now()}`,
     personal: true,
@@ -109,7 +109,7 @@ async function seed() {
 
   await db.insert(schema.members).values(
     allUserIds.map((id, index) => ({
-      organizationId: org.id,
+      workspaceId: workspace.id,
       userId: id,
       role: (index === 0 ? 'owner' : 'member') as 'owner' | 'member',
     }))
@@ -167,7 +167,7 @@ async function seed() {
   
   const [smallBoard] = await db.insert(schema.boards).values({
     name: 'Small Board',
-    organizationId: org.id,
+    workspaceId: workspace.id,
     ownerId: ownerId,
     position: boardPositions[0],
     visibility: 'private',
@@ -214,7 +214,7 @@ async function seed() {
 
   const [bigBoard] = await db.insert(schema.boards).values({
     name: 'Big Board',
-    organizationId: org.id,
+    workspaceId: workspace.id,
     ownerId: ownerId,
     position: boardPositions[1],
     visibility: 'private',

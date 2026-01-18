@@ -3,8 +3,8 @@ import type { CreateBoardTemplateInput, UpdateBoardTemplateInput, CreateTaskTemp
 
 export const templateService = {
   // Board Templates
-  getBoardTemplates: (userId: string, organizationId?: string) =>
-    templateRepository.findBoardTemplates(userId, organizationId),
+  getBoardTemplates: (userId: string, workspaceId?: string) =>
+    templateRepository.findBoardTemplates(userId, workspaceId),
 
   getBoardTemplateById: (id: string) => templateRepository.findBoardTemplateById(id),
 

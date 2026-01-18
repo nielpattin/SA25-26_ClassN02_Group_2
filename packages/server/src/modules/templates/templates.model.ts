@@ -17,7 +17,7 @@ export const ChecklistItemSchema = t.Object({
 export const CreateBoardTemplateBody = t.Object({
   name: t.String({ minLength: 1 }),
   description: t.Optional(t.String()),
-  organizationId: t.Optional(t.String({ format: 'uuid' })),
+  workspaceId: t.Optional(t.String({ format: 'uuid' })),
   columnDefinitions: t.Array(ColumnDefinitionSchema),
   defaultLabels: t.Optional(t.Array(LabelDefinitionSchema)),
   isPublic: t.Optional(t.Boolean()),

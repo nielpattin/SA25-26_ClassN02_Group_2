@@ -3,14 +3,14 @@ import { t } from 'elysia'
 export const BoardSchema = {
   id: t.String({ format: 'uuid' }),
   name: t.String({ minLength: 1 }),
-  visibility: t.Union([t.Literal('private'), t.Literal('organization'), t.Literal('public')]),
+  visibility: t.Union([t.Literal('private'), t.Literal('workspace'), t.Literal('public')]),
   role: t.Union([t.Literal('admin'), t.Literal('member'), t.Literal('viewer')]),
 }
 
 export const CreateBoardBody = t.Object({
   name: BoardSchema.name,
   description: t.Optional(t.String()),
-  organizationId: t.Optional(t.String({ format: 'uuid' })),
+  workspaceId: t.Optional(t.String({ format: 'uuid' })),
   ownerId: t.Optional(t.String()),
   visibility: t.Optional(BoardSchema.visibility),
 })

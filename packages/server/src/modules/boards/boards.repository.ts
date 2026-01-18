@@ -1,28 +1,28 @@
 import { db } from '../../db'
-import { boards, boardMembers, starredBoards, users, members, organizations } from '../../db/schema'
+import { boards, boardMembers, starredBoards, users, members, workspaces } from '../../db/schema'
 import { eq, sql, and, isNull, or, inArray } from 'drizzle-orm'
 import { ConflictError, NotFoundError } from '../../shared/errors'
 
 export const boardRepository = {
   findAll: () => db.select().from(boards).where(isNull(boards.archivedAt)),
 
-  /** Find boards accessible to user (via org membership or board membership) */
+  /** Find boards accessible to user (via workspace membership or board membership) */
   findByUserId: async (userId: string) => {
-    // Get user's organization IDs
-    const userOrgs = await db.select({ orgId: members.organizationId })
+    // Get user's workspace IDs
+    const userWorkspaces = await db.select({ workspaceId: members.workspaceId })
       .from(members)
       .where(eq(members.userId, userId))
 
-    const orgIds = userOrgs.map(o => o.orgId)
+    const workspaceIds = userWorkspaces.map(o => o.workspaceId)
 
-    if (orgIds.length === 0) {
+    if (workspaceIds.length === 0) {
       return []
     }
 
-    // Get boards in user's orgs
+    // Get boards in user's workspaces
     return db.select().from(boards)
       .where(and(
-        inArray(boards.organizationId, orgIds),
+        inArray(boards.workspaceId, workspaceIds),
         isNull(boards.archivedAt)
       ))
   },
@@ -32,16 +32,16 @@ export const boardRepository = {
     return board
   },
 
-  findByOrganizationId: (organizationId: string) =>
+  findByWorkspaceId: (workspaceId: string) =>
     db.select().from(boards)
-      .where(and(eq(boards.organizationId, organizationId), isNull(boards.archivedAt))),
+      .where(and(eq(boards.workspaceId, workspaceId), isNull(boards.archivedAt))),
 
   create: async (data: {
     name: string
     description?: string
-    organizationId?: string
+    workspaceId?: string
     ownerId?: string
-    visibility?: 'private' | 'organization' | 'public'
+    visibility?: 'private' | 'workspace' | 'public'
   }) => {
     const [maxPos] = await db.select({ maxPos: sql<string>`COALESCE(MAX(${boards.position}), '0')` }).from(boards)
     const nextPosition = String(Number(maxPos?.maxPos || '0') + 1)
@@ -56,7 +56,7 @@ export const boardRepository = {
   update: async (id: string, data: {
     name?: string
     description?: string
-    visibility?: 'private' | 'organization' | 'public'
+    visibility?: 'private' | 'workspace' | 'public'
     position?: string
   }, expectedVersion?: number) => {
     const whereClause = expectedVersion

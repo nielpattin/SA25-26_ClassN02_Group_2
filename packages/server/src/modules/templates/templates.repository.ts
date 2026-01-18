@@ -5,12 +5,12 @@ import type { CreateBoardTemplateInput, UpdateBoardTemplateInput, CreateTaskTemp
 
 export const templateRepository = {
   // Board Templates
-  findBoardTemplates: async (userId: string, organizationId?: string) => {
-    if (organizationId) {
+  findBoardTemplates: async (userId: string, workspaceId?: string) => {
+    if (workspaceId) {
       return db.select().from(boardTemplates).where(
         or(
           eq(boardTemplates.createdBy, userId),
-          and(eq(boardTemplates.organizationId, organizationId), eq(boardTemplates.isPublic, true))
+          and(eq(boardTemplates.workspaceId, workspaceId), eq(boardTemplates.isPublic, true))
         )
       )
     }

@@ -2,18 +2,18 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { api } from '../../api/client'
-import { useOrganization } from '../../context/OrganizationContext'
+import { useWorkspace } from '../../context/WorkspaceContext'
 
-interface CreateOrgModalProps {
+interface CreateWorkspaceModalProps {
   isOpen: boolean
   onClose: () => void
 }
 
-export function CreateOrgModal({ isOpen, onClose }: CreateOrgModalProps) {
+export function CreateWorkspaceModal({ isOpen, onClose }: CreateWorkspaceModalProps) {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const queryClient = useQueryClient()
-  const { setCurrentOrganization } = useOrganization()
+  const { setCurrentWorkspace } = useWorkspace()
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value
@@ -25,18 +25,18 @@ export function CreateOrgModal({ isOpen, onClose }: CreateOrgModalProps) {
     setSlug(generatedSlug)
   }
 
-  const createOrg = useMutation({
+  const createWorkspace = useMutation({
     mutationFn: async () => {
-      const { data, error } = await api.v1.organizations.post({
+      const { data, error } = await api.v1.workspaces.post({
         name,
         slug
       })
       if (error) throw error
       return data
     },
-    onSuccess: (newOrg) => {
-      queryClient.invalidateQueries({ queryKey: ['organizations'] })
-      setCurrentOrganization(newOrg)
+    onSuccess: (newWorkspace) => {
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] })
+      setCurrentWorkspace(newWorkspace)
       onClose()
       setName('')
     },
@@ -49,7 +49,7 @@ export function CreateOrgModal({ isOpen, onClose }: CreateOrgModalProps) {
       <div className="w-full max-w-md border border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-black bg-black px-6 py-4 text-white">
-          <h2 className="font-heading text-lg font-bold tracking-wider uppercase">Create New Team</h2>
+          <h2 className="font-heading text-lg font-bold tracking-wider uppercase">Create New Workspace</h2>
           <button onClick={onClose} className="hover:text-accent transition-colors">
             <X size={20} />
           </button>
@@ -59,7 +59,7 @@ export function CreateOrgModal({ isOpen, onClose }: CreateOrgModalProps) {
         <div className="p-6">
           <div className="mb-6">
             <label className="mb-2 block text-xs font-bold tracking-wider text-black uppercase">
-              Team Name
+              Workspace Name
             </label>
             <input
               type="text"
@@ -85,7 +85,7 @@ export function CreateOrgModal({ isOpen, onClose }: CreateOrgModalProps) {
               />
             </div>
             <p className="mt-2 text-[10px] font-medium text-gray-500 uppercase">
-              This will be the unique URL for your team.
+              This will be the unique URL for your workspace.
             </p>
           </div>
 
@@ -97,17 +97,17 @@ export function CreateOrgModal({ isOpen, onClose }: CreateOrgModalProps) {
               Cancel
             </button>
             <button
-              onClick={() => name && slug && createOrg.mutate()}
-              disabled={createOrg.isPending || !name || !slug}
+              onClick={() => name && slug && createWorkspace.mutate()}
+              disabled={createWorkspace.isPending || !name || !slug}
               className="hover:bg-accent hover:shadow-brutal-sm border border-black bg-black px-6 py-3 text-xs font-bold tracking-wider text-white uppercase transition-all hover:-translate-y-0.5 hover:text-black disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
             >
-              {createOrg.isPending ? 'Creating...' : 'Create Team'}
+              {createWorkspace.isPending ? 'Creating...' : 'Create Workspace'}
             </button>
           </div>
           
-          {createOrg.error && (
+          {createWorkspace.error && (
              <div className="mt-4 border border-red-500 bg-red-50 p-3 text-xs font-bold text-red-600 uppercase">
-                Error: {createOrg.error.message}
+                Error: {createWorkspace.error.message}
              </div>
           )}
         </div>

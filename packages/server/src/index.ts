@@ -10,7 +10,7 @@ import { checklistController } from './modules/checklists'
 import { attachmentController } from './modules/attachments'
 import { commentController } from './modules/comments'
 import { userController } from './modules/users'
-import { organizationController } from './modules/organizations'
+import { workspaceController } from './modules/workspaces'
 import { activityController } from './modules/activities'
 import { templateController } from './modules/templates'
 import { notificationController } from './modules/notifications'
@@ -23,22 +23,6 @@ import { AppError } from './shared/errors'
 
 initWebSocketBridge()
 initActivitySubscriber()
-
-// API v1 - groups all domain controllers under /v1 prefix
-const v1 = new Elysia({ prefix: '/v1' })
-  .use(idempotencyPlugin)
-  .use(boardController)
-  .use(columnController)
-  .use(taskController)
-  .use(labelController)
-  .use(checklistController)
-  .use(attachmentController)
-  .use(commentController)
-  .use(userController)
-  .use(organizationController)
-  .use(activityController)
-  .use(templateController)
-  .use(notificationController)
 
 export const app = new Elysia()
   .onError(({ code, error, set }) => {
@@ -82,7 +66,21 @@ export const app = new Elysia()
     allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
   }))
   .use(authPlugin)
-  .use(v1)
+  .group('/v1', (v1) => v1
+    .use(idempotencyPlugin)
+    .use(boardController)
+    .use(columnController)
+    .use(taskController)
+    .use(labelController)
+    .use(checklistController)
+    .use(attachmentController)
+    .use(commentController)
+    .use(userController)
+    .use(workspaceController)
+    .use(activityController)
+    .use(templateController)
+    .use(notificationController)
+  )
   .ws('/ws', {
     body: t.Object({
       type: t.String(),
