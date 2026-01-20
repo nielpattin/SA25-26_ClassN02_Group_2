@@ -4,6 +4,13 @@ import { eq, and, desc } from 'drizzle-orm'
 import type { CreateNotificationInputType } from './notifications.model'
 
 export const notificationRepository = {
+  findById: async (id: string) => {
+    const [notification] = await db.select()
+      .from(notifications)
+      .where(eq(notifications.id, id))
+    return notification
+  },
+
   findByUserId: async (userId: string, limit = 50) => {
     return db.select()
       .from(notifications)

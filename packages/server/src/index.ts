@@ -18,12 +18,14 @@ import { configController } from './modules/config/config.controller'
 import { wsManager } from './websocket/manager'
 import { initWebSocketBridge } from './websocket/bridge'
 import { initActivitySubscriber } from './modules/activities/activity.subscriber'
+import { initNotificationSubscriber } from './modules/notifications/notification.subscriber'
 
 import { activityRepository } from './modules/activities/activities.repository'
 import { AppError } from './shared/errors'
 
 initWebSocketBridge()
 initActivitySubscriber()
+initNotificationSubscriber()
 
 export const app = new Elysia()
   .onError(({ code, error, set }) => {
@@ -86,15 +88,21 @@ export const app = new Elysia()
   .ws('/ws', {
     body: t.Object({
       type: t.String(),
-      boardId: t.String(),
+      boardId: t.Optional(t.String()),
+      userId: t.Optional(t.String()),
       since: t.Optional(t.String())
     }),
-    message(ws, { type, boardId, since }) {
+    message(ws, { type, boardId, userId, since }) {
+      const authenticatedUserId = ws.data.session?.user.id
+
       if (type === 'subscribe') {
-        ws.subscribe(`board:${boardId}`)
+        if (boardId) ws.subscribe(`board:${boardId}`)
+        if (userId && authenticatedUserId === userId) {
+          ws.subscribe(`user:${userId}`)
+        }
       }
 
-      if (type === 'sync' && since) {
+      if (type === 'sync' && boardId && since) {
         const sinceDate = new Date(since)
         if (!isNaN(sinceDate.getTime())) {
            activityRepository.findByBoardIdSince(boardId, sinceDate)

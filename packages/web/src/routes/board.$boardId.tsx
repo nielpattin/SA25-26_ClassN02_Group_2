@@ -1,17 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import { useState, useRef, useLayoutEffect, useMemo, useCallback, memo } from 'react'
+import { useState, useRef, useLayoutEffect, useMemo, useCallback, memo, useEffect } from 'react'
 import { Plus, MoreHorizontal, ChevronRight, CheckSquare, Copy, ExternalLink, Archive, Pencil } from 'lucide-react'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
 import { CardModal } from '../components/CardModal'
 import { Dropdown } from '../components/Dropdown'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-
-export const Route = createFileRoute('/board/$boardId')({
-  component: BoardComponent,
-})
 
 type Column = { id: string; name: string; position: string; boardId: string }
 type CardLabel = { id: string; name: string; color: string }
@@ -30,13 +26,48 @@ type Card = {
   attachmentsCount?: number
 }
 
+type BoardSearch = {
+  cardId?: string
+}
+
+export const Route = createFileRoute('/board/$boardId')({
+  component: BoardComponent,
+  validateSearch: (search: Record<string, unknown>): BoardSearch => {
+    return {
+      cardId: (search.cardId as string) || undefined,
+    }
+  },
+})
+
 function BoardComponent() {
   const { boardId } = Route.useParams()
+  const { cardId } = Route.useSearch()
+  const navigate = Route.useNavigate()
   const queryClient = useQueryClient()
   const [newColumnName, setNewColumnName] = useState('')
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+
+  // Synchronize selectedCardId with cardId search param
+  useEffect(() => {
+    if (cardId) {
+      setSelectedCardId(cardId)
+    }
+  }, [cardId])
+
+  const handleCloseModal = () => {
+    setSelectedCardId(null)
+    navigate({
+      search: (prev) => {
+        const rest = { ...prev }
+        delete rest.cardId
+        return rest
+      },
+      replace: true
+    })
+  }
   
   // Data Fetching
+
   useBoardSocket(boardId)
 
   const { data: board, isLoading: boardLoading } = useQuery({
@@ -617,7 +648,7 @@ function BoardComponent() {
         <CardModal
           cardId={selectedCardId}
           boardId={boardId}
-          onClose={() => setSelectedCardId(null)}
+          onClose={handleCloseModal}
         />
       )}
     </div>
@@ -847,7 +878,7 @@ const CardItem = memo(({
       >
         {card.labels && card.labels.length > 0 && (
           <div className="mb-1.5 flex flex-wrap gap-1">
-            {card.labels.map(l => (
+            {card.labels.map((l: CardLabel) => (
               <div key={l.id} className="h-2 w-10 origin-top rounded-none border border-black shadow-[1px_1px_0px_rgba(0,0,0,0.5)] transition-transform hover:scale-y-150" style={{ background: l.color }} />
             ))}
           </div>

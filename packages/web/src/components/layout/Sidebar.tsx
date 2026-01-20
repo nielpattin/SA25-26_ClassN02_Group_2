@@ -5,6 +5,7 @@ import { useSession, signOut } from '../../api/auth'
 import { useState, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { CreateWorkspaceModal } from '../workspaces/CreateWorkspaceModal'
+import { NotificationBell } from '../notifications/NotificationBell'
 
 export function Sidebar() {
   const { workspaces, currentWorkspace, setCurrentWorkspace } = useWorkspace()
@@ -43,10 +44,10 @@ export function Sidebar() {
       
       <aside className="fixed top-0 left-0 flex h-screen w-64 flex-col border-r border-black bg-white">
         {/* Workspace Switcher */}
-        <div className="relative border-b border-black p-4" ref={dropdownRef}>
+        <div className="relative flex items-center gap-2 border-b border-black p-4" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="hover:bg-accent flex w-full items-center justify-between gap-2 border border-black bg-white p-2 text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-none"
+            className="hover:bg-accent flex flex-1 items-center justify-between gap-2 border border-black bg-white p-2 text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-none"
           >
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-black bg-black text-white">
@@ -67,6 +68,8 @@ export function Sidebar() {
             </div>
             <ChevronsUpDown size={14} className="shrink-0 text-black/50" />
           </button>
+          
+          <NotificationBell />
 
           {/* Dropdown Menu */}
           {isDropdownOpen && (
@@ -150,8 +153,8 @@ export function Sidebar() {
 
         {/* User Footer */}
         <div className="border-t border-black p-4">
-          <Link to="/profile" className="mb-4 flex items-center gap-3 px-2 group">
-            <div className="h-8 w-8 overflow-hidden border border-black bg-gray-100 group-hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
+          <Link to="/profile" className="group mb-4 flex items-center gap-3 px-2">
+            <div className="h-8 w-8 overflow-hidden border border-black bg-gray-100 transition-all group-hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                {session?.user?.image ? (
                   <img src={session.user.image} alt={session.user.name} className="h-full w-full object-cover" />
                ) : (

@@ -67,12 +67,12 @@ function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      setName(user.name)
-      setImageUrl(user.image || '')
-      setTheme(user.theme)
-      setLocale(user.locale)
-      setTimezone(user.timezone)
-      setEmailDigest(user.emailDigest)
+      setName(n => n || user.name)
+      setImageUrl(i => i || user.image || '')
+      setTheme(t => t || user.theme)
+      setLocale(l => l || user.locale)
+      setTimezone(t => t || user.timezone)
+      setEmailDigest(e => e || user.emailDigest)
     }
   }, [user])
 
@@ -249,7 +249,7 @@ function ProfilePage() {
               <SearchableSelect 
                 value={timezone} 
                 onChange={setTimezone} 
-                options={config?.timezones.map((tz: any) => ({
+                options={config?.timezones.map((tz: { id: string; label: string; offset: string }) => ({
                   id: tz.id,
                   name: tz.label,
                   badge: tz.offset

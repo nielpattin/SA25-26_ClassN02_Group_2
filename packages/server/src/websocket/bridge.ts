@@ -106,4 +106,11 @@ export function initWebSocketBridge() {
   eventBus.onDomain('attachment.deleted', ({ taskId, boardId }) => {
     wsManager.broadcast(`board:${boardId}`, { type: 'task:updated', data: { id: taskId } })
   })
+
+  eventBus.onDomain('notification.created', ({ notification, userId }) => {
+    wsManager.broadcast(`user:${userId}`, { 
+      type: 'notification:created', 
+      data: notification 
+    })
+  })
 }

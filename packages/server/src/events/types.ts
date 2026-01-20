@@ -57,6 +57,18 @@ export interface KyteEvents {
   'comment.created': { comment: Comment; boardId: string; userId: string }
   'comment.updated': { comment: Comment; boardId: string; userId: string }
   'comment.deleted': { commentId: string; boardId: string; userId: string }
+  'comment.mention': { 
+    mentionedUserId: string; 
+    comment: Comment; 
+    actorId: string; 
+    taskId: string; 
+    boardId: string 
+  }
+
+  'notification.created': {
+    notification: any; // Using any for now to avoid circular dependency if needed, or I can import the type
+    userId: string;
+  }
 
   'checklist.created': { checklist: Checklist; taskId: string; userId: string; boardId: string }
   'checklist.updated': { checklist: Checklist; taskId: string; userId: string; boardId: string; changes: any }

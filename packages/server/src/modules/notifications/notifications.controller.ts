@@ -24,8 +24,9 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
     return { count: await notificationService.countUnread(session.user.id) }
   })
 
-  .post('/:id/read', async ({ params }) => {
-    return notificationService.markAsRead(params.id)
+  .post('/:id/read', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return notificationService.markAsRead(params.id, session.user.id)
   }, {
     params: NotificationParams,
   })
@@ -36,8 +37,9 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
     return { success: true }
   })
 
-  .delete('/:id', async ({ params }) => {
-    return notificationService.delete(params.id)
+  .delete('/:id', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return notificationService.delete(params.id, session.user.id)
   }, {
     params: NotificationParams,
   })
