@@ -6,12 +6,7 @@ import { taskRepository } from '../tasks/tasks.repository'
 const MENTION_REGEX = /@\[([^\]]+)\]\(([^)]+)\)/g
 
 function extractMentions(content: string): string[] {
-  const mentions: string[] = []
-  let match
-  while ((match = MENTION_REGEX.exec(content)) !== null) {
-    mentions.push(match[2])
-  }
-  return mentions
+  return [...content.matchAll(MENTION_REGEX)].map(match => match[2])
 }
 
 export const commentService = {

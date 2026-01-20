@@ -288,4 +288,42 @@ describe('Notifications API', () => {
     )
     expect(res.status).toBe(404)
   })
+
+  test('Sequential mentions are correctly extracted (regex statefulness fix)', async () => {
+    const THIRD_USER_ID = '00000000-0000-4000-a000-000000000003'
+    await ensureTestUser(THIRD_USER_ID)
+
+    await db.delete(notifications).where(eq(notifications.userId, THIRD_USER_ID))
+
+    const mention1 = `First @[User Two](${SECOND_USER_ID}) mention`
+    const mention2 = `Second @[User Three](${THIRD_USER_ID}) mention`
+
+    await app.handle(
+      new Request('http://localhost/v1/comments', {
+        method: 'POST',
+        headers: getAuthHeaders(TEST_USER_ID),
+        body: JSON.stringify({ content: mention1, taskId })
+      })
+    )
+
+    await app.handle(
+      new Request('http://localhost/v1/comments', {
+        method: 'POST',
+        headers: getAuthHeaders(TEST_USER_ID),
+        body: JSON.stringify({ content: mention2, taskId })
+      })
+    )
+
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    const notifRes3 = await app.handle(
+      new Request('http://localhost/v1/notifications', {
+        headers: getAuthHeaders(THIRD_USER_ID)
+      })
+    )
+    const data3 = await notifRes3.json()
+    const mentionNotif3 = data3.find((n: any) => n.type === 'mention')
+    expect(mentionNotif3).toBeDefined()
+    expect(mentionNotif3.body).toContain('Second')
+  })
 })

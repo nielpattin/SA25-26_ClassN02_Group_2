@@ -16,7 +16,7 @@ export function initNotificationSubscriber() {
     await notificationService.create({
       userId,
       type: 'assignment',
-      title: `${actor?.name} assigned you to "${task?.title}"`,
+      title: `${actor?.name ?? 'Someone'} assigned you to "${task?.title}"`,
       taskId,
       boardId
     })
@@ -33,7 +33,7 @@ export function initNotificationSubscriber() {
     await notificationService.create({
       userId,
       type: 'board_invite',
-      title: `${actor?.name} added you to "${board?.name}"`,
+      title: `${actor?.name ?? 'Someone'} added you to "${board?.name}"`,
       boardId
     })
   })
@@ -46,7 +46,7 @@ export function initNotificationSubscriber() {
     await notificationService.create({
       userId: mentionedUserId,
       type: 'mention',
-      title: `${actor?.name} mentioned you in a comment`,
+      title: `${actor?.name ?? 'Someone'} mentioned you in a comment`,
       body: comment.content.substring(0, 100),
       taskId,
       boardId
@@ -57,20 +57,22 @@ export function initNotificationSubscriber() {
     const task = await taskRepository.findById(comment.taskId)
     if (!task) return
     
-    const assignees = await taskRepository.getAssignees(comment.taskId)
-    const actor = await userRepository.getById(userId)
+    const [assignees, actor] = await Promise.all([
+      taskRepository.getAssignees(comment.taskId),
+      userRepository.getById(userId)
+    ])
     
-    for (const assignee of assignees) {
-      if (assignee.userId === userId) continue
-      
-      await notificationService.create({
+    const notifyAssignees = assignees.filter(a => a.userId !== userId)
+    
+    await Promise.all(notifyAssignees.map(assignee =>
+      notificationService.create({
         userId: assignee.userId,
         type: 'comment',
-        title: `${actor?.name} commented on "${task.title}"`,
+        title: `${actor?.name ?? 'Someone'} commented on "${task.title}"`,
         body: comment.content.substring(0, 100),
         taskId: comment.taskId,
         boardId
       })
-    }
+    ))
   })
 }
