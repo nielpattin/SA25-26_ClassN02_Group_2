@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws'
+
 type WsMessage = {
   type: 
     | 'board:updated' 
@@ -48,7 +50,7 @@ export function useBoardSocket(boardId: string) {
         return
       }
 
-      const ws = new WebSocket('ws://localhost:3000/ws')
+      const ws = new WebSocket(WS_URL)
       wsRef.current = ws
 
       ws.onopen = () => {

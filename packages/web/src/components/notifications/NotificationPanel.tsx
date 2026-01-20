@@ -1,22 +1,13 @@
 import { NotificationItem } from './NotificationItem'
 import { CheckCheck, BellOff } from 'lucide-react'
 import { Popover } from '../ui/Popover'
-import { Button } from '../ui/Button'
+import type { Notification } from './types'
 
 interface NotificationPanelProps {
   isOpen: boolean
   onClose: () => void
   triggerRef: React.RefObject<HTMLElement | null>
-  notifications: {
-    id: string
-    type: 'mention' | 'assignment' | 'due_soon' | 'due_urgent' | 'overdue' | 'comment' | 'board_invite'
-    title: string
-    body?: string | null
-    read: boolean
-    createdAt: string | Date
-    boardId?: string | null
-    taskId?: string | null
-  }[]
+  notifications: Notification[]
   unreadCount: number
   onMarkAsRead: (id: string) => void
   onMarkAllAsRead: () => void
@@ -80,14 +71,6 @@ export function NotificationPanel({
             </div>
           )}
         </div>
-        
-        {notifications.length > 0 && (
-          <div className="border-t border-black bg-white p-2">
-             <Button variant="ghost" size="sm" fullWidth className="text-[9px]">
-                View All Notifications
-             </Button>
-          </div>
-        )}
       </div>
     </Popover>
   )

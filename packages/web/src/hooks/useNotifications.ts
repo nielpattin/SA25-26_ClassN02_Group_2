@@ -3,10 +3,14 @@ import { useEffect, useRef } from 'react'
 import { api } from '../api/client'
 import { useSession } from '../api/auth'
 
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws'
+
 export function useNotifications() {
   const queryClient = useQueryClient()
   const { data: session } = useSession()
   const wsRef = useRef<WebSocket | null>(null)
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isCleaningUpRef = useRef(false)
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications'],
@@ -31,19 +35,28 @@ export function useNotifications() {
 
   useEffect(() => {
     if (!session?.user?.id) return
+    isCleaningUpRef.current = false
 
     function connect() {
-      const ws = new WebSocket('ws://localhost:3000/ws')
+      if (isCleaningUpRef.current) return
+      if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) {
+        return
+      }
+
+      const ws = new WebSocket(WS_URL)
       wsRef.current = ws
 
       ws.onopen = () => {
-        ws.send(JSON.stringify({ 
-          type: 'subscribe', 
-          userId: session?.user?.id 
-        }))
+        if (!isCleaningUpRef.current) {
+          ws.send(JSON.stringify({ 
+            type: 'subscribe', 
+            userId: session?.user?.id 
+          }))
+        }
       }
 
       ws.onmessage = (event) => {
+        if (isCleaningUpRef.current) return
         try {
           const message = JSON.parse(event.data)
           if (message.type === 'notification:created') {
@@ -55,17 +68,32 @@ export function useNotifications() {
         }
       }
 
+      ws.onerror = () => {}
+
       ws.onclose = () => {
-        setTimeout(connect, 2000)
+        if (!isCleaningUpRef.current) {
+          reconnectTimeoutRef.current = setTimeout(connect, 2000)
+        }
       }
     }
 
     connect()
 
     return () => {
+      isCleaningUpRef.current = true
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+        reconnectTimeoutRef.current = null
+      }
       if (wsRef.current) {
         wsRef.current.onclose = null
-        wsRef.current.close()
+        wsRef.current.onerror = null
+        wsRef.current.onmessage = null
+        wsRef.current.onopen = null
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.close()
+        }
+        wsRef.current = null
       }
     }
   }, [session?.user?.id, queryClient])

@@ -1,20 +1,10 @@
 import { AtSign, UserPlus, Clock, MessageSquare, LayoutDashboard, AlertTriangle, AlertCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useNavigate } from '@tanstack/react-router'
-
-type NotificationType = 'mention' | 'assignment' | 'due_soon' | 'due_urgent' | 'overdue' | 'comment' | 'board_invite'
+import type { Notification, NotificationType } from './types'
 
 interface NotificationItemProps {
-  notification: {
-    id: string
-    type: NotificationType
-    title: string
-    body?: string | null
-    read: boolean
-    createdAt: string | Date
-    boardId?: string | null
-    taskId?: string | null
-  }
+  notification: Notification
   onRead: (id: string) => void
   onClose: () => void
 }
