@@ -14,7 +14,7 @@ function Index() {
 
   const handleStartClick = () => {
     if (session) {
-      navigate({ to: '/dashboard' })
+            navigate({ to: '/boards' })
     } else {
       setShowAuthModal(true)
     }
@@ -28,7 +28,7 @@ function Index() {
           setShowAuthModal(false)
           // If logged in after modal closes, go to dashboard
           if (session) {
-            navigate({ to: '/dashboard' })
+      navigate({ to: '/boards' })
           }
         }}
       />

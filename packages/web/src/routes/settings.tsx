@@ -64,7 +64,7 @@ function SettingsPage() {
 			const personalWorkspace = workspaces.find(o => o.personal && o.id !== currentWorkspace?.id)
 			if (personalWorkspace) {
 				setCurrentWorkspace(personalWorkspace)
-				navigate({ to: '/dashboard' })
+				navigate({ to: '/boards' })
 			} else {
 				// Fallback if no personal workspace found (shouldn't happen)
 				window.location.href = '/'

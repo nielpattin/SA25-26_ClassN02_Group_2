@@ -1,25 +1,43 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Calendar, Type, Paperclip, MessageSquare, History, Tag, Move, Trash2, MoreHorizontal, Archive, Flag, Image, Plus } from 'lucide-react'
+import {
+  X,
+  Calendar,
+  Type,
+  Paperclip,
+  MessageSquare,
+  History,
+  Tag,
+  Move,
+  MoreHorizontal,
+  Archive,
+  Flag,
+  Image,
+  Plus,
+} from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../api/client'
-import { Button } from './ui/Button'
-import { Textarea } from './ui/Textarea'
-import { Input } from './ui/Input'
-import { Popover } from './ui/Popover'
-import { DatePicker } from './ui/DatePicker'
-import { Dropdown } from './Dropdown'
-import { Checklist, ChecklistCreator } from './checklist'
-import { CommentSection } from './comments'
-import { LabelSection } from './Labels'
-import { AssigneeSection } from './Assignees'
-import { AttachmentSection } from './Attachments'
-import { ActivitySection } from './Activity'
-import { MoveModal } from './MoveModal'
-import { Card, Checklist as ChecklistType, Comment, Activity, Board } from './CardModalTypes'
+import { api } from '../../api/client'
+import { Button } from '../ui/Button'
+import { Textarea } from '../ui/Textarea'
+import { Input } from '../ui/Input'
+import { Popover } from '../ui/Popover'
+import { DatePicker } from '../ui/DatePicker'
+import { Dropdown } from '../Dropdown'
+import { Checklist, ChecklistCreator } from '../checklist'
+import { CommentSection } from '../comments'
+import { LabelSection } from '../Labels'
+import { AssigneeSection } from '../Assignees'
+import { AttachmentSection } from '../Attachments'
+import { ActivitySection } from '../Activity'
+import { MoveModal } from '../MoveModal'
 import { format } from 'date-fns'
 
-interface CardModalProps {
-  cardId: string
+// Re-export types that were in CardModalTypes for backwards compatibility
+export type { Card, Checklist as ChecklistType, Comment, Activity, Board } from '../CardModalTypes'
+import type { Card, Checklist as ChecklistType, Comment, Activity, Board } from '../CardModalTypes'
+
+export interface TaskModalProps {
+  taskId?: string
+  cardId?: string // Backwards compatibility alias for taskId
   boardId: string
   onClose: () => void
 }
@@ -32,7 +50,8 @@ const PRIORITIES = [
   { id: 'none', name: 'None', color: '#95A5A6' },
 ]
 
-export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
+export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: TaskModalProps) {
+  const taskId = taskIdProp ?? cardId ?? ''
   const queryClient = useQueryClient()
   const [isMoving, setIsMoving] = useState(false)
   const [description, setDescription] = useState('')
@@ -48,42 +67,42 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   const [coverUrl, setCoverUrl] = useState('')
 
   const { data: card, isLoading } = useQuery<Card>({
-    queryKey: ['card', cardId],
+    queryKey: ['card', taskId],
     queryFn: async () => {
-      const { data, error } = await api.v1.tasks({ id: cardId }).get()
+      const { data, error } = await api.v1.tasks({ id: taskId }).get()
       if (error) throw error
       return data as unknown as Card
-    }
+    },
   })
 
   const { data: checklists = [] } = useQuery<ChecklistType[]>({
-    queryKey: ['checklists', cardId],
+    queryKey: ['checklists', taskId],
     queryFn: async () => {
-      const { data, error } = await api.v1.checklists.task({ taskId: cardId }).get()
+      const { data, error } = await api.v1.checklists.task({ taskId }).get()
       if (error) throw error
       return data as unknown as ChecklistType[]
     },
-    enabled: !!card
+    enabled: !!card,
   })
 
   const { data: comments = [] } = useQuery<Comment[]>({
-    queryKey: ['comments', cardId],
+    queryKey: ['comments', taskId],
     queryFn: async () => {
-      const { data, error } = await api.v1.comments.task({ taskId: cardId }).get()
+      const { data, error } = await api.v1.comments.task({ taskId }).get()
       if (error) throw error
       return data as unknown as Comment[]
     },
-    enabled: !!card
+    enabled: !!card,
   })
 
   const { data: activities = [] } = useQuery<Activity[]>({
-    queryKey: ['activities', cardId],
+    queryKey: ['activities', taskId],
     queryFn: async () => {
-      const { data, error } = await api.v1.activities.task({ taskId: cardId }).get()
+      const { data, error } = await api.v1.activities.task({ taskId }).get()
       if (error) throw error
       return data as unknown as Activity[]
     },
-    enabled: !!card
+    enabled: !!card,
   })
 
   const { data: boardLabels = [] } = useQuery<{ id: string; name: string; color: string }[]>({
@@ -92,7 +111,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
       const { data, error } = await api.v1.labels.board({ boardId }).get()
       if (error) throw error
       return data as unknown as { id: string; name: string; color: string }[]
-    }
+    },
   })
 
   const { data: boards = [] } = useQuery<Board[]>({
@@ -101,10 +120,12 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
       const { data, error } = await api.v1.boards.get()
       if (error) throw error
       return data as unknown as Board[]
-    }
+    },
   })
 
-  const { data: boardMembers = [] } = useQuery<{ id: string; name: string | null; image: string | null }[]>({
+  const { data: boardMembers = [] } = useQuery<
+    { id: string; name: string | null; image: string | null }[]
+  >({
     queryKey: ['board-members', boardId],
     queryFn: async () => {
       const { data, error } = await api.v1.boards({ id: boardId }).members.get()
@@ -113,9 +134,9 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
       return (data as any[]).map((m: any) => ({
         id: m.userId,
         name: m.userName,
-        image: m.userImage
+        image: m.userImage,
       }))
-    }
+    },
   })
 
   useEffect(() => {
@@ -138,81 +159,92 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
   const updateCard = useMutation({
     mutationFn: async (updates: Partial<Card>) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await api.v1.tasks({ id: cardId }).patch(updates as any)
+      const { data, error } = await api.v1.tasks({ id: taskId }).patch(updates as any)
       if (error) throw error
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
-    }
+    },
   })
 
   const archiveCard = useMutation({
     mutationFn: async () => {
-      const { error } = await api.v1.tasks({ id: cardId }).archive.post()
+      const { error } = await api.v1.tasks({ id: taskId }).archive.post()
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
       onClose()
-    }
+    },
   })
 
   const moveCard = useMutation({
-    mutationFn: async (params: { columnId: string, beforeTaskId?: string, afterTaskId?: string }) => {
-      const { error } = await api.v1.tasks({ id: cardId }).move.patch(params)
+    mutationFn: async (params: { columnId: string; beforeTaskId?: string; afterTaskId?: string }) => {
+      const { error } = await api.v1.tasks({ id: taskId }).move.patch(params)
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
       setIsMoving(false)
-    }
+    },
   })
 
   const toggleAssignee = useMutation({
     mutationFn: async (userId: string) => {
       const currentAssignees = card!.assignees || []
       if (currentAssignees.includes(userId)) {
-        await api.v1.tasks({ id: cardId }).assignees({ userId }).delete()
+        await api.v1.tasks({ id: taskId }).assignees({ userId }).delete()
       } else {
-        await api.v1.tasks({ id: cardId }).assignees.post({ userId })
+        await api.v1.tasks({ id: taskId }).assignees.post({ userId })
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['card', cardId] })
-      queryClient.invalidateQueries({ queryKey: ['activities', cardId] })
-    }
+      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
+      queryClient.invalidateQueries({ queryKey: ['activities', taskId] })
+    },
   })
 
   const createChecklist = useMutation({
     mutationFn: async (title: string) => {
       const { error } = await api.v1.checklists.post({
         title,
-        taskId: cardId
+        taskId,
       })
       if (error) throw error
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+      queryClient.invalidateQueries({ queryKey: ['checklists', taskId] })
+      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-    }
+    },
   })
 
-  if (isLoading || !card) return <div className="font-heading bg-canvas flex h-screen items-center justify-center font-extrabold text-black uppercase">Loading...</div>
+  if (isLoading || !card)
+    return (
+      <div className="font-heading bg-canvas flex h-screen items-center justify-center font-extrabold text-black uppercase">
+        Loading...
+      </div>
+    )
 
   const menuItems = [
     { label: 'Move', icon: <Move size={14} />, onClick: () => setIsMoving(true) },
-    { label: 'Archive', icon: <Archive size={14} />, onClick: () => archiveCard.mutate() }
+    { label: 'Archive', icon: <Archive size={14} />, onClick: () => archiveCard.mutate() },
   ]
 
   return (
-    <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="shadow-brutal-xl relative flex max-h-[90vh] w-[95%] max-w-250 flex-col overflow-hidden border border-black bg-white" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-1000 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="shadow-brutal-xl relative flex max-h-[90vh] w-[95%] max-w-250 flex-col overflow-hidden border border-black bg-white"
+        onClick={e => e.stopPropagation()}
+      >
         {card.coverImageUrl && (
           <div className="relative h-50 w-full shrink-0 overflow-hidden border-b border-black bg-[#EEEEEE]">
             <img src={card.coverImageUrl} alt="Cover" className="h-full w-full object-cover" />
@@ -221,7 +253,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onClick={() => updateCard.mutate({ coverImageUrl: null } as any)}
             >
-              <Trash2 size={16} />
+              <X size={16} />
             </button>
           </div>
         )}
@@ -229,7 +261,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-black">
           <Input
             value={card.title}
-            onChange={(e) => updateCard.mutate({ title: e.target.value })}
+            onChange={e => updateCard.mutate({ title: e.target.value })}
             className="font-heading h-full border-none bg-transparent p-0 text-[20px] font-extrabold uppercase"
             brutal={false}
           />
@@ -268,24 +300,24 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                   <LabelSection
                     cardLabels={card.labels || []}
                     allLabels={boardLabels || []}
-                    onToggle={async (labelId) => {
+                    onToggle={async labelId => {
                       const currentLabels = card.labels || []
                       if (currentLabels.includes(labelId)) {
-                        await api.v1.labels.card({ cardId }).label({ labelId }).delete()
+                        await api.v1.labels.card({ cardId: taskId }).label({ labelId }).delete()
                       } else {
-                        await api.v1.labels.card({ cardId }).label({ labelId }).post()
+                        await api.v1.labels.card({ cardId: taskId }).label({ labelId }).post()
                       }
-                      queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+                      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
                       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
                     }}
                     onAdd={async (name, color) => {
                       await api.v1.labels.post({ name, color, boardId })
                       queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
                     }}
-                    onDelete={async (labelId) => {
+                    onDelete={async labelId => {
                       await api.v1.labels({ id: labelId }).delete()
                       queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
-                      queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+                      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
                       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
                     }}
                   />
@@ -294,7 +326,8 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                   <div
                     className="shadow-brutal-sm hover:shadow-brutal-md flex h-12 shrink-0 cursor-pointer items-center justify-center border-2 border-black bg-white px-4 transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
                     onClick={() => setIsDatePickerOpen(prev => !prev)}
-                    ref={mainDateTriggerRef}>
+                    ref={mainDateTriggerRef}
+                  >
                     <div className="flex items-center gap-3">
                       {card.dueDate ? (
                         <>
@@ -302,7 +335,9 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                             {format(new Date(card.dueDate), 'MMM d, yyyy')}
                           </span>
                           {new Date(card.dueDate) < new Date() && (
-                            <span className="shadow-brutal-sm border-2 border-black bg-[#E74C3C] px-2 py-0.5 text-[11px] leading-none font-extrabold text-white uppercase">Overdue</span>
+                            <span className="shadow-brutal-sm border-2 border-black bg-[#E74C3C] px-2 py-0.5 text-[11px] leading-none font-extrabold text-white uppercase">
+                              Overdue
+                            </span>
                           )}
                         </>
                       ) : (
@@ -319,20 +354,28 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
 
             {/* Description */}
             <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60"><Type size={14} /> Description</h3>
+              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+                <Type size={14} /> Description
+              </h3>
               {isEditingDescription ? (
                 <div className="flex flex-col gap-3">
                   <Textarea
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={e => setDescription(e.target.value)}
                     autoFocus
                   />
                   <div className="flex gap-3">
-                    <Button onClick={() => {
-                      updateCard.mutate({ description })
-                      setIsEditingDescription(false)
-                    }}>Save</Button>
-                    <Button variant="secondary" onClick={() => setIsEditingDescription(false)}>Cancel</Button>
+                    <Button
+                      onClick={() => {
+                        updateCard.mutate({ description })
+                        setIsEditingDescription(false)
+                      }}
+                    >
+                      Save
+                    </Button>
+                    <Button variant="secondary" onClick={() => setIsEditingDescription(false)}>
+                      Cancel
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -347,28 +390,24 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
 
             {/* Checklists */}
             {checklists.map(checklist => (
-              <Checklist
-                key={checklist.id}
-                checklist={checklist}
-                cardId={cardId}
-              />
+              <Checklist key={checklist.id} checklist={checklist} cardId={taskId} />
             ))}
 
             {/* Attachments */}
             <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60"><Paperclip size={14} /> Attachments</h3>
-              <AttachmentSection
-                attachments={[]}
-                onAdd={() => { }}
-                onDelete={() => { }}
-              />
+              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+                <Paperclip size={14} /> Attachments
+              </h3>
+              <AttachmentSection attachments={[]} onAdd={() => {}} onDelete={() => {}} />
             </div>
 
             {/* Comments */}
             <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60"><MessageSquare size={14} /> Comments</h3>
+              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+                <MessageSquare size={14} /> Comments
+              </h3>
               <CommentSection
-                cardId={cardId}
+                cardId={taskId}
                 comments={comments}
                 sessionUserId="current-user-id" // Replace with real session
               />
@@ -376,16 +415,20 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
 
             {/* Activity */}
             <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60"><History size={14} /> Activity</h3>
+              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+                <History size={14} /> Activity
+              </h3>
               <ActivitySection activities={activities} />
             </div>
           </div>
 
           <div className="flex w-[320px] min-w-0 shrink-0 flex-col gap-6 overflow-y-auto bg-[#F4F4F4] p-8">
             <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">Add to card</h3>
+              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+                Add to card
+              </h3>
               <div className="flex flex-col gap-2">
-                <ChecklistCreator onCreate={(title) => createChecklist.mutate(title)} />
+                <ChecklistCreator onCreate={title => createChecklist.mutate(title)} />
 
                 <Popover
                   isOpen={isDatePickerOpen}
@@ -395,7 +438,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                 >
                   <DatePicker
                     initialDate={card.dueDate}
-                    onSave={(date) => {
+                    onSave={date => {
                       updateCard.mutate({ dueDate: date })
                       setIsDatePickerOpen(false)
                     }}
@@ -426,7 +469,10 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                           setIsPriorityOpen(false)
                         }}
                       >
-                        <span className="h-3 w-3 border border-black" style={{ backgroundColor: p.color }} />
+                        <span
+                          className="h-3 w-3 border border-black"
+                          style={{ backgroundColor: p.color }}
+                        />
                         {p.name}
                       </button>
                     ))}
@@ -452,8 +498,8 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                     <Input
                       placeholder="Enter image URL..."
                       value={coverUrl}
-                      onChange={(e) => setCoverUrl(e.target.value)}
-                      onKeyDown={(e) => {
+                      onChange={e => setCoverUrl(e.target.value)}
+                      onKeyDown={e => {
                         if (e.key === 'Enter') {
                           updateCard.mutate({ coverImageUrl: coverUrl })
                           setIsCoverOpen(false)
@@ -492,8 +538,10 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
             {/* Assigned Members Section */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">Assigned</h3>
-                <button 
+                <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+                  Assigned
+                </h3>
+                <button
                   ref={assignedTriggerRef}
                   className="hover:bg-accent hover:shadow-brutal-sm flex h-7 w-7 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-0.5"
                   onClick={() => setIsMembersOpen(!isMembersOpen)}
@@ -501,7 +549,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                   <Plus size={14} strokeWidth={3} />
                 </button>
               </div>
-              
+
               <Popover
                 isOpen={isMembersOpen}
                 onClose={() => setIsMembersOpen(false)}
@@ -512,7 +560,7 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                   variant="picker"
                   currentAssignees={card.assignees || []}
                   boardMembers={boardMembers}
-                  onToggle={(userId) => toggleAssignee.mutate(userId)}
+                  onToggle={userId => toggleAssignee.mutate(userId)}
                 />
               </Popover>
 
@@ -520,12 +568,14 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                 variant="sidebar-list"
                 currentAssignees={card.assignees || []}
                 boardMembers={boardMembers}
-                onToggle={(userId) => toggleAssignee.mutate(userId)}
+                onToggle={userId => toggleAssignee.mutate(userId)}
               />
             </div>
 
             <div className="flex flex-col gap-4">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">Details</h3>
+              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+                Details
+              </h3>
               <div className="shadow-brutal-sm hover:shadow-brutal-md grid grid-cols-2 gap-4 border border-black bg-white p-4 transition-all hover:-translate-0.5">
                 <div className="flex flex-col gap-1">
                   <span className="text-text-subtle text-[9px] font-extrabold uppercase">Position</span>
@@ -533,9 +583,12 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="text-text-subtle text-[9px] font-extrabold uppercase">Priority</span>
-                  <span className="text-[13px] font-extrabold text-black" style={{
-                    color: PRIORITIES.find(p => p.id === card.priority)?.color || 'inherit'
-                  }}>
+                  <span
+                    className="text-[13px] font-extrabold text-black"
+                    style={{
+                      color: PRIORITIES.find(p => p.id === card.priority)?.color || 'inherit',
+                    }}
+                  >
                     {card.priority || 'none'}
                   </span>
                 </div>
@@ -550,11 +603,16 @@ export function CardModal({ cardId, boardId, onClose }: CardModalProps) {
           boards={boards}
           currentBoardId={boardId}
           currentColumnId={card.columnId}
-          cardId={cardId}
-          onMove={(columnId, beforeTaskId, afterTaskId) => moveCard.mutate({ columnId, beforeTaskId, afterTaskId })}
+          cardId={taskId}
+          onMove={(columnId, beforeTaskId, afterTaskId) =>
+            moveCard.mutate({ columnId, beforeTaskId, afterTaskId })
+          }
           onCancel={() => setIsMoving(false)}
         />
       )}
     </div>
   )
 }
+
+// Backwards compatibility alias
+export { TaskModal as CardModal }

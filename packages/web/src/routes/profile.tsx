@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Settings, Shield, Save, Key, UserCircle } from 'lucide-react'
 import { api } from '../api/client'
 import { useSession, changePassword } from '../api/auth'
@@ -24,33 +24,32 @@ function ProfileRouteComponent() {
 type Theme = 'light' | 'dark' | 'system'
 type EmailDigest = 'instant' | 'daily' | 'weekly' | 'none'
 
+interface UserData {
+  id: string
+  email: string
+  name: string
+  image: string | null
+  theme: Theme
+  locale: string
+  timezone: string
+  emailDigest: EmailDigest
+}
+
+interface ConfigData {
+  languages: Array<{ id: string; name: string }>
+  timezones: Array<{ id: string; label: string; offset: string }>
+}
+
 function ProfilePage() {
   const { data: session } = useSession()
-  const queryClient = useQueryClient()
   const userId = session?.user?.id
-
-  const [name, setName] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
-  const [profileStatus, setProfileStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
-
-  const [theme, setTheme] = useState<Theme>('system')
-  const [locale, setLocale] = useState('en')
-  const [timezone, setTimezone] = useState('UTC')
-  const [emailDigest, setEmailDigest] = useState<EmailDigest>('daily')
-  const [prefsStatus, setPrefsStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
-
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [securityStatus, setSecurityStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
-  const [securityError, setSecurityError] = useState('')
 
   const { data: config } = useQuery({
     queryKey: ['config'],
     queryFn: async () => {
       const { data, error } = await api.v1.config.get()
       if (error) throw error
-      return data
+      return data as ConfigData
     }
   })
 
@@ -60,27 +59,46 @@ function ProfilePage() {
       if (!userId) return null
       const { data, error } = await api.v1.users({ id: userId }).get()
       if (error) throw error
-      return data
+      return data as UserData
     },
     enabled: !!userId,
   })
 
-  useEffect(() => {
-    if (user) {
-      setName(n => n || user.name)
-      setImageUrl(i => i || user.image || '')
-      setTheme(t => t || user.theme)
-      setLocale(l => l || user.locale)
-      setTimezone(t => t || user.timezone)
-      setEmailDigest(e => e || user.emailDigest)
-    }
-  }, [user])
+  if (isLoading || !user) return null
+
+  // Use key={user.id} to reset form state when user changes
+  return <ProfileForm key={user.id} user={user} config={config} />
+}
+
+interface ProfileFormProps {
+  user: UserData
+  config: ConfigData | undefined
+}
+
+function ProfileForm({ user, config }: ProfileFormProps) {
+  const queryClient = useQueryClient()
+
+  // Initialize from user data - form resets on user change via key prop
+  const [name, setName] = useState(user.name)
+  const [imageUrl, setImageUrl] = useState(user.image || '')
+  const [profileStatus, setProfileStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
+
+  const [theme, setTheme] = useState<Theme>(user.theme)
+  const [locale, setLocale] = useState(user.locale)
+  const [timezone, setTimezone] = useState(user.timezone)
+  const [emailDigest, setEmailDigest] = useState<EmailDigest>(user.emailDigest)
+  const [prefsStatus, setPrefsStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
+
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [securityStatus, setSecurityStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
+  const [securityError, setSecurityError] = useState('')
 
   const updateProfile = useMutation({
     mutationFn: async () => {
-      if (!userId) return
       setProfileStatus('saving')
-      const { error } = await api.v1.users({ id: userId }).patch({
+      const { error } = await api.v1.users({ id: user.id }).patch({
         name,
         image: imageUrl || undefined,
       })
@@ -88,7 +106,7 @@ function ProfilePage() {
     },
     onSuccess: () => {
       setProfileStatus('success')
-      queryClient.invalidateQueries({ queryKey: ['user-profile', userId] })
+      queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] })
       queryClient.invalidateQueries({ queryKey: ['session'] })
       setTimeout(() => setProfileStatus('idle'), 3000)
     },
@@ -97,19 +115,18 @@ function ProfilePage() {
 
   const updatePreferences = useMutation({
     mutationFn: async () => {
-      if (!userId) return
       setPrefsStatus('saving')
-      const { error } = await api.v1.users({ id: userId }).preferences.patch({
+      const { error } = await api.v1.users({ id: user.id }).preferences.patch({
         theme,
         locale,
         timezone,
         emailDigest,
-      } as any)
+      })
       if (error) throw error
     },
     onSuccess: () => {
       setPrefsStatus('success')
-      queryClient.invalidateQueries({ queryKey: ['user-profile', userId] })
+      queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] })
       setTimeout(() => setPrefsStatus('idle'), 3000)
     },
     onError: () => setPrefsStatus('error'),
@@ -148,8 +165,6 @@ function ProfilePage() {
     }
   }
 
-  if (isLoading) return null
-
   return (
     <div className="p-12 lg:px-16">
       <header className="mb-10">
@@ -172,7 +187,7 @@ function ProfilePage() {
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold tracking-widest text-black uppercase">Email Address</label>
               <div className="font-body border border-black bg-black/5 px-3 py-2.5 text-[13px] font-semibold text-black/50">
-                {user?.email}
+                {user.email}
               </div>
               <p className="text-[9px] font-medium text-gray-400 uppercase">Email cannot be changed at this time</p>
             </div>
@@ -202,7 +217,7 @@ function ProfilePage() {
               </div>
               <button
                 onClick={() => updateProfile.mutate()}
-                disabled={updateProfile.isPending || (name === user?.name && imageUrl === (user?.image || ''))}
+                disabled={updateProfile.isPending || (name === user.name && imageUrl === (user.image || ''))}
                 className="hover:bg-accent hover:shadow-brutal-sm flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save size={16} />

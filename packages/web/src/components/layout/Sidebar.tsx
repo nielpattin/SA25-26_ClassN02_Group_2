@@ -114,9 +114,9 @@ export function Sidebar() {
             <p className="px-2 text-[10px] font-bold text-gray-400 uppercase">Menu</p>
             
             <Link
-              to="/dashboard"
+              to="/boards"
               className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
-                isActive('/dashboard')
+                isActive('/boards')
                   ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                   : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`}

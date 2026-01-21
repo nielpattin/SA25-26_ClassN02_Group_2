@@ -8,7 +8,7 @@ import { AuthModal } from '../components/auth/AuthModal'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { useWorkspace } from '../context/WorkspaceContext'
 
-export const Route = createFileRoute('/dashboard')({
+export const Route = createFileRoute('/boards')({
   component: DashboardComponent,
 })
 
