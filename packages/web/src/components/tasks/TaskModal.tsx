@@ -30,6 +30,7 @@ import { AttachmentSection } from '../Attachments'
 import { ActivitySection } from '../Activity'
 import { MoveModal } from '../MoveModal'
 import { format } from 'date-fns'
+import { useSession } from '../../api/auth'
 import {
   useAttachments,
   useAddLinkAttachment,
@@ -40,8 +41,8 @@ import {
 import type { UploadProgress, UploadError } from '../../hooks/useAttachments'
 
 // Re-export types that were in CardModalTypes for backwards compatibility
-export type { Card, Checklist as ChecklistType, Comment, Activity, Board } from '../CardModalTypes'
-import type { Card, Checklist as ChecklistType, Comment, Activity, Board } from '../CardModalTypes'
+export type { Card, Checklist as ChecklistType, Comment, Activity, Board, BoardMember } from '../CardModalTypes'
+import type { Card, Checklist as ChecklistType, Comment, Activity, Board, BoardMember } from '../CardModalTypes'
 
 export interface TaskModalProps {
   taskId?: string
@@ -75,6 +76,8 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
   const [coverUrl, setCoverUrl] = useState('')
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
   const [uploadError, setUploadError] = useState<UploadError | null>(null)
+
+  const { data: session } = useSession()
 
   const { data: attachments = [] } = useAttachments(taskId)
   const addLinkMutation = useAddLinkAttachment(taskId)
@@ -139,19 +142,12 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
     },
   })
 
-  const { data: boardMembers = [] } = useQuery<
-    { id: string; name: string | null; image: string | null }[]
-  >({
+  const { data: boardMembers = [] } = useQuery<BoardMember[]>({
     queryKey: ['board-members', boardId],
     queryFn: async () => {
       const { data, error } = await api.v1.boards({ id: boardId }).members.get()
       if (error) throw error
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (data as any[]).map((m: any) => ({
-        id: m.userId,
-        name: m.userName,
-        image: m.userImage,
-      }))
+      return data as unknown as BoardMember[]
     },
   })
 
@@ -447,7 +443,8 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
               <CommentSection
                 cardId={taskId}
                 comments={comments}
-                sessionUserId="current-user-id" // Replace with real session
+                members={boardMembers}
+                sessionUserId={session?.user?.id}
               />
             </div>
 

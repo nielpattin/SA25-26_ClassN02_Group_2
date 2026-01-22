@@ -1,20 +1,24 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api/client'
-import { Comment } from '../CardModalTypes'
+import { Comment, BoardMember } from '../CardModalTypes'
 import { Button } from '../ui/Button'
-import { Textarea } from '../ui/Textarea'
 import { Avatar } from '../ui/Avatar'
 import { formatDistanceToNow } from 'date-fns'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Pencil, X, Check } from 'lucide-react'
+import { MentionInput } from './MentionInput'
+import { MentionRenderer } from './MentionRenderer'
+
+export { MentionInput, MentionRenderer }
 
 interface CommentSectionProps {
   cardId: string
   comments: Comment[]
+  members: BoardMember[]
   sessionUserId?: string
 }
 
-export function CommentSection({ cardId, comments, sessionUserId }: CommentSectionProps) {
+export function CommentSection({ cardId, comments, members, sessionUserId }: CommentSectionProps) {
   const queryClient = useQueryClient()
   const [content, setContent] = useState('')
 
@@ -29,20 +33,13 @@ export function CommentSection({ cardId, comments, sessionUserId }: CommentSecti
     }
   })
 
-  const deleteComment = useMutation({
-    mutationFn: async (commentId: string) => {
-      const { error } = await api.v1.comments({ id: commentId }).delete()
-      if (error) throw error
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
-  })
-
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-4">
-        <Textarea
+        <MentionInput
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={setContent}
+          members={members}
           placeholder="Write a comment..."
           className="min-h-25"
         />
@@ -59,35 +56,129 @@ export function CommentSection({ cardId, comments, sessionUserId }: CommentSecti
 
       <div className="flex flex-col gap-6">
         {comments.map((comment) => (
-          <div key={comment.id} className="group flex gap-4">
-            <Avatar 
-              src={comment.userImage} 
-              fallback={comment.userName || 'U'} 
-              size="md" 
-            />
-            <div className="shadow-brutal-sm hover:shadow-brutal-md flex flex-1 flex-col gap-2 border border-black bg-white p-4 transition-all hover:-translate-0.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-[13px] font-extrabold tracking-wider text-black uppercase">{comment.userName}</span>
-                  <span className="text-[11px] font-extrabold tracking-widest text-black/40 uppercase">
-                    {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-                  </span>
-                </div>
-                {sessionUserId === comment.userId && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6! p-0 opacity-0 transition-opacity group-hover:opacity-100 hover:text-[#E74C3C]"
-                    onClick={() => deleteComment.mutate(comment.id)}
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                )}
-              </div>
-              <div className="text-[14px] leading-relaxed font-semibold text-black">{comment.content}</div>
-            </div>
-          </div>
+          <CommentItem 
+            key={comment.id}
+            comment={comment}
+            members={members}
+            cardId={cardId}
+            sessionUserId={sessionUserId}
+          />
         ))}
+      </div>
+    </div>
+  )
+}
+
+interface CommentItemProps {
+  comment: Comment
+  members: BoardMember[]
+  cardId: string
+  sessionUserId?: string
+}
+
+function CommentItem({ comment, members, cardId, sessionUserId }: CommentItemProps) {
+  const queryClient = useQueryClient()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState(comment.content)
+
+  const updateComment = useMutation({
+    mutationFn: async (content: string) => {
+      const { error } = await api.v1.comments({ id: comment.id }).patch({ content })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
+      setIsEditing(false)
+    }
+  })
+
+  const deleteComment = useMutation({
+    mutationFn: async (commentId: string) => {
+      const { error } = await api.v1.comments({ id: commentId }).delete()
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
+  })
+
+  const handleCancel = () => {
+    setEditContent(comment.content)
+    setIsEditing(false)
+  }
+
+  return (
+    <div className="group flex gap-4">
+      <Avatar 
+        src={comment.userImage} 
+        fallback={comment.userName || 'U'} 
+        size="md" 
+      />
+      <div className="shadow-brutal-sm hover:shadow-brutal-md flex flex-1 flex-col gap-2 border border-black bg-white p-4 transition-all hover:-translate-0.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[13px] font-extrabold tracking-wider text-black uppercase">{comment.userName}</span>
+            <span className="text-[11px] font-extrabold tracking-widest text-black/40 uppercase">
+              {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+              {comment.updatedAt !== comment.createdAt && ' (edited)'}
+            </span>
+          </div>
+          {sessionUserId === comment.userId && !isEditing && (
+            <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6! p-0 hover:text-[#3498DB]"
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil size={14} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6! p-0 hover:text-[#E74C3C]"
+                onClick={() => deleteComment.mutate(comment.id)}
+              >
+                <Trash2 size={14} />
+              </Button>
+            </div>
+          )}
+          {isEditing && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6! p-0 text-[#27AE60]"
+                onClick={() => updateComment.mutate(editContent)}
+                disabled={!editContent.trim() || editContent === comment.content}
+              >
+                <Check size={14} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6! p-0 text-[#E74C3C]"
+                onClick={handleCancel}
+              >
+                <X size={14} />
+              </Button>
+            </div>
+          )}
+        </div>
+        
+        {isEditing ? (
+          <div className="mt-1">
+            <MentionInput
+              value={editContent}
+              onChange={setEditContent}
+              members={members}
+              autoFocus
+              className="min-h-20"
+            />
+          </div>
+        ) : (
+          <div className="text-[14px] leading-relaxed font-semibold text-black">
+            <MentionRenderer content={comment.content} members={members} />
+          </div>
+        )}
       </div>
     </div>
   )

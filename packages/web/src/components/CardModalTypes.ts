@@ -69,3 +69,11 @@ export interface Activity {
   userImage: string | null
 }
 
+export interface BoardMember {
+  id: string
+  userId: string
+  userName: string | null
+  userImage: string | null
+  role: 'admin' | 'member' | 'viewer'
+}
+
