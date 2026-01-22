@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { CreateWorkspaceModal } from '../workspaces/CreateWorkspaceModal'
 import { NotificationBell } from '../notifications/NotificationBell'
+import { useSearchModal } from '../../context/SearchContext'
 
 export function Sidebar() {
   const { workspaces, currentWorkspace, setCurrentWorkspace } = useWorkspace()
@@ -15,6 +16,7 @@ export function Sidebar() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const routerState = useRouterState()
   const queryClient = useQueryClient()
+  const { open: openSearch } = useSearchModal()
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -125,17 +127,13 @@ export function Sidebar() {
               Boards
             </Link>
 
-            <Link
-              to="/search"
-              className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
-                isActive('/search')
-                  ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                  : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-              }`}
+            <button
+              onClick={openSearch}
+              className="flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide text-black uppercase transition-all hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
             >
               <Search size={16} />
               Search
-            </Link>
+            </button>
 
             <Link
               to="/members"

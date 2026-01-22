@@ -7,6 +7,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { AuthModal } from '../components/auth/AuthModal'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { useWorkspace } from '../context/WorkspaceContext'
+import { SearchTrigger } from '../components/search'
 
 export const Route = createFileRoute('/boards')({
   component: DashboardComponent,
@@ -115,13 +116,16 @@ function BoardsDashboard() {
 
   return (
     <div className="p-12 lg:px-16">
-      <header className="mb-10">
-        <h1 className="font-heading m-0 text-[32px] font-bold tracking-tight text-black uppercase">
-          {currentWorkspace?.personal ? 'My Boards' : `${currentWorkspace?.name} Boards`}
-        </h1>
-        <p className="mt-2 text-sm font-medium text-gray-500 uppercase">
-          {currentWorkspace?.personal ? 'Personal Workspace' : 'Team Workspace'}
-        </p>
+      <header className="mb-10 flex items-center justify-between">
+        <div>
+          <h1 className="font-heading m-0 text-[32px] font-bold tracking-tight text-black uppercase">
+            {currentWorkspace?.personal ? 'My Boards' : `${currentWorkspace?.name} Boards`}
+          </h1>
+          <p className="mt-2 text-sm font-medium text-gray-500 uppercase">
+            {currentWorkspace?.personal ? 'Personal Workspace' : 'Team Workspace'}
+          </p>
+        </div>
+        <SearchTrigger />
       </header>
 
       <div className="mb-12 flex max-w-150 gap-4">

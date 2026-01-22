@@ -7,6 +7,12 @@ export type TaskLabel = {
   color: string
 }
 
+export type TaskAssignee = {
+  userId: string
+  name: string | null
+  image: string | null
+}
+
 export type ChecklistProgress = {
   completed: number
   total: number
@@ -22,6 +28,7 @@ export type TaskWithLabels = {
   description?: string | null
   createdAt?: Date | null
   labels?: TaskLabel[]
+  assignees?: TaskAssignee[]
   checklistProgress?: ChecklistProgress | null
   attachmentsCount?: number
 }

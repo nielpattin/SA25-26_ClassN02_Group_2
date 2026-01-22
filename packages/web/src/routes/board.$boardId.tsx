@@ -17,9 +17,15 @@ import {
 import { useTasks, useCreateTask, type TaskWithLabels, taskKeys } from '../hooks/useTasks'
 import { useRecordBoardVisit } from '../hooks/useRecentBoards'
 import { useSearchModal } from '../context/SearchContext'
+import { useBoardFilters } from '../hooks/useBoardFilters'
+import { filterTasks } from '../hooks/filterTasks'
+import { useLabels } from '../hooks/useLabels'
+import { useBoardMembers } from '../hooks/useAssignees'
 import { CardModal, TaskCard } from '../components/tasks'
 import { BoardColumn } from '../components/columns'
 import { WorkspaceProvider } from '../context/WorkspaceContext'
+import { SearchTrigger } from '../components/search'
+import { BoardFilterBar } from '../components/filters'
 import {
   DragProvider,
   useDragContext,
@@ -73,6 +79,8 @@ function BoardComponent() {
   const { data: board, isLoading: boardLoading } = useBoard(boardId)
   const { data: serverColumns = [], isLoading: columnsLoading } = useColumns(boardId)
   const { data: allCards = [] } = useTasks(boardId)
+  const { data: labels = [] } = useLabels(boardId)
+  const { data: members = [] } = useBoardMembers(boardId)
   const createTask = useCreateTask(boardId)
   const createColumn = useCreateColumn()
   const renameColumn = useRenameColumn(boardId)
@@ -81,6 +89,39 @@ function BoardComponent() {
   const moveColumnToBoard = useMoveColumnToBoard(boardId)
   const recordVisit = useRecordBoardVisit()
   const { setBoardContext } = useSearchModal()
+
+  // Filtering
+  const {
+    filters,
+    pendingFilters,
+    setLabelIds,
+    setAssigneeIds,
+    setDueDate,
+    applyFilters,
+    clearFilters,
+    hasActiveFilters,
+    hasPendingChanges,
+  } = useBoardFilters(boardId)
+
+  const filteredCards = useMemo(() => filterTasks(allCards, filters), [allCards, filters])
+
+  const handleLabelToggle = useCallback(
+    (labelId: string) => {
+      const current = pendingFilters.labelIds
+      const next = current.includes(labelId) ? current.filter(id => id !== labelId) : [...current, labelId]
+      setLabelIds(next)
+    },
+    [pendingFilters.labelIds, setLabelIds]
+  )
+
+  const handleAssigneeToggle = useCallback(
+    (userId: string) => {
+      const current = pendingFilters.assigneeIds
+      const next = current.includes(userId) ? current.filter(id => id !== userId) : [...current, userId]
+      setAssigneeIds(next)
+    },
+    [pendingFilters.assigneeIds, setAssigneeIds]
+  )
 
   // Record board visit for recent boards feature
   useEffect(() => {
@@ -190,7 +231,7 @@ function BoardComponent() {
     <WorkspaceProvider>
       <DragProvider>
         <div className="bg-canvas font-body color-text flex h-screen flex-col overflow-hidden p-0">
-          <header className="bg-canvas flex shrink-0 items-center justify-between border-b border-black px-6 py-4">
+          <header className="bg-canvas flex shrink-0 items-center justify-between gap-4 border-b border-black px-6 py-4">
             <div className="flex items-center gap-3">
               <Link
                 to="/boards"
@@ -201,12 +242,27 @@ function BoardComponent() {
               <ChevronRight size={14} className="text-text-muted" />
               <h1 className="font-heading m-0 text-[18px] font-bold text-black">{board.name}</h1>
             </div>
+            <div className="flex items-center gap-4">
+              <BoardFilterBar
+                pendingFilters={pendingFilters}
+                labels={labels}
+                members={members}
+                hasActiveFilters={hasActiveFilters}
+                hasPendingChanges={hasPendingChanges}
+                onLabelToggle={handleLabelToggle}
+                onAssigneeToggle={handleAssigneeToggle}
+                onDueDateChange={setDueDate}
+                onApply={applyFilters}
+                onClear={clearFilters}
+              />
+              <SearchTrigger />
+            </div>
           </header>
 
           <BoardContent
             boardId={boardId}
             serverColumns={serverColumns}
-            allCards={allCards}
+            allCards={filteredCards}
             newColumnName={newColumnName}
             setNewColumnName={setNewColumnName}
             createColumn={createColumn}
@@ -218,6 +274,7 @@ function BoardComponent() {
             onMoveColumnToBoard={handleMoveColumnToBoard}
             onColumnDrop={handleColumnDrop}
             onCardDrop={handleCardDrop}
+            isFiltering={hasActiveFilters}
           />
 
           {selectedCardId && (
@@ -244,6 +301,7 @@ type BoardContentProps = {
   onMoveColumnToBoard: (columnId: string, targetBoardId: string) => void
   onColumnDrop: (result: ColumnDropResult<Column>) => void
   onCardDrop: (result: CardDropResult<TaskWithLabels>) => void
+  isFiltering: boolean
 }
 
 function BoardContent({
@@ -261,6 +319,7 @@ function BoardContent({
   onMoveColumnToBoard,
   onColumnDrop,
   onCardDrop,
+  isFiltering,
 }: BoardContentProps) {
   const { data: allBoards = [] } = useBoards()
   const {
@@ -336,6 +395,7 @@ function BoardContent({
             isDragging={column.id === draggedColumnId}
             draggedCardId={draggedCardId}
             isAnyDragging={isAnyDragging}
+            isFiltering={isFiltering}
           />
         ))}
         <div

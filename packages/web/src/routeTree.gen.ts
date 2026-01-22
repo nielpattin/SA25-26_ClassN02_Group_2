@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as SearchRouteImport } from './routes/search'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MembersRouteImport } from './routes/members'
 import { Route as BoardsRouteImport } from './routes/boards'
@@ -20,11 +19,6 @@ import { Route as BoardBoardIdRouteImport } from './routes/board.$boardId'
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SearchRoute = SearchRouteImport.update({
-  id: '/search',
-  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -58,7 +52,6 @@ export interface FileRoutesByFullPath {
   '/boards': typeof BoardsRoute
   '/members': typeof MembersRoute
   '/profile': typeof ProfileRoute
-  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/board/$boardId': typeof BoardBoardIdRoute
 }
@@ -67,7 +60,6 @@ export interface FileRoutesByTo {
   '/boards': typeof BoardsRoute
   '/members': typeof MembersRoute
   '/profile': typeof ProfileRoute
-  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/board/$boardId': typeof BoardBoardIdRoute
 }
@@ -77,7 +69,6 @@ export interface FileRoutesById {
   '/boards': typeof BoardsRoute
   '/members': typeof MembersRoute
   '/profile': typeof ProfileRoute
-  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/board/$boardId': typeof BoardBoardIdRoute
 }
@@ -88,7 +79,6 @@ export interface FileRouteTypes {
     | '/boards'
     | '/members'
     | '/profile'
-    | '/search'
     | '/settings'
     | '/board/$boardId'
   fileRoutesByTo: FileRoutesByTo
@@ -97,7 +87,6 @@ export interface FileRouteTypes {
     | '/boards'
     | '/members'
     | '/profile'
-    | '/search'
     | '/settings'
     | '/board/$boardId'
   id:
@@ -106,7 +95,6 @@ export interface FileRouteTypes {
     | '/boards'
     | '/members'
     | '/profile'
-    | '/search'
     | '/settings'
     | '/board/$boardId'
   fileRoutesById: FileRoutesById
@@ -116,7 +104,6 @@ export interface RootRouteChildren {
   BoardsRoute: typeof BoardsRoute
   MembersRoute: typeof MembersRoute
   ProfileRoute: typeof ProfileRoute
-  SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   BoardBoardIdRoute: typeof BoardBoardIdRoute
 }
@@ -128,13 +115,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -180,7 +160,6 @@ const rootRouteChildren: RootRouteChildren = {
   BoardsRoute: BoardsRoute,
   MembersRoute: MembersRoute,
   ProfileRoute: ProfileRoute,
-  SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   BoardBoardIdRoute: BoardBoardIdRoute,
 }

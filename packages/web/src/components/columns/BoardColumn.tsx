@@ -33,6 +33,7 @@ export type BoardColumnProps = {
   isDragging?: boolean
   draggedCardId: string | null
   isAnyDragging: boolean
+  isFiltering?: boolean
 }
 
 export const BoardColumn = memo(function BoardColumn({
@@ -50,6 +51,7 @@ export const BoardColumn = memo(function BoardColumn({
   isDragging = false,
   draggedCardId,
   isAnyDragging,
+  isFiltering = false,
 }: BoardColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -174,7 +176,7 @@ export const BoardColumn = memo(function BoardColumn({
           ))}
           {cards.length === 0 && (
             <div className="text-text-subtle border border-dashed border-black bg-black/5 p-4 text-center text-[12px] font-bold uppercase">
-              No items
+              {isFiltering ? 'No tasks match filters' : 'No items'}
             </div>
           )}
         </div>
