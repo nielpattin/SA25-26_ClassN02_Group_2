@@ -6,7 +6,7 @@ import { api } from '../api/client'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { Workspace } from '../types/workspace'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
-import { ConfirmModal } from '../components/ConfirmModal'
+import { ConfirmModal } from '../components/ui/ConfirmModal'
 
 export const Route = createFileRoute('/settings')({
 	component: SettingsRouteComponent,

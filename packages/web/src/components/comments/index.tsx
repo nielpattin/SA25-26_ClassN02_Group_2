@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../../api/client'
 import { Comment, BoardMember } from '../CardModalTypes'
 import { Button } from '../ui/Button'
 import { Avatar } from '../ui/Avatar'
@@ -8,30 +6,26 @@ import { formatDistanceToNow } from 'date-fns'
 import { Trash2, Pencil, X, Check } from 'lucide-react'
 import { MentionInput } from './MentionInput'
 import { MentionRenderer } from './MentionRenderer'
+import {
+  useComments,
+  useCreateComment,
+  useUpdateComment,
+  useDeleteComment,
+} from '../../hooks'
 
 export { MentionInput, MentionRenderer }
 
 interface CommentSectionProps {
   cardId: string
-  comments: Comment[]
+  comments?: Comment[]
   members: BoardMember[]
   sessionUserId?: string
 }
 
-export function CommentSection({ cardId, comments, members, sessionUserId }: CommentSectionProps) {
-  const queryClient = useQueryClient()
+export function CommentSection({ cardId, comments: initialComments, members, sessionUserId }: CommentSectionProps) {
   const [content, setContent] = useState('')
-
-  const createComment = useMutation({
-    mutationFn: async (content: string) => {
-      const { error } = await api.v1.comments.post({ taskId: cardId, content })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
-      setContent('')
-    }
-  })
+  const { data: comments = initialComments || [] } = useComments(cardId)
+  const createComment = useCreateComment(cardId)
 
   return (
     <div className="flex flex-col gap-8">
@@ -46,7 +40,11 @@ export function CommentSection({ cardId, comments, members, sessionUserId }: Com
         <div className="flex justify-end">
           <Button 
             disabled={!content.trim()} 
-            onClick={() => createComment.mutate(content)}
+            onClick={() => {
+              createComment.mutate(content, {
+                onSuccess: () => setContent('')
+              })
+            }}
             className="px-6!"
           >
             Comment
@@ -77,28 +75,11 @@ interface CommentItemProps {
 }
 
 function CommentItem({ comment, members, cardId, sessionUserId }: CommentItemProps) {
-  const queryClient = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(comment.content)
 
-  const updateComment = useMutation({
-    mutationFn: async (content: string) => {
-      const { error } = await api.v1.comments({ id: comment.id }).patch({ content })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
-      setIsEditing(false)
-    }
-  })
-
-  const deleteComment = useMutation({
-    mutationFn: async (commentId: string) => {
-      const { error } = await api.v1.comments({ id: commentId }).delete()
-      if (error) throw error
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', cardId] })
-  })
+  const updateComment = useUpdateComment(cardId)
+  const deleteComment = useDeleteComment(cardId)
 
   const handleCancel = () => {
     setEditContent(comment.content)
@@ -147,7 +128,11 @@ function CommentItem({ comment, members, cardId, sessionUserId }: CommentItemPro
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6! p-0 text-[#27AE60]"
-                onClick={() => updateComment.mutate(editContent)}
+                onClick={() => {
+                  updateComment.mutate({ id: comment.id, content: editContent }, {
+                    onSuccess: () => setIsEditing(false)
+                  })
+                }}
                 disabled={!editContent.trim() || editContent === comment.content}
               >
                 <Check size={14} />

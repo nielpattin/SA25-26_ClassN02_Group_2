@@ -3,7 +3,7 @@ import { Plus, Pencil, Copy, Archive, ExternalLink } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { ColumnHeader } from './ColumnHeader'
-import type { DropdownItem } from '../Dropdown'
+import type { DropdownItem } from '../ui/Dropdown'
 
 export type ColumnData = {
   id: string

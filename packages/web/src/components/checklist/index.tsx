@@ -1,20 +1,26 @@
 import { useState } from 'react'
 import { X, Plus } from 'lucide-react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../../api/client'
 import { Checklist as ChecklistType, ChecklistItem } from '../CardModalTypes'
 import { Button } from '../ui/Button'
 import { Checkbox } from '../ui/Checkbox'
 import { Input } from '../ui/Input'
 import { Progress } from '../ui/Progress'
+import {
+  useUpdateChecklist,
+  useDeleteChecklist,
+  useAddChecklistItem,
+  useToggleChecklistItem,
+  useUpdateChecklistItem,
+  useDeleteChecklistItem,
+} from '../../hooks'
 
 interface ChecklistProps {
   checklist: ChecklistType
   cardId: string
+  boardId?: string
 }
 
-export function Checklist({ checklist, cardId }: ChecklistProps) {
-  const queryClient = useQueryClient()
+export function Checklist({ checklist, cardId, boardId }: ChecklistProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editedTitle, setEditedTitle] = useState(checklist.title)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
@@ -22,71 +28,17 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
   const [isAddingItem, setIsAddingItem] = useState(false)
   const [newItemContent, setNewItemContent] = useState('')
 
+  const updateChecklist = useUpdateChecklist(cardId)
+  const deleteChecklist = useDeleteChecklist(cardId, boardId)
+  const addItem = useAddChecklistItem(cardId, boardId)
+  const toggleItem = useToggleChecklistItem(cardId, boardId)
+  const updateItem = useUpdateChecklistItem(cardId)
+  const deleteItem = useDeleteChecklistItem(cardId, boardId)
+
   const items = checklist.items || []
   const totalCount = items.length
   const completedCount = items.filter(i => i.isCompleted).length
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
-
-  const updateChecklist = useMutation({
-    mutationFn: async (title: string) => {
-      const { error } = await api.v1.checklists({ id: checklist.id }).patch({ title })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      setIsEditingTitle(false)
-    }
-  })
-
-  const deleteChecklist = useMutation({
-    mutationFn: async () => {
-      const { error } = await api.v1.checklists({ id: checklist.id }).delete()
-      if (error) throw error
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-  })
-
-  const addItem = useMutation({
-    mutationFn: async (content: string) => {
-      const { error } = await api.v1.checklists.items.post({
-        checklistId: checklist.id,
-        content
-      })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      setNewItemContent('')
-      setIsAddingItem(false)
-    }
-  })
-
-  const toggleItem = useMutation({
-    mutationFn: async (itemId: string) => {
-      const { error } = await api.v1.checklists.items({ id: itemId }).toggle.post()
-      if (error) throw error
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-  })
-
-  const updateItem = useMutation({
-    mutationFn: async ({ itemId, content }: { itemId: string; content: string }) => {
-      const { error } = await api.v1.checklists.items({ id: itemId }).patch({ content })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-      setEditingItemId(null)
-    }
-  })
-
-  const deleteItem = useMutation({
-    mutationFn: async (itemId: string) => {
-      const { error } = await api.v1.checklists.items({ id: itemId }).delete()
-      if (error) throw error
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['checklists', cardId] })
-  })
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -100,7 +52,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
                   onChange={(e) => setEditedTitle(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && editedTitle.trim()) {
-                      updateChecklist.mutate(editedTitle.trim())
+                      updateChecklist.mutate({ id: checklist.id, title: editedTitle.trim() }, { onSuccess: () => setIsEditingTitle(false) })
                     } else if (e.key === 'Escape') {
                       setEditedTitle(checklist.title)
                       setIsEditingTitle(false)
@@ -112,7 +64,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
                   <Button
                     size="sm"
                     onClick={() => {
-                      if (editedTitle.trim()) updateChecklist.mutate(editedTitle.trim())
+                      if (editedTitle.trim()) updateChecklist.mutate({ id: checklist.id, title: editedTitle.trim() }, { onSuccess: () => setIsEditingTitle(false) })
                     }}
                   >
                     Save
@@ -138,7 +90,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
           <div className="flex items-center gap-4 pt-1">
             <span className="text-[11px] leading-none font-extrabold text-black/40 uppercase">{Math.round(progress)}%</span>
             <button
-              onClick={() => deleteChecklist.mutate()}
+              onClick={() => deleteChecklist.mutate(checklist.id)}
               className="hover:bg-text-danger hover:shadow-brutal-sm flex h-8 w-8 cursor-pointer items-center justify-center border border-black bg-white text-black opacity-0 transition-all group-hover:opacity-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:text-white"
             >
               <X size={14} />
@@ -164,7 +116,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
                       onChange={(e) => setEditedItemContent(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && editedItemContent.trim()) {
-                          updateItem.mutate({ itemId: item.id, content: editedItemContent.trim() })
+                          updateItem.mutate({ id: item.id, content: editedItemContent.trim() }, { onSuccess: () => setEditingItemId(null) })
                         } else if (e.key === 'Escape') {
                           setEditingItemId(null)
                         }
@@ -197,7 +149,7 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
                   size="sm"
                   onClick={() => {
                     if (editedItemContent.trim()) {
-                      updateItem.mutate({ itemId: item.id, content: editedItemContent.trim() })
+                      updateItem.mutate({ id: item.id, content: editedItemContent.trim() }, { onSuccess: () => setEditingItemId(null) })
                     }
                   }}
                 >
@@ -225,7 +177,10 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
             autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter' && newItemContent) {
-                addItem.mutate(newItemContent)
+                addItem.mutate({ checklistId: checklist.id, content: newItemContent }, { onSuccess: () => {
+                  setNewItemContent('')
+                  setIsAddingItem(false)
+                }})
               } else if (e.key === 'Escape') {
                 setNewItemContent('')
                 setIsAddingItem(false)
@@ -236,7 +191,10 @@ export function Checklist({ checklist, cardId }: ChecklistProps) {
             <Button
               size="md"
               onClick={() => {
-                if (newItemContent) addItem.mutate(newItemContent)
+                if (newItemContent) addItem.mutate({ checklistId: checklist.id, content: newItemContent }, { onSuccess: () => {
+                  setNewItemContent('')
+                  setIsAddingItem(false)
+                }})
               }}
               disabled={!newItemContent}
             >

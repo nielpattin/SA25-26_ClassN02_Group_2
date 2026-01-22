@@ -44,3 +44,44 @@ export {
   attachmentKeys,
 } from './useAttachments'
 export type { Attachment, UploadProgress, UploadError } from './useAttachments'
+
+export {
+  useLabels,
+  useCreateLabel,
+  useUpdateLabel,
+  useDeleteLabel,
+  useToggleLabel,
+  labelKeys,
+} from './useLabels'
+export type { Label, CreateLabelInput, UpdateLabelInput } from './useLabels'
+
+export {
+  useBoardMembers,
+  useAssignMember,
+  useUnassignMember,
+  useToggleAssignee,
+  assigneeKeys,
+} from './useAssignees'
+export type { BoardMember as BoardMemberType } from './useAssignees'
+
+export {
+  useChecklists,
+  useCreateChecklist,
+  useUpdateChecklist,
+  useDeleteChecklist,
+  useAddChecklistItem,
+  useUpdateChecklistItem,
+  useToggleChecklistItem,
+  useDeleteChecklistItem,
+  checklistKeys,
+} from './useChecklists'
+
+export { useTaskActivity, activityKeys } from './useTaskActivity'
+
+export {
+  useComments,
+  useCreateComment,
+  useUpdateComment,
+  useDeleteComment,
+  commentKeys,
+} from './useComments'

@@ -1,6 +1,6 @@
 import { memo, useRef, useLayoutEffect, useState } from 'react'
 import { MoreHorizontal } from 'lucide-react'
-import { Dropdown, type DropdownItem } from '../Dropdown'
+import { Dropdown, type DropdownItem } from '../ui/Dropdown'
 
 export type ColumnHeaderProps = {
   name: string

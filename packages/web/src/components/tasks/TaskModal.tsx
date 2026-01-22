@@ -5,7 +5,6 @@ import {
   Type,
   Paperclip,
   MessageSquare,
-  History,
   Tag,
   Move,
   MoreHorizontal,
@@ -21,14 +20,15 @@ import { Textarea } from '../ui/Textarea'
 import { Input } from '../ui/Input'
 import { Popover } from '../ui/Popover'
 import { DatePicker } from '../ui/DatePicker'
-import { Dropdown } from '../Dropdown'
-import { Checklist, ChecklistCreator } from '../checklist'
+import { Dropdown } from '../ui/Dropdown'
+import { ChecklistCreator } from '../checklist'
 import { CommentSection } from '../comments'
-import { LabelSection } from '../Labels'
-import { AssigneeSection } from '../Assignees'
-import { AttachmentSection } from '../Attachments'
-import { ActivitySection } from '../Activity'
-import { MoveModal } from '../MoveModal'
+import { AttachmentSection } from '../attachments/Attachments'
+import { MoveModal } from './MoveModal'
+import { TaskChecklist } from './TaskChecklist'
+import { TaskLabels } from './TaskLabels'
+import { TaskAssignees } from './TaskAssignees'
+import { TaskActivity } from './TaskActivity'
 import { format } from 'date-fns'
 import { useSession } from '../../api/auth'
 import {
@@ -37,12 +37,13 @@ import {
   useUploadAttachment,
   useDeleteAttachment,
   useDownloadAttachment,
-} from '../../hooks/useAttachments'
-import type { UploadProgress, UploadError } from '../../hooks/useAttachments'
+  useCreateChecklist,
+} from '../../hooks'
+import type { UploadProgress, UploadError } from '../../hooks'
 
 // Re-export types that were in CardModalTypes for backwards compatibility
 export type { Card, Checklist as ChecklistType, Comment, Activity, Board, BoardMember } from '../CardModalTypes'
-import type { Card, Checklist as ChecklistType, Comment, Activity, Board, BoardMember } from '../CardModalTypes'
+import type { Card, Board, BoardMember } from '../CardModalTypes'
 
 export interface TaskModalProps {
   taskId?: string
@@ -67,11 +68,9 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [isPriorityOpen, setIsPriorityOpen] = useState(false)
-  const [isMembersOpen, setIsMembersOpen] = useState(false)
   const [isCoverOpen, setIsCoverOpen] = useState(false)
   const mainDateTriggerRef = useRef<HTMLDivElement>(null)
   const priorityTriggerRef = useRef<HTMLButtonElement>(null)
-  const assignedTriggerRef = useRef<HTMLButtonElement>(null)
   const coverTriggerRef = useRef<HTMLButtonElement>(null)
   const [coverUrl, setCoverUrl] = useState('')
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
@@ -91,45 +90,6 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
       const { data, error } = await api.v1.tasks({ id: taskId }).get()
       if (error) throw error
       return data as unknown as Card
-    },
-  })
-
-  const { data: checklists = [] } = useQuery<ChecklistType[]>({
-    queryKey: ['checklists', taskId],
-    queryFn: async () => {
-      const { data, error } = await api.v1.checklists.task({ taskId }).get()
-      if (error) throw error
-      return data as unknown as ChecklistType[]
-    },
-    enabled: !!card,
-  })
-
-  const { data: comments = [] } = useQuery<Comment[]>({
-    queryKey: ['comments', taskId],
-    queryFn: async () => {
-      const { data, error } = await api.v1.comments.task({ taskId }).get()
-      if (error) throw error
-      return data as unknown as Comment[]
-    },
-    enabled: !!card,
-  })
-
-  const { data: activities = [] } = useQuery<Activity[]>({
-    queryKey: ['activities', taskId],
-    queryFn: async () => {
-      const { data, error } = await api.v1.activities.task({ taskId }).get()
-      if (error) throw error
-      return data as unknown as Activity[]
-    },
-    enabled: !!card,
-  })
-
-  const { data: boardLabels = [] } = useQuery<{ id: string; name: string; color: string }[]>({
-    queryKey: ['labels', boardId],
-    queryFn: async () => {
-      const { data, error } = await api.v1.labels.board({ boardId }).get()
-      if (error) throw error
-      return data as unknown as { id: string; name: string; color: string }[]
     },
   })
 
@@ -206,35 +166,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
     },
   })
 
-  const toggleAssignee = useMutation({
-    mutationFn: async (userId: string) => {
-      const currentAssignees = card!.assignees || []
-      if (currentAssignees.includes(userId)) {
-        await api.v1.tasks({ id: taskId }).assignees({ userId }).delete()
-      } else {
-        await api.v1.tasks({ id: taskId }).assignees.post({ userId })
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
-      queryClient.invalidateQueries({ queryKey: ['activities', taskId] })
-    },
-  })
-
-  const createChecklist = useMutation({
-    mutationFn: async (title: string) => {
-      const { error } = await api.v1.checklists.post({
-        title,
-        taskId,
-      })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists', taskId] })
-      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
-      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-    },
-  })
+  const createChecklist = useCreateChecklist(taskId, boardId)
 
   if (isLoading || !card)
     return (
@@ -309,29 +241,10 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
               </div>
               <div className="grid grid-cols-2 items-stretch">
                 <div className="flex min-w-0 flex-col justify-center overflow-hidden border-r-2 border-black bg-white p-2.5">
-                  <LabelSection
+                  <TaskLabels
+                    taskId={taskId}
+                    boardId={boardId}
                     cardLabels={card.labels || []}
-                    allLabels={boardLabels || []}
-                    onToggle={async labelId => {
-                      const currentLabels = card.labels || []
-                      if (currentLabels.includes(labelId)) {
-                        await api.v1.labels.card({ cardId: taskId }).label({ labelId }).delete()
-                      } else {
-                        await api.v1.labels.card({ cardId: taskId }).label({ labelId }).post()
-                      }
-                      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
-                      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-                    }}
-                    onAdd={async (name, color) => {
-                      await api.v1.labels.post({ name, color, boardId })
-                      queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
-                    }}
-                    onDelete={async labelId => {
-                      await api.v1.labels({ id: labelId }).delete()
-                      queryClient.invalidateQueries({ queryKey: ['labels', boardId] })
-                      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
-                      queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
-                    }}
                   />
                 </div>
                 <div className="flex min-w-0 items-center justify-center overflow-hidden bg-white p-2.5">
@@ -401,9 +314,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
             </div>
 
             {/* Checklists */}
-            {checklists.map(checklist => (
-              <Checklist key={checklist.id} checklist={checklist} cardId={taskId} />
-            ))}
+            <TaskChecklist taskId={taskId} boardId={boardId} />
 
             {/* Attachments */}
             <div className="flex flex-col gap-3">
@@ -442,19 +353,13 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
               </h3>
               <CommentSection
                 cardId={taskId}
-                comments={comments}
                 members={boardMembers}
                 sessionUserId={session?.user?.id}
               />
             </div>
 
             {/* Activity */}
-            <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
-                <History size={14} /> Activity
-              </h3>
-              <ActivitySection activities={activities} />
-            </div>
+            <TaskActivity taskId={taskId} />
           </div>
 
           <div className="flex w-[320px] min-w-0 shrink-0 flex-col gap-6 overflow-y-auto bg-[#F4F4F4] p-8">
@@ -571,41 +476,11 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
             </div>
 
             {/* Assigned Members Section */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
-                  Assigned
-                </h3>
-                <button
-                  ref={assignedTriggerRef}
-                  className="hover:bg-accent hover:shadow-brutal-sm flex h-7 w-7 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-0.5"
-                  onClick={() => setIsMembersOpen(!isMembersOpen)}
-                >
-                  <Plus size={14} strokeWidth={3} />
-                </button>
-              </div>
-
-              <Popover
-                isOpen={isMembersOpen}
-                onClose={() => setIsMembersOpen(false)}
-                triggerRef={assignedTriggerRef}
-                title="Members"
-              >
-                <AssigneeSection
-                  variant="picker"
-                  currentAssignees={card.assignees || []}
-                  boardMembers={boardMembers}
-                  onToggle={userId => toggleAssignee.mutate(userId)}
-                />
-              </Popover>
-
-              <AssigneeSection
-                variant="sidebar-list"
-                currentAssignees={card.assignees || []}
-                boardMembers={boardMembers}
-                onToggle={userId => toggleAssignee.mutate(userId)}
-              />
-            </div>
+            <TaskAssignees
+              taskId={taskId}
+              boardId={boardId}
+              currentAssignees={card.assignees || []}
+            />
 
             <div className="flex flex-col gap-4">
               <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">

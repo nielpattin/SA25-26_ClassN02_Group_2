@@ -1,7 +1,7 @@
 import { memo, useState, useRef, useLayoutEffect } from 'react'
 import { Plus, MoreHorizontal, Pencil, Copy, Archive, ExternalLink } from 'lucide-react'
 import { TaskCard } from '../tasks'
-import { Dropdown } from '../Dropdown'
+import { Dropdown } from '../ui/Dropdown'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import type { TaskWithLabels } from '../../hooks/useTasks'

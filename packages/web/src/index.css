@@ -17,8 +17,37 @@
     --color-text-subtle: #666666;
     --color-text-danger: #E74C3C;
 
+    /* Status Colors - Used for feedback and semantic states */
+    --color-success: #2ECC71;
+    --color-success-bg: #D5F5E3;
+    --color-success-border: #27AE60;
+
+    --color-warning: #F1C40F;
+    --color-warning-bg: #FCF3CF;
+    --color-warning-border: #F39C12;
+
+    --color-error: #E74C3C;
+    --color-error-bg: #FADBD8;
+    --color-error-border: #C0392B;
+
+    --color-info: #3498DB;
+    --color-info-bg: #D6EAF8;
+    --color-info-border: #2980B9;
+
     --color-danger-bg: #FADBD8;
     --color-danger-border: #E74C3C;
+
+    /* Interaction States - Standardized hover, active, and disabled behaviors */
+    --color-hover: #F4F4F4;
+    --color-active: #EEEEEE;
+    --color-disabled: #E0E0E0;
+    --color-disabled-text: #999999;
+    --color-focus-ring: #3498DB;
+
+    /* Elevation Levels - Distinguish between UI layers in combination with brutal shadows */
+    --color-surface-elevated: #FFFFFF;
+    --color-surface-overlay: #F8F8F8;
+    --color-surface-modal: #FFFFFF;
 
     /* Hard Shadows */
     --shadow-brutal-sm: 2px 2px 0px rgba(0, 0, 0, 0.5);

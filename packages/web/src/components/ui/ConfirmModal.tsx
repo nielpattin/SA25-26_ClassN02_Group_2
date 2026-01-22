@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { Button } from './ui/Button'
+import { Button } from './Button'
 
 interface ConfirmModalProps {
   title: string

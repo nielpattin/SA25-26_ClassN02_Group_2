@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Avatar } from './ui/Avatar'
-import { Activity as ActivityType } from './CardModalTypes'
+import { Avatar } from '../ui/Avatar'
+import { Activity as ActivityType } from '../CardModalTypes'
 import { formatDistanceToNow, format } from 'date-fns'
-import { Button } from './ui/Button'
+import { Button } from '../ui/Button'
 
 interface ActivityProps {
   activities: ActivityType[]

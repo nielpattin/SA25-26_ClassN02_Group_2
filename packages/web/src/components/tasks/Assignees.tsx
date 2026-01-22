@@ -1,6 +1,6 @@
 import { Check, X } from 'lucide-react'
-import { Avatar } from './ui/Avatar'
-import type { BoardMember } from './CardModalTypes'
+import { Avatar } from '../ui/Avatar'
+import type { BoardMember } from '../CardModalTypes'
 
 interface AssigneesProps {
   currentAssignees: string[]
