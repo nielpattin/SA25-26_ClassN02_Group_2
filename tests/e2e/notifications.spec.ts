@@ -8,16 +8,21 @@ test.describe('Notifications E2E', () => {
 	const password = 'password123';
 
 	test('User A assigns task to User B, User B receives notification', async ({ browser }) => {
+		test.slow();
 		// 1. Register User A
-		const contextA = await browser.newContext();
+		const contextA = await browser.newContext({ baseURL: 'http://localhost:5173' });
 		const pageA = await contextA.newPage();
-		await pageA.goto('/dashboard');
+		await pageA.goto('/boards');
+		await pageA.waitForTimeout(1000); // Allow hydration
 
 		// Auth modal opens automatically if not logged in
-		// Switch to Sign Up if Name input is missing
-		if (!await pageA.getByPlaceholder('Name').isVisible()) {
+		if (await pageA.getByPlaceholder('Name').isVisible()) {
+			// Already in Sign Up mode
+		} else if (await pageA.getByText("Don't have an account? Sign up").isVisible()) {
 			await pageA.getByText("Don't have an account? Sign up").click();
 		}
+		
+		await expect(pageA.getByPlaceholder('Name')).toBeVisible();
 
 		await pageA.getByPlaceholder('Name').fill('User A');
 		await pageA.getByPlaceholder('Email').fill(emailA);
@@ -28,13 +33,18 @@ test.describe('Notifications E2E', () => {
 		await expect(pageA.getByText('My Boards')).toBeVisible();
 
 		// 2. Register User B
-		const contextB = await browser.newContext();
+		const contextB = await browser.newContext({ baseURL: 'http://localhost:5173' });
 		const pageB = await contextB.newPage();
-		await pageB.goto('/dashboard');
+		await pageB.goto('/boards');
+		await pageB.waitForTimeout(1000);
 
-		if (!await pageB.getByPlaceholder('Name').isVisible()) {
+		if (await pageB.getByPlaceholder('Name').isVisible()) {
+			// Already in Sign Up mode
+		} else if (await pageB.getByText("Don't have an account? Sign up").isVisible()) {
 			await pageB.getByText("Don't have an account? Sign up").click();
 		}
+
+		await expect(pageB.getByPlaceholder('Name')).toBeVisible();
 
 		await pageB.getByPlaceholder('Name').fill('User B');
 		await pageB.getByPlaceholder('Email').fill(emailB);

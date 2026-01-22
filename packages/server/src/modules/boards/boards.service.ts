@@ -34,6 +34,9 @@ export const boardService = {
       ...data,
       workspaceId: workspaceId,
     })
+
+    // Add owner as admin member
+    await boardRepository.addMember(board.id, data.ownerId, 'admin')
     
     eventBus.emitDomain('board.created', { board, userId: data.ownerId })
     
