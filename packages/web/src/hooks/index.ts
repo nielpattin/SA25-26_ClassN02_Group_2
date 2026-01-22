@@ -1,6 +1,9 @@
 export { useBoards, useBoard, useCreateBoard, useDeleteBoard, boardKeys } from './useBoards'
 export type { Board, CreateBoardInput } from './useBoards'
 
+export { useSearch, searchKeys } from './useSearch'
+export type { SearchResult, BoardSearchResult, TaskSearchResult, SearchResponse, SearchOptions } from './useSearch'
+
 export {
   useTasks,
   useTask,

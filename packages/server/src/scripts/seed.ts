@@ -2,7 +2,7 @@ import { auth } from '../modules/auth/auth'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { generatePositions } from '../shared/position'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 const TEST_USER = {
   email: 'test@kyte.dev',
@@ -88,9 +88,30 @@ async function cleanDatabase() {
   }
 }
 
+async function ensureSearchVectors() {
+  console.log('Ensuring search vectors exist...')
+  await db.execute(sql`
+    ALTER TABLE boards
+    ADD COLUMN IF NOT EXISTS search_vector tsvector
+    GENERATED ALWAYS AS (
+      to_tsvector('english', coalesce(name, '') || ' ' || coalesce(description, ''))
+    ) STORED
+  `)
+  await db.execute(sql`
+    ALTER TABLE tasks
+    ADD COLUMN IF NOT EXISTS search_vector tsvector
+    GENERATED ALWAYS AS (
+      to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, ''))
+    ) STORED
+  `)
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_boards_search_vector ON boards USING gin(search_vector)`)
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_tasks_search_vector ON tasks USING gin(search_vector)`)
+}
+
 async function seed() {
   console.log('--- Seeding started ---')
 
+  await ensureSearchVectors()
   await cleanDatabase()
 
   console.log('Creating users...')

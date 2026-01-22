@@ -18,6 +18,11 @@ export const boardController = new Elysia({ prefix: '/boards' })
     if (!session) throw new UnauthorizedError()
     return boardService.getUserBoards(session.user.id)
   })
+  // Recent Boards - must be before /:id to avoid route conflicts
+  .get('/recent', ({ session }) => {
+    if (!session) throw new UnauthorizedError()
+    return boardService.getRecentBoards(session.user.id)
+  })
   .get('/:id', ({ params: { id } }) => boardService.getBoardById(id), {
     params: BoardParams,
   })
@@ -92,4 +97,10 @@ export const boardController = new Elysia({ prefix: '/boards' })
     return boardService.unstarBoard(session.user.id, id)
   }, {
     params: StarBoardParams,
+  })
+  .post('/:id/visit', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return boardService.recordVisit(session.user.id, id)
+  }, {
+    params: BoardParams,
   })

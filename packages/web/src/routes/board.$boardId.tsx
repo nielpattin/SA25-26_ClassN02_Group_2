@@ -15,6 +15,8 @@ import {
   columnKeys,
 } from '../hooks/useColumns'
 import { useTasks, useCreateTask, type TaskWithLabels, taskKeys } from '../hooks/useTasks'
+import { useRecordBoardVisit } from '../hooks/useRecentBoards'
+import { useSearchModal } from '../context/SearchContext'
 import { CardModal, TaskCard } from '../components/tasks'
 import { BoardColumn } from '../components/columns'
 import { WorkspaceProvider } from '../context/WorkspaceContext'
@@ -77,6 +79,23 @@ function BoardComponent() {
   const archiveColumn = useArchiveColumn(boardId)
   const copyColumn = useCopyColumn(boardId)
   const moveColumnToBoard = useMoveColumnToBoard(boardId)
+  const recordVisit = useRecordBoardVisit()
+  const { setBoardContext } = useSearchModal()
+
+  // Record board visit for recent boards feature
+  useEffect(() => {
+    if (boardId) {
+      recordVisit.mutate(boardId)
+    }
+  }, [boardId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Set board context for search modal (enables per-board search)
+  useEffect(() => {
+    if (board) {
+      setBoardContext({ id: board.id, name: board.name })
+    }
+    return () => setBoardContext(null)
+  }, [board, setBoardContext])
 
   // Column action handlers
   const handleAddTask = useCallback(

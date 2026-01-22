@@ -115,4 +115,11 @@ export const boardService = {
   },
 
   isStarred: (userId: string, boardId: string) => boardRepository.isStarred(userId, boardId),
+
+  // Recent Boards (board visits)
+  getRecentBoards: (userId: string, limit?: number) =>
+    boardRepository.getRecentBoards(userId, limit),
+
+  recordVisit: (userId: string, boardId: string) =>
+    boardRepository.recordVisit(userId, boardId),
 }

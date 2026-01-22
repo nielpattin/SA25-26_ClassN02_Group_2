@@ -1,6 +1,6 @@
 import { db } from '../../db'
-import { boards, boardMembers, starredBoards, users, members, workspaces } from '../../db/schema'
-import { eq, sql, and, isNull, or, inArray } from 'drizzle-orm'
+import { boards, boardMembers, starredBoards, boardVisits, users, members, workspaces } from '../../db/schema'
+import { eq, sql, and, isNull, or, inArray, desc } from 'drizzle-orm'
 import { ConflictError, NotFoundError } from '../../shared/errors'
 
 export const boardRepository = {
@@ -171,5 +171,38 @@ export const boardRepository = {
       .from(starredBoards)
       .where(and(eq(starredBoards.userId, userId), eq(starredBoards.boardId, boardId)))
     return !!result
+  },
+
+  // Recent Boards (board visits)
+  getRecentBoards: async (userId: string, limit = 5) => {
+    return db.select({
+      id: boards.id,
+      name: boards.name,
+      description: boards.description,
+      visitedAt: boardVisits.visitedAt,
+    })
+      .from(boardVisits)
+      .innerJoin(boards, eq(boardVisits.boardId, boards.id))
+      .where(and(
+        eq(boardVisits.userId, userId),
+        isNull(boards.archivedAt)
+      ))
+      .orderBy(desc(boardVisits.visitedAt))
+      .limit(limit)
+  },
+
+  recordVisit: async (userId: string, boardId: string) => {
+    const [visit] = await db.insert(boardVisits)
+      .values({
+        userId,
+        boardId,
+        visitedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [boardVisits.userId, boardVisits.boardId],
+        set: { visitedAt: new Date() },
+      })
+      .returning()
+    return visit
   },
 }

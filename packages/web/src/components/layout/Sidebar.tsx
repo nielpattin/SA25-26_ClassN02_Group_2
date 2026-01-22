@@ -1,5 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { LayoutDashboard, Users, Plus, ChevronsUpDown, Check, LogOut, Building2, Settings, Users as MembersIcon } from 'lucide-react'
+import { LayoutDashboard, Users, Plus, ChevronsUpDown, Check, LogOut, Building2, Settings, Users as MembersIcon, Search } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useSession, signOut } from '../../api/auth'
 import { useState, useRef, useEffect } from 'react'
@@ -123,6 +123,18 @@ export function Sidebar() {
             >
               <LayoutDashboard size={16} />
               Boards
+            </Link>
+
+            <Link
+              to="/search"
+              className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
+                isActive('/search')
+                  ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                  : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+              }`}
+            >
+              <Search size={16} />
+              Search
             </Link>
 
             <Link
