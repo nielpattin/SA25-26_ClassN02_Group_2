@@ -14,9 +14,10 @@ services:
   seaweedfs:
     image: chrislusf/seaweedfs
     container_name: kyte-seaweedfs
-    command: server -s3 -dir=/data
+    command: server -s3 -filer -dir=/data
     ports:
       - "8333:8333"
+      - "8888:8888"
       - "9333:9333"
     volumes:
       - seaweedfs_data:/data
