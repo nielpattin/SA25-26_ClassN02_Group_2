@@ -1,7 +1,8 @@
-import { betterAuth } from 'better-auth'
+import { betterAuth, APIError } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from '../../db'
 import * as schema from '../../db/schema'
+import { eq } from 'drizzle-orm'
 
 export const auth = betterAuth({
   basePath: '/api/auth',
@@ -57,6 +58,18 @@ export const auth = betterAuth({
         },
       },
     },
+    session: {
+      create: {
+        before: async (session) => {
+          const user = await db.query.users.findFirst({
+            where: eq(schema.users.id, session.userId)
+          })
+          if (user?.deletedAt) {
+            throw new APIError("FORBIDDEN", { message: "Account is scheduled for deletion. Contact support@kyte.dev to recover your account." })
+          }
+        }
+      }
+    }
   },
 })
 

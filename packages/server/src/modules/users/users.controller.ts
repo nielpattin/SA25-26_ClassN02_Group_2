@@ -1,8 +1,8 @@
 import { Elysia, t } from 'elysia'
 import { userService } from './users.service'
-import { CreateUserBody, UpdateUserBody, UpdateUserPreferencesBody } from './users.model'
+import { CreateUserBody, UpdateUserBody, UpdateUserPreferencesBody, UpdateNotificationPreferencesBody, AvatarUploadBody, DeleteAccountBody } from './users.model'
 import { authPlugin } from '../auth'
-import { UnauthorizedError } from '../../shared/errors'
+import { UnauthorizedError, ForbiddenError } from '../../shared/errors'
 import { isValidTimezone, isValidLanguage } from '../config'
 
 export const userController = new Elysia({ prefix: '/users' })
@@ -24,19 +24,37 @@ export const userController = new Elysia({ prefix: '/users' })
   })
 
   .patch('/:id', async ({ params, body, session }) => {
-    if (!session || session.user.id !== params.id) {
-      throw new UnauthorizedError()
-    }
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+    
     return userService.update(params.id, body)
   }, {
     params: t.Object({ id: t.String() }),
     body: UpdateUserBody
   })
 
+  .post('/:id/avatar', async ({ params, body, session }) => {
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+
+    return userService.uploadAvatar(params.id, body.file)
+  }, {
+    params: t.Object({ id: t.String() }),
+    body: AvatarUploadBody
+  })
+
+  .delete('/:id/avatar', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+
+    return userService.deleteAvatar(params.id)
+  }, {
+    params: t.Object({ id: t.String() })
+  })
+
   .patch('/:id/preferences', async ({ params, body, session, set }) => {
-    if (!session || session.user.id !== params.id) {
-      throw new UnauthorizedError()
-    }
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
 
     if (body.timezone && !isValidTimezone(body.timezone)) {
       set.status = 400
@@ -54,11 +72,56 @@ export const userController = new Elysia({ prefix: '/users' })
     body: UpdateUserPreferencesBody
   })
 
-  .delete('/:id', async ({ params, session }) => {
-    if (!session || session.user.id !== params.id) {
-      throw new UnauthorizedError()
+  .patch('/:id/notification-preferences', async ({ params, body, session }) => {
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+
+    return userService.updateNotificationPreferences(params.id, body)
+  }, {
+    params: t.Object({ id: t.String() }),
+    body: UpdateNotificationPreferencesBody
+  })
+
+  .delete('/:id', async ({ params, body, session }) => {
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+
+    return userService.deleteAccount(params.id, body.password)
+  }, {
+    params: t.Object({ id: t.String() }),
+    body: DeleteAccountBody
+  })
+
+  .get('/:id/sessions', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+
+    return userService.getSessions(params.id, session.session.id)
+  }, {
+    params: t.Object({ id: t.String() })
+  })
+
+  .delete('/:id/sessions/:sessionId', async ({ params, session, set }) => {
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+    
+    try {
+      await userService.revokeSession(params.id, params.sessionId, session.session.id)
+      return { success: true }
+    } catch (error: any) {
+      set.status = 400
+      return { success: false, error: error.message }
     }
-    return userService.delete(params.id)
+  }, {
+    params: t.Object({ id: t.String(), sessionId: t.String() })
+  })
+
+  .post('/:id/sessions/revoke-all', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+
+    const revoked = await userService.revokeAllSessions(params.id, session.session.id)
+    return { success: true, count: revoked.length }
   }, {
     params: t.Object({ id: t.String() })
   })

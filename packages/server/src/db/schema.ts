@@ -52,6 +52,16 @@ export const users = pgTable('user', {
 	timezone: varchar('timezone', { length: 50 }).default('UTC').notNull(),
 	theme: themeEnum().default('system').notNull(),
 	emailDigest: emailDigestEnum().default('daily').notNull(),
+	notificationPreferences: jsonb('notification_preferences').default({
+		mention: { inApp: true, email: true },
+		assignment: { inApp: true, email: true },
+		due_soon: { inApp: true, email: true },
+		due_urgent: { inApp: true, email: true },
+		overdue: { inApp: true, email: true },
+		comment: { inApp: true, email: true },
+		board_invite: { inApp: true, email: true },
+	}).notNull(),
+	deletedAt: timestamp('deleted_at'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 	updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

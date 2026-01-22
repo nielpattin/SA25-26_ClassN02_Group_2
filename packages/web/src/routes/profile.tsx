@@ -1,13 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Settings, Shield, Save, Key, UserCircle } from 'lucide-react'
+import { Settings, Shield, Save, Key, UserCircle, Bell, Link2 } from 'lucide-react'
 import { api } from '../api/client'
 import { useSession, changePassword } from '../api/auth'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { SearchableSelect } from '../components/ui/SearchableSelect'
+import { AvatarUpload } from '../components/ui/AvatarUpload'
+import { ActiveSessions } from '../components/ui/ActiveSessions'
+import { NotificationSettings } from '../components/ui/NotificationSettings'
+import { ConnectedAccounts } from '../components/ui/ConnectedAccounts'
+import { DangerZone } from '../components/ui/DangerZone'
+import type { NotificationPreferencesSchema } from '@kyte/server/src/modules/users/users.model'
 
 export const Route = createFileRoute('/profile')({
   component: ProfileRouteComponent,
@@ -23,6 +29,7 @@ function ProfileRouteComponent() {
 
 type Theme = 'light' | 'dark' | 'system'
 type EmailDigest = 'instant' | 'daily' | 'weekly' | 'none'
+type NotificationPreferences = typeof NotificationPreferencesSchema.static
 
 interface UserData {
   id: string
@@ -33,6 +40,7 @@ interface UserData {
   locale: string
   timezone: string
   emailDigest: EmailDigest
+  notificationPreferences: NotificationPreferences
 }
 
 interface ConfigData {
@@ -80,7 +88,6 @@ function ProfileForm({ user, config }: ProfileFormProps) {
 
   // Initialize from user data - form resets on user change via key prop
   const [name, setName] = useState(user.name)
-  const [imageUrl, setImageUrl] = useState(user.image || '')
   const [profileStatus, setProfileStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
 
   const [theme, setTheme] = useState<Theme>(user.theme)
@@ -100,7 +107,6 @@ function ProfileForm({ user, config }: ProfileFormProps) {
       setProfileStatus('saving')
       const { error } = await api.v1.users({ id: user.id }).patch({
         name,
-        image: imageUrl || undefined,
       })
       if (error) throw error
     },
@@ -202,11 +208,10 @@ function ProfileForm({ user, config }: ProfileFormProps) {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-bold tracking-widest text-black uppercase">Avatar URL</label>
-              <Input 
-                value={imageUrl} 
-                onChange={(e) => setImageUrl(e.target.value)} 
-                placeholder="https://example.com/avatar.png"
+              <AvatarUpload 
+                userId={user.id} 
+                currentImage={user.image} 
+                userName={user.name} 
               />
             </div>
 
@@ -217,7 +222,7 @@ function ProfileForm({ user, config }: ProfileFormProps) {
               </div>
               <button
                 onClick={() => updateProfile.mutate()}
-                disabled={updateProfile.isPending || (name === user.name && imageUrl === (user.image || ''))}
+                disabled={updateProfile.isPending || name === user.name}
                 className="hover:bg-accent hover:shadow-brutal-sm flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save size={16} />
@@ -289,7 +294,7 @@ function ProfileForm({ user, config }: ProfileFormProps) {
             </div>
           </div>
 
-          <div className="mt-8 flex items-center justify-between">
+            <div className="mt-8 flex items-center justify-between">
             <div className="text-[10px] font-bold uppercase">
               {prefsStatus === 'success' && <span className="text-green-600">Preferences saved!</span>}
               {prefsStatus === 'error' && <span className="text-red-600">Failed to save preferences</span>}
@@ -306,6 +311,19 @@ function ProfileForm({ user, config }: ProfileFormProps) {
         </section>
 
         <section className="border border-black bg-white p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <div className="mb-6 flex items-center gap-3 border-b border-black/10 pb-4">
+            <Bell size={20} />
+            <h2 className="font-heading text-lg font-bold tracking-wider text-black uppercase">Notifications</h2>
+          </div>
+
+          <NotificationSettings 
+            userId={user.id} 
+            initialPreferences={user.notificationPreferences} 
+          />
+        </section>
+
+        <section className="border border-black bg-white p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+
           <div className="mb-6 flex items-center gap-3 border-b border-black/10 pb-4">
             <Shield size={20} />
             <h2 className="font-heading text-lg font-bold tracking-wider text-black uppercase">Security</h2>
@@ -361,7 +379,26 @@ function ProfileForm({ user, config }: ProfileFormProps) {
               </button>
             </div>
           </form>
+
+          <div className="mt-12 border-t border-black/10 pt-10">
+            <div className="mb-6 flex items-center gap-2">
+              <Shield size={18} />
+              <h3 className="text-sm font-bold tracking-widest text-black uppercase">Active Sessions</h3>
+            </div>
+            <ActiveSessions userId={user.id} />
+          </div>
         </section>
+
+        <section className="border border-black bg-white p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <div className="mb-6 flex items-center gap-3 border-b border-black/10 pb-4">
+            <Link2 size={20} />
+            <h2 className="font-heading text-lg font-bold tracking-wider text-black uppercase">Connected Accounts</h2>
+          </div>
+
+          <ConnectedAccounts />
+        </section>
+
+        <DangerZone userId={user.id} />
       </div>
     </div>
   )
