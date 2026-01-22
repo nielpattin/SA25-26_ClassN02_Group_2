@@ -34,3 +34,13 @@ export {
   columnKeys,
 } from './useColumns'
 export type { Column, CreateColumnInput, MoveColumnInput } from './useColumns'
+
+export {
+  useAttachments,
+  useAddLinkAttachment,
+  useUploadAttachment,
+  useDeleteAttachment,
+  useDownloadAttachment,
+  attachmentKeys,
+} from './useAttachments'
+export type { Attachment, UploadProgress, UploadError } from './useAttachments'

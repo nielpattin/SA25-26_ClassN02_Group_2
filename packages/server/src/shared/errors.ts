@@ -40,6 +40,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class UnsupportedMediaTypeError extends AppError {
+  constructor(message: string) {
+    super(message, 'UNSUPPORTED_MEDIA_TYPE', 415)
+  }
+}
+
 export class InternalServerError extends AppError {
   constructor(message = 'Internal Server Error') {
     super(message, 'INTERNAL_SERVER_ERROR', 500)

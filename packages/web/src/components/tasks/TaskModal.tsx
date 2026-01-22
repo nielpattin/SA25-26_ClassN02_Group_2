@@ -30,6 +30,14 @@ import { AttachmentSection } from '../Attachments'
 import { ActivitySection } from '../Activity'
 import { MoveModal } from '../MoveModal'
 import { format } from 'date-fns'
+import {
+  useAttachments,
+  useAddLinkAttachment,
+  useUploadAttachment,
+  useDeleteAttachment,
+  useDownloadAttachment,
+} from '../../hooks/useAttachments'
+import type { UploadProgress, UploadError } from '../../hooks/useAttachments'
 
 // Re-export types that were in CardModalTypes for backwards compatibility
 export type { Card, Checklist as ChecklistType, Comment, Activity, Board } from '../CardModalTypes'
@@ -65,6 +73,14 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
   const assignedTriggerRef = useRef<HTMLButtonElement>(null)
   const coverTriggerRef = useRef<HTMLButtonElement>(null)
   const [coverUrl, setCoverUrl] = useState('')
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
+  const [uploadError, setUploadError] = useState<UploadError | null>(null)
+
+  const { data: attachments = [] } = useAttachments(taskId)
+  const addLinkMutation = useAddLinkAttachment(taskId)
+  const uploadMutation = useUploadAttachment(taskId)
+  const deleteMutation = useDeleteAttachment(taskId)
+  const downloadMutation = useDownloadAttachment()
 
   const { data: card, isLoading } = useQuery<Card>({
     queryKey: ['card', taskId],
@@ -398,7 +414,29 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
               <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
                 <Paperclip size={14} /> Attachments
               </h3>
-              <AttachmentSection attachments={[]} onAdd={() => {}} onDelete={() => {}} />
+              <AttachmentSection
+                attachments={attachments}
+                onAddLink={(name, url) => addLinkMutation.mutate({ name, url })}
+                onDelete={(id) => deleteMutation.mutate(id)}
+                onUpload={async (file) => {
+                  setUploadError(null)
+                  try {
+                    await uploadMutation.mutateAsync({ file, onProgress: setUploadProgress })
+                    setUploadProgress(null)
+                  } catch (err) {
+                    setUploadProgress(null)
+                    setUploadError(err as UploadError)
+                  }
+                }}
+                onDownload={async (id) => {
+                  const result = await downloadMutation.mutateAsync(id)
+                  window.open(result.url, '_blank', 'noopener,noreferrer')
+                }}
+                isUploading={uploadMutation.isPending}
+                uploadProgress={uploadProgress}
+                uploadError={uploadError}
+                onClearError={() => setUploadError(null)}
+              />
             </div>
 
             {/* Comments */}
