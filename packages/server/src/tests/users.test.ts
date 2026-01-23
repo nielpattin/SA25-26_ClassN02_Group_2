@@ -187,6 +187,9 @@ describe('Users & Sessions API', () => {
     }
     
     const deleteTestUserId = signUpResult.user.id
+    
+    // Mark as verified to allow operations
+    await db.update(users).set({ emailVerified: true }).where(eq(users.id, deleteTestUserId))
 
     // 1. Wrong password
     const resFail = await app.handle(
@@ -238,8 +241,8 @@ describe('Users & Sessions API', () => {
     
     const deletedUserId = signUpResult.user.id
 
-    // 2. Mark as deleted in DB
-    await db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, deletedUserId))
+    // 2. Mark as deleted and verified in DB
+    await db.update(users).set({ deletedAt: new Date(), emailVerified: true }).where(eq(users.id, deletedUserId))
 
     // 3. Try to sign in via API
     try {

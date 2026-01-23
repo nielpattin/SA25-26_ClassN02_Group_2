@@ -19,6 +19,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showResend, setShowResend] = useState(false)
   const { refetch } = useSession()
 
   if (!isOpen) return null
@@ -27,6 +28,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     e.preventDefault()
     setError('')
     setSuccessMessage('')
+    setShowResend(false)
     setLoading(true)
 
     try {
@@ -34,7 +36,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         const { signIn } = await import('../../api/auth')
         const result = await signIn.email({ email, password })
         if (result.error) {
-          setError(result.error.message || 'Login failed')
+          if (result.error.code === 'EMAIL_NOT_VERIFIED') {
+            setError('Please verify your email first.')
+            setShowResend(true)
+          } else {
+            setError(result.error.message || 'Login failed')
+          }
         } else {
           refetch()
           onClose()
@@ -73,6 +80,30 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose()
+    }
+  }
+
+  const handleResend = async () => {
+    setError('')
+    setSuccessMessage('')
+    setLoading(true)
+    try {
+      const { sendVerificationEmail } = await import('../../api/auth')
+      const result = await sendVerificationEmail({ email, callbackURL: '/' })
+      if (result.error) {
+        if (result.error.status === 429) {
+          setError('Too many requests. Please try again later.')
+        } else {
+          setError(result.error.message || 'Failed to send verification email')
+        }
+      } else {
+        setSuccessMessage('Verification email sent!')
+        setShowResend(false)
+      }
+    } catch {
+      setError('An error occurred. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -127,6 +158,16 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           )}
 
           {error && <div className="bg-danger-bg rounded-none border border-black p-2 text-sm font-bold text-black">{error}</div>}
+          {showResend && (
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={loading}
+              className="w-full cursor-pointer border border-black bg-white p-2 text-[12px] font-bold text-black uppercase hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Resend verification email
+            </button>
+          )}
           {successMessage && <div className="bg-success-bg rounded-none border border-black p-2 text-sm font-bold text-black">{successMessage}</div>}
           
           <Button

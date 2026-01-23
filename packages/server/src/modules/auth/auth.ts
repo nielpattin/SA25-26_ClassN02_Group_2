@@ -3,7 +3,10 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from '../../db'
 import * as schema from '../../db/schema'
 import { eq } from 'drizzle-orm'
-import { emailService } from '../email/email.service'
+import { emailService, verifyEmailTemplate } from '../email'
+import { checkRateLimit } from '../../shared/middleware/rate-limit'
+
+const webUrl = process.env.WEB_URL || 'http://localhost:5173'
 
 export const auth = betterAuth({
   basePath: '/api/auth',
@@ -18,7 +21,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // TODO: Enable when email service is configured
+    requireEmailVerification: true,
     async sendResetPassword({ user, url }) {
       await emailService.sendEmail({
         to: user.email,
@@ -27,6 +30,24 @@ export const auth = betterAuth({
       })
     },
     resetPasswordTokenExpiresIn: 900, // 15 minutes
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    async sendVerificationEmail({ user, url }) {
+      await checkRateLimit(`email-verify:${user.email}`, 3, 60 * 60 * 1000)
+      const token = new URL(url, webUrl).searchParams.get('token')
+      const verificationUrl = `${webUrl}/verify-email?token=${token}`
+
+      await emailService.sendEmail({
+        to: user.email,
+        subject: 'Verify your Kyte email',
+        html: verifyEmailTemplate({
+          name: user.name,
+          url: verificationUrl,
+        }),
+      })
+    },
+    verificationTokenExpiresIn: 86400, // 24 hours
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
