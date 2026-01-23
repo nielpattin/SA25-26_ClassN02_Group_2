@@ -60,6 +60,52 @@ export function initActivitySubscriber() {
     })
   })
 
+  eventBus.onDomain('column.archived', ({ column, userId, boardId }) => {
+    activityService.log({
+      boardId, userId, action: 'archived',
+      targetType: 'column', targetId: column.id,
+      changes: { name: column.name }
+    })
+  })
+
+  eventBus.onDomain('column.restored', ({ column, userId, boardId }) => {
+    activityService.log({
+      boardId, userId, action: 'restored',
+      targetType: 'column', targetId: column.id,
+      changes: { name: column.name }
+    })
+  })
+
+  eventBus.onDomain('column.deleted', ({ columnId, userId, boardId }) => {
+    activityService.log({
+      boardId, userId, action: 'deleted',
+      targetType: 'column', targetId: columnId
+    })
+  })
+
+  eventBus.onDomain('board.archived', ({ board, userId }) => {
+    activityService.log({
+      boardId: board.id, userId, action: 'archived',
+      targetType: 'board', targetId: board.id,
+      changes: { name: board.name }
+    })
+  })
+
+  eventBus.onDomain('board.restored', ({ board, userId }) => {
+    activityService.log({
+      boardId: board.id, userId, action: 'restored',
+      targetType: 'board', targetId: board.id,
+      changes: { name: board.name }
+    })
+  })
+
+  eventBus.onDomain('board.deleted', ({ boardId, userId }) => {
+    activityService.log({
+      boardId, userId, action: 'deleted',
+      targetType: 'board', targetId: boardId
+    })
+  })
+
   eventBus.onDomain('task.assignee.added', ({ taskId, userId, actorId, boardId }) => {
     activityService.log({
       boardId, taskId, userId: actorId, action: 'assigned',

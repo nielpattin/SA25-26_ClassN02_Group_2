@@ -42,6 +42,12 @@ export const columnController = new Elysia({ prefix: '/columns' })
   }, {
     params: ColumnParams,
   })
+  .post('/:id/restore', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return columnService.restoreColumn(id, session.user.id)
+  }, {
+    params: ColumnParams,
+  })
   .post('/:id/copy', ({ params: { id }, session }) => {
     if (!session) throw new UnauthorizedError()
     return columnService.copyColumn(id, session.user.id)
@@ -58,6 +64,12 @@ export const columnController = new Elysia({ prefix: '/columns' })
   .delete('/:id', ({ params: { id }, session }) => {
     if (!session) throw new UnauthorizedError()
     return columnService.deleteColumn(id, session.user.id)
+  }, {
+    params: ColumnParams,
+  })
+  .delete('/:id/permanent', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return columnService.permanentDeleteColumn(id, session.user.id)
   }, {
     params: ColumnParams,
   })

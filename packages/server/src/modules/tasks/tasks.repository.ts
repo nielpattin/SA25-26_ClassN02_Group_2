@@ -1,6 +1,6 @@
 import { db } from '../../db'
 import { tasks, columns, labels, taskLabels, taskAssignees, checklists, checklistItems, attachments, users } from '../../db/schema'
-import { eq, asc, desc, sql, and, isNull } from 'drizzle-orm'
+import { eq, asc, desc, sql, and, isNull, isNotNull } from 'drizzle-orm'
 import { generatePosition, generatePositions } from '../../shared/position'
 import { ConflictError, NotFoundError } from '../../shared/errors'
 
@@ -30,6 +30,23 @@ export const taskRepository = {
       .where(and(eq(tasks.columnId, columnId), isNull(tasks.archivedAt)))
       .orderBy(asc(tasks.position)),
 
+  findArchivedByColumnId: (columnId: string) =>
+    db.select().from(tasks)
+      .where(and(eq(tasks.columnId, columnId), isNotNull(tasks.archivedAt)))
+      .orderBy(desc(tasks.archivedAt)),
+
+  findArchivedByBoardId: (boardId: string) =>
+    db.select({
+      id: tasks.id,
+      title: tasks.title,
+      archivedAt: tasks.archivedAt,
+      columnName: columns.name,
+    })
+      .from(tasks)
+      .innerJoin(columns, eq(tasks.columnId, columns.id))
+      .where(and(eq(columns.boardId, boardId), isNotNull(tasks.archivedAt)))
+      .orderBy(desc(tasks.archivedAt)),
+
   create: async (data: {
     title: string
     description?: string
@@ -51,6 +68,7 @@ export const taskRepository = {
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
     dueDate?: Date | null
     coverImageUrl?: string | null
+    archivedAt?: Date | null
   }, expectedVersion?: number) => {
     const whereClause = expectedVersion
       ? and(eq(tasks.id, id), eq(tasks.version, expectedVersion))
@@ -90,6 +108,11 @@ export const taskRepository = {
   },
 
   delete: async (id: string) => {
+    const [task] = await db.delete(tasks).where(eq(tasks.id, id)).returning()
+    return task
+  },
+
+  permanentDelete: async (id: string) => {
     const [task] = await db.delete(tasks).where(eq(tasks.id, id)).returning()
     return task
   },

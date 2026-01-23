@@ -1,9 +1,10 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { LayoutDashboard, Users, Plus, ChevronsUpDown, Check, LogOut, Building2, Settings, Users as MembersIcon, Search } from 'lucide-react'
+import { LayoutDashboard, Users, Plus, ChevronsUpDown, Check, LogOut, Building2, Settings, Users as MembersIcon, Search, Archive } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useSession, signOut } from '../../api/auth'
 import { useState, useRef, useEffect } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
+import { api } from '../../api/client'
 import { CreateWorkspaceModal } from '../workspaces/CreateWorkspaceModal'
 import { NotificationBell } from '../notifications/NotificationBell'
 import { useSearchModal } from '../../context/SearchContext'
@@ -17,6 +18,20 @@ export function Sidebar() {
   const routerState = useRouterState()
   const queryClient = useQueryClient()
   const { open: openSearch } = useSearchModal()
+
+  const { data: members } = useQuery({
+    queryKey: ['members', currentWorkspace?.id],
+    queryFn: async () => {
+      if (!currentWorkspace?.id) return []
+      const { data, error } = await api.v1.workspaces({ id: currentWorkspace.id }).members.get()
+      if (error) throw error
+      return data
+    },
+    enabled: !!currentWorkspace?.id,
+  })
+
+  const myMembership = Array.isArray(members) ? members.find(m => m.userId === session?.user?.id) : null
+  const canManage = myMembership?.role === 'owner' || myMembership?.role === 'admin'
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -158,6 +173,20 @@ export function Sidebar() {
               <Settings size={16} />
               Settings
             </Link>
+
+            {canManage && (
+              <Link
+                to="/archive"
+                className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
+                  isActive('/archive')
+                    ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                    : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                }`}
+              >
+                <Archive size={16} />
+                Archive
+              </Link>
+            )}
           </div>
         </nav>
 

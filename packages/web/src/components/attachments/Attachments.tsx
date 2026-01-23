@@ -177,7 +177,7 @@ function FileUpload({ onUpload, isUploading, uploadProgress, uploadError, onClea
         className={`relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed p-4 transition-all ${
           isDragging
             ? 'bg-accent border-black'
-            : 'border-black/30 bg-[#F8F8F8] hover:border-black hover:bg-[#EEEEEE]'
+            : 'bg-surface-overlay hover:bg-active border-black/30 hover:border-black'
         } ${isUploading ? 'pointer-events-none opacity-60' : ''}`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -211,7 +211,7 @@ function FileUpload({ onUpload, isUploading, uploadProgress, uploadError, onClea
       {uploadError && (
         <div className="flex items-center justify-between border border-[#E74C3C] bg-[#E74C3C]/10 p-2">
           <span className="text-[12px] font-bold text-[#E74C3C]">{uploadError.message}</span>
-          <button onClick={onClearError} className="cursor-pointer text-[#E74C3C] hover:text-[#C0392B]">
+          <button onClick={onClearError} className="hover:text-error-border cursor-pointer text-[#E74C3C]">
             <X size={14} />
           </button>
         </div>

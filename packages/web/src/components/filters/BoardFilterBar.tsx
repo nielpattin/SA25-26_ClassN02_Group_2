@@ -51,7 +51,7 @@ export function BoardFilterBar({
         isOpen={openDropdown === 'labels'}
         onOpenChange={open => setOpenDropdown(open ? 'labels' : null)}
         trigger={
-          <button className="flex items-center gap-1.5 border border-black bg-white px-2.5 py-1.5 text-xs font-bold uppercase transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-px hover:-translate-y-px">
+          <button className="flex items-center gap-1.5 border border-black bg-white px-2.5 py-1.5 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <Tag size={12} />
             <span>Labels</span>
             {pendingFilters.labelIds.length > 0 && (
@@ -92,7 +92,7 @@ export function BoardFilterBar({
         isOpen={openDropdown === 'assignees'}
         onOpenChange={open => setOpenDropdown(open ? 'assignees' : null)}
         trigger={
-          <button className="flex items-center gap-1.5 border border-black bg-white px-2.5 py-1.5 text-xs font-bold uppercase transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-px hover:-translate-y-px">
+          <button className="flex items-center gap-1.5 border border-black bg-white px-2.5 py-1.5 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <Users size={12} />
             <span>Assignees</span>
             {pendingFilters.assigneeIds.length > 0 && (
@@ -146,7 +146,7 @@ export function BoardFilterBar({
         isOpen={openDropdown === 'dueDate'}
         onOpenChange={open => setOpenDropdown(open ? 'dueDate' : null)}
         trigger={
-          <button className="flex items-center gap-1.5 border border-black bg-white px-2.5 py-1.5 text-xs font-bold uppercase transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-px hover:-translate-y-px">
+          <button className="flex items-center gap-1.5 border border-black bg-white px-2.5 py-1.5 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <Calendar size={12} />
             <span>
               {pendingFilters.dueDate
@@ -177,7 +177,7 @@ export function BoardFilterBar({
       <button
         onClick={onApply}
         disabled={!hasPendingChanges}
-        className="border border-black bg-black px-3 py-1.5 text-xs font-bold text-white uppercase transition-all enabled:hover:bg-white enabled:hover:text-black enabled:hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] enabled:hover:-translate-x-px enabled:hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
+        className="border border-black bg-black px-3 py-1.5 text-xs font-bold text-white uppercase transition-all enabled:hover:-translate-x-px enabled:hover:-translate-y-px enabled:hover:bg-white enabled:hover:text-black enabled:hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:cursor-not-allowed disabled:opacity-50"
       >
         Apply
       </button>

@@ -63,6 +63,14 @@ export function initWebSocketBridge() {
     wsManager.broadcast(`board:${boardId}`, { type: 'column:moved', data: column })
   })
 
+  eventBus.onDomain('column.archived', ({ column, boardId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'column:archived', data: column })
+  })
+
+  eventBus.onDomain('column.restored', ({ column, boardId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'column:restored', data: column })
+  })
+
   eventBus.onDomain('column.deleted', ({ columnId, boardId }) => {
     wsManager.broadcast(`board:${boardId}`, { type: 'column:deleted', data: { id: columnId } })
   })

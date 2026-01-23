@@ -1,4 +1,5 @@
 import { workspaceRepository } from './workspaces.repository'
+import { boardRepository } from '../boards/boards.repository'
 import type { CreateWorkspaceInput, UpdateWorkspaceInput, AddMemberInput } from './workspaces.model'
 import { ForbiddenError, BadRequestError } from '../../shared/errors'
 
@@ -81,5 +82,14 @@ export const workspaceService = {
 
   async getBoards(workspaceId: string) {
     return workspaceRepository.getBoards(workspaceId)
+  },
+
+  async getArchivedBoards(workspaceId: string, actorId: string) {
+    const actorMembership = await workspaceRepository.getMember(workspaceId, actorId)
+    if (!actorMembership || (actorMembership.role !== 'owner' && actorMembership.role !== 'admin')) {
+      throw new ForbiddenError('Only workspace admins can view archived boards')
+    }
+
+    return boardRepository.findArchivedByWorkspaceId(workspaceId)
   }
 }

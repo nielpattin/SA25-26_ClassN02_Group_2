@@ -1,6 +1,9 @@
 import { boardRepository } from './boards.repository'
 import { workspaceRepository } from '../workspaces/workspaces.repository'
+import { columnRepository } from '../columns/columns.repository'
+import { taskRepository } from '../tasks/tasks.repository'
 import { eventBus } from '../../events/bus'
+import { ForbiddenError } from '../../shared/errors'
 
 export const boardService = {
   getAllBoards: () => boardRepository.findAll(),
@@ -64,15 +67,51 @@ export const boardService = {
   },
 
   archiveBoard: async (id: string, userId: string) => {
-    const board = await boardRepository.archive(id)
-    eventBus.emitDomain('board.archived', { board, userId })
-    return board
+    const board = await boardRepository.findById(id)
+    if (!board) throw new Error('Board not found')
+
+    if (board.workspaceId) {
+      const membership = await workspaceRepository.getMember(board.workspaceId, userId)
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+        throw new ForbiddenError('Only workspace admins can archive boards')
+      }
+    }
+
+    const archivedBoard = await boardRepository.archive(id)
+    eventBus.emitDomain('board.archived', { board: archivedBoard, userId })
+    return archivedBoard
   },
 
   restoreBoard: async (id: string, userId: string) => {
-    const board = await boardRepository.restore(id)
-    eventBus.emitDomain('board.restored', { board, userId })
-    return board
+    const board = await boardRepository.findById(id)
+    if (!board) throw new Error('Board not found')
+
+    if (board.workspaceId) {
+      const membership = await workspaceRepository.getMember(board.workspaceId, userId)
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+        throw new ForbiddenError('Only workspace admins can restore boards')
+      }
+    }
+
+    const restoredBoard = await boardRepository.restore(id)
+    eventBus.emitDomain('board.restored', { board: restoredBoard, userId })
+    return restoredBoard
+  },
+
+  permanentDeleteBoard: async (id: string, userId: string) => {
+    const board = await boardRepository.findById(id)
+    if (!board) throw new Error('Board not found')
+
+    if (board.workspaceId) {
+      const membership = await workspaceRepository.getMember(board.workspaceId, userId)
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+        throw new ForbiddenError('Only workspace admins can permanently delete boards')
+      }
+    }
+
+    const deletedBoard = await boardRepository.permanentDelete(id)
+    eventBus.emitDomain('board.deleted', { boardId: id, userId })
+    return deletedBoard
   },
 
   deleteBoard: async (id: string, userId: string) => {
@@ -104,6 +143,32 @@ export const boardService = {
 
   // Starred Boards
   getStarredBoards: (userId: string) => boardRepository.getStarredByUserId(userId),
+
+  getArchivedItems: async (boardId: string, userId: string) => {
+    const board = await boardRepository.findById(boardId)
+    if (!board) throw new Error('Board not found')
+
+    // Basic access check: must be workspace member or board member
+    let hasAccess = false
+    const boardMembers = await boardRepository.getMembers(boardId)
+    if (boardMembers.some(m => m.userId === userId)) {
+      hasAccess = true
+    } else if (board.workspaceId) {
+      const workspaceMember = await workspaceRepository.getMember(board.workspaceId, userId)
+      if (workspaceMember) hasAccess = true
+    }
+
+    if (!hasAccess && board.visibility !== 'public') {
+      throw new ForbiddenError('Access denied')
+    }
+
+    const [columns, tasks] = await Promise.all([
+      columnRepository.findArchivedByBoardId(boardId),
+      taskRepository.findArchivedByBoardId(boardId)
+    ])
+
+    return { columns, tasks }
+  },
 
   starBoard: async (userId: string, boardId: string) => {
     const result = await boardRepository.star(userId, boardId)

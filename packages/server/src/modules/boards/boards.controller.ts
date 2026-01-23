@@ -61,6 +61,19 @@ export const boardController = new Elysia({ prefix: '/boards' })
   }, {
     params: BoardParams,
   })
+  .delete('/:id/permanent', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return boardService.permanentDeleteBoard(id, session.user.id)
+  }, {
+    params: BoardParams,
+  })
+
+  .get('/:id/archived', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return boardService.getArchivedItems(id, session.user.id)
+  }, {
+    params: BoardParams,
+  })
 
   .get('/:id/members', ({ params: { id } }) => boardService.getMembers(id), {
     params: BoardParams,

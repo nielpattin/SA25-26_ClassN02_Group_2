@@ -40,6 +40,7 @@ export interface KyteEvents {
   'column.updated': { column: Column; boardId: string; userId: string; changes?: any }
   'column.moved': { column: Column; boardId: string; userId: string }
   'column.archived': { column: Column; boardId: string; userId: string }
+  'column.restored': { column: Column; boardId: string; userId: string }
   'column.deleted': { columnId: string; boardId: string; userId: string }
   
   'board.created': { board: Board; userId: string }

@@ -1,7 +1,10 @@
 import { columnRepository } from './columns.repository'
 import { taskRepository } from '../tasks/tasks.repository'
+import { boardRepository } from '../boards/boards.repository'
+import { workspaceRepository } from '../workspaces/workspaces.repository'
 import { eventBus } from '../../events/bus'
 import { generatePosition, needsRebalancing } from '../../shared/position'
+import { ForbiddenError } from '../../shared/errors'
 
 export const columnService = {
   getColumnsByBoardId: (boardId: string) => columnRepository.findByBoardId(boardId),
@@ -69,6 +72,50 @@ export const columnService = {
     const column = await columnRepository.archive(id)
     eventBus.emitDomain('column.archived', { column, boardId: column.boardId, userId })
     return column
+  },
+
+  restoreColumn: async (id: string, userId: string) => {
+    const column = await columnRepository.findById(id)
+    if (!column) throw new Error('Column not found')
+
+    const board = await boardRepository.findById(column.boardId)
+    if (board?.workspaceId) {
+      const membership = await workspaceRepository.getMember(board.workspaceId, userId)
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+        throw new ForbiddenError('Only workspace admins can restore columns')
+      }
+    }
+
+    const lastPosition = await columnRepository.getLastPositionInBoard(column.boardId)
+    const position = generatePosition(lastPosition, null)
+
+    const restoredColumn = await columnRepository.restore(id, position)
+    
+    const archivedTasks = await taskRepository.findArchivedByColumnId(id)
+    for (const task of archivedTasks) {
+      const restoredTask = await taskRepository.restore(task.id)
+      eventBus.emitDomain('task.restored', { task: restoredTask, userId, boardId: column.boardId })
+    }
+
+    eventBus.emitDomain('column.restored', { column: restoredColumn, boardId: restoredColumn.boardId, userId })
+    return restoredColumn
+  },
+
+  permanentDeleteColumn: async (id: string, userId: string) => {
+    const column = await columnRepository.findById(id)
+    if (!column) throw new Error('Column not found')
+
+    const board = await boardRepository.findById(column.boardId)
+    if (board?.workspaceId) {
+      const membership = await workspaceRepository.getMember(board.workspaceId, userId)
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+        throw new ForbiddenError('Only workspace admins can permanently delete columns')
+      }
+    }
+
+    const deletedColumn = await columnRepository.permanentDelete(id)
+    eventBus.emitDomain('column.deleted', { columnId: id, boardId: column.boardId, userId })
+    return deletedColumn
   },
 
   copyColumn: async (id: string, userId: string) => {

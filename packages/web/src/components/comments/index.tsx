@@ -127,7 +127,7 @@ function CommentItem({ comment, members, cardId, sessionUserId }: CommentItemPro
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6! p-0 text-[#27AE60]"
+                className="text-success-border h-6 w-6! p-0"
                 onClick={() => {
                   updateComment.mutate({ id: comment.id, content: editContent }, {
                     onSuccess: () => setIsEditing(false)

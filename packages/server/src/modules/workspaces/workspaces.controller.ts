@@ -69,6 +69,13 @@ export const workspaceController = new Elysia({ prefix: '/workspaces' })
     params: t.Object({ id: t.String() })
   })
 
+  .get('/:id/archived-boards', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return workspaceService.getArchivedBoards(params.id, session.user.id)
+  }, {
+    params: t.Object({ id: t.String() })
+  })
+
   .get('/user/:userId', async ({ params }) => {
     return workspaceService.getUserWorkspaces(params.userId)
   }, {

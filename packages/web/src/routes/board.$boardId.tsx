@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Archive } from 'lucide-react'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
 import { useBoard, useBoards } from '../hooks/useBoards'
 import {
@@ -23,6 +23,7 @@ import { useLabels } from '../hooks/useLabels'
 import { useBoardMembers } from '../hooks/useAssignees'
 import { CardModal, TaskCard } from '../components/tasks'
 import { BoardColumn } from '../components/columns'
+import { ArchivePanel } from '../components/board/ArchivePanel'
 import { WorkspaceProvider } from '../context/WorkspaceContext'
 import { SearchTrigger } from '../components/search'
 import { BoardFilterBar } from '../components/filters'
@@ -55,6 +56,7 @@ function BoardComponent() {
   const queryClient = useQueryClient()
   const [newColumnName, setNewColumnName] = useState('')
   const [selectedCardId, setSelectedCardId] = useState<string | null>(cardId ?? null)
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false)
 
   // Sync URL cardId param to local state (intentional URL -> state sync)
   useEffect(() => {
@@ -255,6 +257,13 @@ function BoardComponent() {
                 onApply={applyFilters}
                 onClear={clearFilters}
               />
+              <button
+                onClick={() => setIsArchiveOpen(true)}
+                className="hover:bg-accent shadow-brutal-sm flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-none"
+                title="Open Archive"
+              >
+                <Archive size={18} />
+              </button>
               <SearchTrigger />
             </div>
           </header>
@@ -280,6 +289,12 @@ function BoardComponent() {
           {selectedCardId && (
             <CardModal cardId={selectedCardId} boardId={boardId} onClose={handleCloseModal} />
           )}
+
+          <ArchivePanel
+            isOpen={isArchiveOpen}
+            onClose={() => setIsArchiveOpen(false)}
+            boardId={boardId}
+          />
         </div>
       </DragProvider>
     </WorkspaceProvider>

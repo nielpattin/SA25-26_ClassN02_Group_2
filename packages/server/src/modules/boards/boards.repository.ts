@@ -1,6 +1,6 @@
 import { db } from '../../db'
 import { boards, boardMembers, starredBoards, boardVisits, users, members, workspaces } from '../../db/schema'
-import { eq, sql, and, isNull, or, inArray, desc } from 'drizzle-orm'
+import { eq, sql, and, isNull, isNotNull, or, inArray, desc } from 'drizzle-orm'
 import { ConflictError, NotFoundError } from '../../shared/errors'
 
 export const boardRepository = {
@@ -35,6 +35,11 @@ export const boardRepository = {
   findByWorkspaceId: (workspaceId: string) =>
     db.select().from(boards)
       .where(and(eq(boards.workspaceId, workspaceId), isNull(boards.archivedAt))),
+
+  findArchivedByWorkspaceId: (workspaceId: string) =>
+    db.select().from(boards)
+      .where(and(eq(boards.workspaceId, workspaceId), isNotNull(boards.archivedAt)))
+      .orderBy(desc(boards.archivedAt)),
 
   create: async (data: {
     name: string
@@ -97,6 +102,11 @@ export const boardRepository = {
   },
 
   delete: async (id: string) => {
+    const [board] = await db.delete(boards).where(eq(boards.id, id)).returning()
+    return board
+  },
+
+  permanentDelete: async (id: string) => {
     const [board] = await db.delete(boards).where(eq(boards.id, id)).returning()
     return board
   },

@@ -52,6 +52,12 @@ export const taskController = new Elysia({ prefix: '/tasks' })
   }, {
     params: TaskParams,
   })
+  .delete('/:id/permanent', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return taskService.permanentDeleteTask(id, session.user.id)
+  }, {
+    params: TaskParams,
+  })
   .patch('/:id/move', ({ params: { id }, body, session }) => {
     if (!session) throw new UnauthorizedError()
     return taskService.moveTask(id, session.user.id, body.columnId, body.beforeTaskId, body.afterTaskId, body.version)

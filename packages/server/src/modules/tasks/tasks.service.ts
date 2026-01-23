@@ -1,6 +1,10 @@
 import { taskRepository } from './tasks.repository'
+import { columnRepository } from '../columns/columns.repository'
+import { boardRepository } from '../boards/boards.repository'
+import { workspaceRepository } from '../workspaces/workspaces.repository'
 import { eventBus } from '../../events/bus'
 import { generatePosition, needsRebalancing } from '../../shared/position'
+import { ForbiddenError } from '../../shared/errors'
 
 export const taskService = {
   getTaskById: (id: string) => taskRepository.findById(id),
@@ -76,14 +80,64 @@ export const taskService = {
   },
 
   restoreTask: async (id: string, userId: string) => {
-    const task = await taskRepository.restore(id)
-    if (task.columnId) {
-      const boardId = await taskRepository.getBoardIdFromColumn(task.columnId)
-      if (boardId) {
-        eventBus.emitDomain('task.restored', { task, userId, boardId })
+    const task = await taskRepository.findById(id)
+    if (!task) throw new Error('Task not found')
+    if (!task.columnId) throw new Error('Task has no column')
+
+    let targetColumnId = task.columnId
+    const column = await columnRepository.findById(targetColumnId)
+    const boardId = await taskRepository.getBoardIdFromColumn(targetColumnId)
+    if (!boardId) throw new Error('Board not found')
+
+    const board = await boardRepository.findById(boardId)
+    if (board?.workspaceId) {
+      const membership = await workspaceRepository.getMember(board.workspaceId, userId)
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+        throw new ForbiddenError('Only workspace admins can restore tasks')
       }
     }
-    return task
+
+    if (!column || column.archivedAt) {
+      const activeColumns = await columnRepository.findByBoardId(boardId)
+      if (activeColumns.length === 0) {
+        throw new Error('No active columns in board to restore task to')
+      }
+      targetColumnId = activeColumns[0].id
+    }
+
+    const lastPosition = await taskRepository.getLastPositionInColumn(targetColumnId)
+    const position = generatePosition(lastPosition, null)
+
+    const restoredTask = await taskRepository.update(id, {
+      columnId: targetColumnId,
+      position,
+      archivedAt: null,
+    })
+
+    eventBus.emitDomain('task.restored', { task: restoredTask, userId, boardId })
+    return restoredTask
+  },
+
+  permanentDeleteTask: async (id: string, userId: string) => {
+    const task = await taskRepository.findById(id)
+    if (!task) throw new Error('Task not found')
+    
+    const boardId = await taskRepository.getBoardIdFromTask(id)
+    if (boardId) {
+      const board = await boardRepository.findById(boardId)
+      if (board?.workspaceId) {
+        const membership = await workspaceRepository.getMember(board.workspaceId, userId)
+        if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+          throw new ForbiddenError('Only workspace admins can permanently delete tasks')
+        }
+      }
+    }
+
+    const deletedTask = await taskRepository.permanentDelete(id)
+    if (boardId) {
+      eventBus.emitDomain('task.deleted', { task: deletedTask, userId, boardId })
+    }
+    return deletedTask
   },
 
   deleteTask: async (id: string, userId: string) => {

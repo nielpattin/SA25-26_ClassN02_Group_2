@@ -45,7 +45,7 @@ export function AssigneeSection({ currentAssignees = [], boardMembers = [], onTo
           return (
             <button
               key={member.userId}
-              className={`font-body flex cursor-pointer items-center gap-3 border border-black bg-white p-2.5 text-left text-[13px] font-extrabold uppercase transition-all ${isAssigned ? 'shadow-inner-brutal bg-[#EEEEEE]' : 'hover:bg-accent hover:shadow-brutal-md hover:-translate-0.5'}`}
+              className={`font-body flex cursor-pointer items-center gap-3 border border-black bg-white p-2.5 text-left text-[13px] font-extrabold uppercase transition-all ${isAssigned ? 'shadow-inner-brutal bg-active' : 'hover:bg-accent hover:shadow-brutal-md hover:-translate-0.5'}`}
               onClick={() => onToggle(member.userId)}
             >
               <Avatar src={member.userImage || undefined} fallback={member.userName || 'Unknown'} size="sm" />

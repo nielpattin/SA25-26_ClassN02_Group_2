@@ -1,6 +1,6 @@
 import { db } from '../../db'
 import { columns } from '../../db/schema'
-import { eq, asc, desc, and, isNull, sql } from 'drizzle-orm'
+import { eq, asc, desc, and, isNull, isNotNull, sql } from 'drizzle-orm'
 import { generatePositions } from '../../shared/position'
 import { ConflictError, NotFoundError } from '../../shared/errors'
 
@@ -14,6 +14,11 @@ export const columnRepository = {
     db.select().from(columns)
       .where(and(eq(columns.boardId, boardId), isNull(columns.archivedAt)))
       .orderBy(asc(columns.position)),
+
+  findArchivedByBoardId: (boardId: string) =>
+    db.select().from(columns)
+      .where(and(eq(columns.boardId, boardId), isNotNull(columns.archivedAt)))
+      .orderBy(desc(columns.archivedAt)),
 
   create: async (data: { name: string; position: string; boardId: string }) => {
     const [column] = await db.insert(columns).values(data).returning()
@@ -49,7 +54,20 @@ export const columnRepository = {
     return column
   },
 
+  restore: async (id: string, position: string) => {
+    const [column] = await db.update(columns)
+      .set({ archivedAt: null, position })
+      .where(eq(columns.id, id))
+      .returning()
+    return column
+  },
+
   delete: async (id: string) => {
+    const [column] = await db.delete(columns).where(eq(columns.id, id)).returning()
+    return column
+  },
+
+  permanentDelete: async (id: string) => {
     const [column] = await db.delete(columns).where(eq(columns.id, id)).returning()
     return column
   },

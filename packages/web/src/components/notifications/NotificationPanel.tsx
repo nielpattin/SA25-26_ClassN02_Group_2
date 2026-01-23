@@ -37,7 +37,7 @@ export function NotificationPanel({
             </span>
             <button
               onClick={() => onMarkAllAsRead()}
-              className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#E74C3C] uppercase transition-colors hover:text-[#C0392B]"
+              className="hover:text-error-border flex items-center gap-1.5 text-[10px] font-extrabold text-[#E74C3C] uppercase transition-colors"
             >
               <CheckCheck size={12} />
               Mark all as read

@@ -190,7 +190,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
         onClick={e => e.stopPropagation()}
       >
         {card.coverImageUrl && (
-          <div className="relative h-50 w-full shrink-0 overflow-hidden border-b border-black bg-[#EEEEEE]">
+          <div className="bg-active relative h-50 w-full shrink-0 overflow-hidden border-b border-black">
             <img src={card.coverImageUrl} alt="Cover" className="h-full w-full object-cover" />
             <button
               className="absolute top-3 right-3 flex cursor-pointer items-center justify-center border border-white bg-black p-2 text-white hover:bg-[#E74C3C]"
@@ -305,7 +305,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                 </div>
               ) : (
                 <div
-                  className="shadow-brutal-sm hover:shadow-brutal-md min-h-25 cursor-pointer border border-black bg-[#F8F8F8] p-4 text-[14px] leading-relaxed wrap-break-word text-[#333333] transition-all hover:-translate-0.5 hover:bg-[#EEEEEE]"
+                  className="shadow-brutal-sm hover:shadow-brutal-md bg-surface-overlay hover:bg-active min-h-25 cursor-pointer border border-black p-4 text-[14px] leading-relaxed wrap-break-word text-[#333333] transition-all hover:-translate-0.5"
                   onClick={() => setIsEditingDescription(true)}
                 >
                   {card.description || 'Add a more detailed description...'}
@@ -362,7 +362,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
             <TaskActivity taskId={taskId} />
           </div>
 
-          <div className="flex w-[320px] min-w-0 shrink-0 flex-col gap-6 overflow-y-auto bg-[#F4F4F4] p-8">
+          <div className="bg-hover flex w-[320px] min-w-0 shrink-0 flex-col gap-6 overflow-y-auto p-8">
             <div className="flex flex-col gap-3">
               <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
                 Add to card
@@ -403,7 +403,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                     {PRIORITIES.map(p => (
                       <button
                         key={p.id}
-                        className={`font-body flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left text-[13px] font-bold transition-all ${card.priority === p.id ? 'shadow-inner-brutal bg-[#EEEEEE]' : 'hover:shadow-brutal-md hover:-translate-0.5 hover:bg-[#F4F4F4]'}`}
+                        className={`font-body flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left text-[13px] font-bold transition-all ${card.priority === p.id ? 'shadow-inner-brutal bg-active' : 'hover:shadow-brutal-md hover:bg-hover hover:-translate-0.5'}`}
                         onClick={() => {
                           updateCard.mutate({ priority: p.id as Card['priority'] })
                           setIsPriorityOpen(false)

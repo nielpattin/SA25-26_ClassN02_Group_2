@@ -6,10 +6,13 @@ const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws'
 type WsMessage = {
   type: 
     | 'board:updated' 
+    | 'board:restored'
     | 'board:deleted' 
     | 'column:created'
     | 'column:updated'
     | 'column:moved'
+    | 'column:archived'
+    | 'column:restored'
     | 'column:deleted'
     | 'task:created'
     | 'task:updated'
@@ -66,14 +69,19 @@ export function useBoardSocket(boardId: string) {
 
           switch (message.type) {
             case 'board:updated':
+            case 'board:restored':
             case 'board:deleted':
               queryClient.invalidateQueries({ queryKey: ['board', boardIdRef.current] })
+              queryClient.invalidateQueries({ queryKey: ['archive'] })
               break
             case 'column:created':
             case 'column:updated':
             case 'column:moved':
+            case 'column:archived':
+            case 'column:restored':
             case 'column:deleted':
               queryClient.invalidateQueries({ queryKey: ['columns', boardIdRef.current] })
+              queryClient.invalidateQueries({ queryKey: ['archive'] })
               break
             case 'task:updated':
               queryClient.invalidateQueries({ queryKey: ['cards', boardIdRef.current] })
@@ -87,6 +95,7 @@ export function useBoardSocket(boardId: string) {
             case 'task:archived':
             case 'task:restored':
               queryClient.invalidateQueries({ queryKey: ['cards', boardIdRef.current] })
+              queryClient.invalidateQueries({ queryKey: ['archive'] })
               break
           }
         } catch {

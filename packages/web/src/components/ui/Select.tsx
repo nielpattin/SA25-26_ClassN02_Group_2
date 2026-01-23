@@ -46,7 +46,7 @@ export function Select({ value, options, onChange, className = '' }: SelectProps
                 onChange(option.id)
                 setIsOpen(false)
               }}
-              className={`font-body hover:bg-accent hover:shadow-brutal-sm w-full border border-transparent px-3 py-2 text-left text-[13px] font-bold transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:border-black ${value === option.id ? 'shadow-inner-brutal border-black bg-[#EEEEEE]' : 'bg-white'}`}
+              className={`font-body hover:bg-accent hover:shadow-brutal-sm w-full border border-transparent px-3 py-2 text-left text-[13px] font-bold transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:border-black ${value === option.id ? 'shadow-inner-brutal bg-active border-black' : 'bg-white'}`}
             >
               {option.name}
             </button>
