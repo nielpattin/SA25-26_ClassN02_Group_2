@@ -58,4 +58,24 @@ export const notificationRepository = {
       .returning()
     return notification
   },
+
+  exists: async (userId: string, taskId: string, type: 'due_soon' | 'overdue') => {
+    const [notification] = await db.select({ id: notifications.id })
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.taskId, taskId),
+        eq(notifications.type, type)
+      ))
+      .limit(1)
+    return !!notification
+  },
+
+  deleteByType: async (taskId: string, type: 'due_soon' | 'overdue') => {
+    return db.delete(notifications)
+      .where(and(
+        eq(notifications.taskId, taskId),
+        eq(notifications.type, type)
+      ))
+  },
 }

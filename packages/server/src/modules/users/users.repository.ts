@@ -1,6 +1,7 @@
 import { db } from '../../db'
 import { users, sessions, accounts } from '../../db/schema'
 import { eq, and, ne } from 'drizzle-orm'
+import { DEFAULT_NOTIFICATION_PREFERENCES } from './users.model'
 import type { CreateUserInput, UpdateUserInput, UpdateUserPreferencesInput, UpdateNotificationPreferencesInput } from './users.model'
 
 export const userRepository = {
@@ -34,6 +35,7 @@ export const userRepository = {
       name: data.name,
       email: data.email,
       image: data.image,
+      notificationPreferences: DEFAULT_NOTIFICATION_PREFERENCES,
     }).returning()
     return user
   },
@@ -65,12 +67,13 @@ export const userRepository = {
     if (!user) return null
 
     const currentPrefs = user.notificationPreferences as any
-    const newPrefs = { ...currentPrefs }
+    // Merge current prefs with defaults to ensure all keys exist
+    const newPrefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...currentPrefs }
 
     for (const key in data) {
       if (data[key as keyof typeof data]) {
         newPrefs[key] = {
-          ...currentPrefs[key],
+          ...newPrefs[key],
           ...data[key as keyof typeof data]
         }
       }

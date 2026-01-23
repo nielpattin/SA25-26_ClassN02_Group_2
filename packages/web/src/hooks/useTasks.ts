@@ -31,6 +31,7 @@ export type TaskWithLabels = {
   assignees?: TaskAssignee[]
   checklistProgress?: ChecklistProgress | null
   attachmentsCount?: number
+  reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
 }
 
 // Task type from detail endpoint (labels as string IDs)
@@ -44,11 +45,13 @@ export type Task = {
   createdAt?: Date | null
   labels?: string[]
   priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
+  reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
 }
 
 export type CreateTaskInput = {
   title: string
   columnId: string
+  reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
 }
 
 export type UpdateTaskInput = {
@@ -56,6 +59,7 @@ export type UpdateTaskInput = {
   description?: string
   dueDate?: string | null
   priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
+  reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
 }
 
 export type MoveTaskInput = {

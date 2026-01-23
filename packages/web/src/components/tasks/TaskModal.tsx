@@ -5,6 +5,7 @@ import {
   Type,
   Paperclip,
   MessageSquare,
+  Bell,
   Tag,
   Move,
   MoreHorizontal,
@@ -29,6 +30,7 @@ import { TaskChecklist } from './TaskChecklist'
 import { TaskLabels } from './TaskLabels'
 import { TaskAssignees } from './TaskAssignees'
 import { TaskActivity } from './TaskActivity'
+import { ReminderSelect } from './ReminderSelect'
 import { format } from 'date-fns'
 import { useSession } from '../../api/auth'
 import {
@@ -135,10 +137,22 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
       if (error) throw error
       return data
     },
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({ queryKey: ['card', taskId] })
+      const previousCard = queryClient.getQueryData(['card', taskId])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      queryClient.setQueryData(['card', taskId], (old: any) => ({ ...old, ...updates }))
+      return { previousCard }
+    },
+    onError: (_err, _updates, context) => {
+      queryClient.setQueryData(['card', taskId], context?.previousCard)
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['card', taskId] })
     },
   })
 
@@ -231,15 +245,18 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
           <div className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto border-r border-black p-8">
             {/* Metadata Grid */}
             <div className="shadow-brutal-md mb-4 shrink-0 overflow-hidden border-2 border-black bg-white">
-              <div className="bg-accent grid grid-cols-2 border-b-2 border-black">
+              <div className="bg-accent grid grid-cols-3 border-b-2 border-black">
                 <div className="font-heading flex items-center gap-2 border-r-2 border-black p-1 px-3 text-[10px] font-extrabold tracking-widest text-black uppercase">
                   <Tag size={12} strokeWidth={2.5} /> Labels
                 </div>
-                <div className="font-heading flex items-center gap-2 p-1 px-3 text-[10px] font-extrabold tracking-widest text-black uppercase">
+                <div className="font-heading flex items-center gap-2 border-r-2 border-black p-1 px-3 text-[10px] font-extrabold tracking-widest text-black uppercase">
                   <Calendar size={12} strokeWidth={2.5} /> Due Date
                 </div>
+                <div className="font-heading flex items-center gap-2 p-1 px-3 text-[10px] font-extrabold tracking-widest text-black uppercase">
+                  <Bell size={12} strokeWidth={2.5} /> Reminder
+                </div>
               </div>
-              <div className="grid grid-cols-2 items-stretch">
+              <div className="grid grid-cols-3 items-stretch">
                 <div className="flex min-w-0 flex-col justify-center overflow-hidden border-r-2 border-black bg-white p-2.5">
                   <TaskLabels
                     taskId={taskId}
@@ -247,7 +264,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                     cardLabels={card.labels || []}
                   />
                 </div>
-                <div className="flex min-w-0 items-center justify-center overflow-hidden bg-white p-2.5">
+                <div className="flex min-w-0 items-center justify-center overflow-hidden border-r-2 border-black bg-white p-2.5">
                   <div
                     className="shadow-brutal-sm hover:shadow-brutal-md flex h-12 shrink-0 cursor-pointer items-center justify-center border-2 border-black bg-white px-4 transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
                     onClick={() => setIsDatePickerOpen(prev => !prev)}
@@ -273,6 +290,13 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                       )}
                     </div>
                   </div>
+                </div>
+                <div className="flex min-w-0 items-center justify-center overflow-hidden bg-white p-2.5">
+                  <ReminderSelect
+                    value={card.reminder}
+                    onChange={reminder => updateCard.mutate({ reminder })}
+                    disabled={!card.dueDate}
+                  />
                 </div>
               </div>
             </div>

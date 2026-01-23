@@ -59,7 +59,7 @@ describe('Email Notification Integration', () => {
   let createSpy: any
 
   beforeAll(() => {
-    sendSpy = spyOn(emailService, 'sendEmail').mockImplementation(() => Promise.resolve({ success: true }))
+    sendSpy = spyOn(emailService, 'sendEmail').mockImplementation(() => Promise.resolve({ success: true, error: null } as any))
     createSpy = spyOn(notificationService, 'create').mockImplementation(() => Promise.resolve({} as any))
   })
 
@@ -94,7 +94,8 @@ describe('Email Notification Integration', () => {
       taskId: VALID_UUID_2,
       userId: VALID_UUID_1,
       actorId: 'actor-1',
-      boardId: VALID_UUID_1
+      boardId: VALID_UUID_1,
+      assignee: {} as any
     })
 
     // Wait for async handler
@@ -123,7 +124,8 @@ describe('Email Notification Integration', () => {
       taskId: VALID_UUID_2,
       userId: VALID_UUID_2,
       actorId: 'actor-1',
-      boardId: VALID_UUID_1
+      boardId: VALID_UUID_1,
+      assignee: {} as any
     })
 
     await new Promise(resolve => setTimeout(resolve, 100))

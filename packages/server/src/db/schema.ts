@@ -21,6 +21,9 @@ export const emailDigestEnum = pgEnum('email_digest', ['instant', 'daily', 'week
 // Attachment type - file upload or external link
 export const attachmentTypeEnum = pgEnum('attachment_type', ['link', 'file'])
 
+// Task reminder timing
+export const reminderEnum = pgEnum('reminder', ['none', 'on_day', '1_day', '2_days', '1_week'])
+
 // In-app notification types
 export const notificationTypeEnum = pgEnum('notification_type', [
 	'mention', 'assignment', 'due_soon', 'due_urgent', 'overdue', 'comment', 'board_invite'
@@ -186,6 +189,9 @@ export const tasks = pgTable('tasks', {
 	position: text('position').notNull(),
 	priority: priorityEnum(),
 	dueDate: timestamp('due_date'),
+	reminder: reminderEnum().default('none').notNull(),
+	reminderSentAt: timestamp('reminder_sent_at'),
+	overdueSentAt: timestamp('overdue_sent_at'),
 	coverImageUrl: text('cover_image_url'),
 	// Optimistic locking version
 	version: integer('version').default(1).notNull(),

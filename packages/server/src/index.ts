@@ -20,6 +20,7 @@ import { wsManager } from './websocket/manager'
 import { initWebSocketBridge } from './websocket/bridge'
 import { initActivitySubscriber } from './modules/activities/activity.subscriber'
 import { initNotificationSubscriber } from './modules/notifications/notification.subscriber'
+import { runReminderJob } from './jobs/reminder-job'
 
 import { activityRepository } from './modules/activities/activities.repository'
 import { AppError } from './shared/errors'
@@ -129,5 +130,13 @@ export const app = new Elysia()
 wsManager.setServer(app.server!)
 
 console.log('Kyte API running on http://localhost:3000')
+
+// Start reminder job
+if (process.env.NODE_ENV !== 'test') {
+  console.log('Initializing reminder job (15m interval)...')
+  setInterval(runReminderJob, 15 * 60 * 1000)
+  // Run once on startup after a small delay
+  setTimeout(runReminderJob, 10000)
+}
 
 export type App = typeof app

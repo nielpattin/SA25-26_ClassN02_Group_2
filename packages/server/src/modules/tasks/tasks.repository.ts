@@ -1,5 +1,5 @@
 import { db } from '../../db'
-import { tasks, columns, labels, taskLabels, taskAssignees, checklists, checklistItems, attachments, users } from '../../db/schema'
+import { tasks, columns, labels, taskLabels, taskAssignees, checklists, checklistItems, attachments, users, boards } from '../../db/schema'
 import { eq, asc, desc, sql, and, isNull, isNotNull } from 'drizzle-orm'
 import { generatePosition, generatePositions } from '../../shared/position'
 import { ConflictError, NotFoundError } from '../../shared/errors'
@@ -53,6 +53,7 @@ export const taskRepository = {
     position: string
     columnId: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none'
+    reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
     dueDate?: Date | null
     coverImageUrl?: string
   }) => {
@@ -66,7 +67,10 @@ export const taskRepository = {
     position?: string
     columnId?: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
+    reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
     dueDate?: Date | null
+    reminderSentAt?: Date | null
+    overdueSentAt?: Date | null
     coverImageUrl?: string | null
     archivedAt?: Date | null
   }, expectedVersion?: number) => {
@@ -115,6 +119,53 @@ export const taskRepository = {
   permanentDelete: async (id: string) => {
     const [task] = await db.delete(tasks).where(eq(tasks.id, id)).returning()
     return task
+  },
+
+  findTasksNeedingReminders: async () => {
+    return db.select({
+      id: tasks.id,
+      title: tasks.title,
+      dueDate: tasks.dueDate,
+      reminder: tasks.reminder,
+      reminderSentAt: tasks.reminderSentAt,
+      boardName: boards.name,
+      boardId: boards.id,
+      columnId: tasks.columnId,
+    })
+      .from(tasks)
+      .innerJoin(columns, eq(tasks.columnId, columns.id))
+      .innerJoin(boards, eq(columns.boardId, boards.id))
+      .where(
+        and(
+          isNull(tasks.archivedAt),
+          isNotNull(tasks.dueDate),
+          sql`${tasks.reminder} != 'none'`,
+          sql`(${tasks.reminderSentAt} IS NULL OR ${tasks.reminderSentAt} < ${tasks.dueDate})`
+        )
+      )
+  },
+
+  findOverdueTasks: async () => {
+    return db.select({
+      id: tasks.id,
+      title: tasks.title,
+      dueDate: tasks.dueDate,
+      overdueSentAt: tasks.overdueSentAt,
+      boardName: boards.name,
+      boardId: boards.id,
+      columnId: tasks.columnId,
+    })
+      .from(tasks)
+      .innerJoin(columns, eq(tasks.columnId, columns.id))
+      .innerJoin(boards, eq(columns.boardId, boards.id))
+      .where(
+        and(
+          isNull(tasks.archivedAt),
+          isNotNull(tasks.dueDate),
+          sql`${tasks.dueDate} < NOW()`,
+          isNull(tasks.overdueSentAt)
+        )
+      )
   },
 
   getBoardIdFromColumn: async (columnId: string): Promise<string | null> => {

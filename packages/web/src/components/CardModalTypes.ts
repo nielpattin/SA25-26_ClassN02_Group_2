@@ -6,6 +6,7 @@ export interface Card {
   position: string
   priority: 'none' | 'low' | 'medium' | 'high' | 'urgent' | null
   dueDate: string | Date | null
+  reminder: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
   coverImageUrl?: string | null
   labels: string[] // Label IDs
   assignees: string[] // User IDs

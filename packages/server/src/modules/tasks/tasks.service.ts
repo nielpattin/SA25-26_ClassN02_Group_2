@@ -2,6 +2,7 @@ import { taskRepository } from './tasks.repository'
 import { columnRepository } from '../columns/columns.repository'
 import { boardRepository } from '../boards/boards.repository'
 import { workspaceRepository } from '../workspaces/workspaces.repository'
+import { notificationRepository } from '../notifications/notifications.repository'
 import { eventBus } from '../../events/bus'
 import { generatePosition, needsRebalancing } from '../../shared/position'
 import { ForbiddenError } from '../../shared/errors'
@@ -19,6 +20,7 @@ export const taskService = {
     position?: string
     columnId: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none'
+    reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
     dueDate?: Date | null
     coverImageUrl?: string
   }, userId: string) => {
@@ -44,12 +46,26 @@ export const taskService = {
     position?: string
     columnId?: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
+    reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
     dueDate?: Date | null
     coverImageUrl?: string | null
     version?: number
   }, userId: string) => {
     const oldTask = await taskRepository.findById(id)
-    const { version, ...updateData } = data
+    const { version, ...updateData } = data as any
+
+    if (data.dueDate !== undefined) {
+      const oldTime = oldTask?.dueDate?.getTime()
+      const newTime = data.dueDate?.getTime()
+      if (oldTime !== newTime) {
+        updateData.reminderSentAt = null
+        updateData.overdueSentAt = null
+        // Clear old notifications so they can be re-triggered for the new date
+        await notificationRepository.deleteByType(id, 'due_soon')
+        await notificationRepository.deleteByType(id, 'overdue')
+      }
+    }
+
     const task = await taskRepository.update(id, updateData, version)
     
     if (task.columnId) {

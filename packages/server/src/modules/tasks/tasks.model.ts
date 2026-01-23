@@ -14,6 +14,13 @@ export const TaskSchema = {
     t.Literal('low'),
     t.Literal('none'),
   ]),
+  reminder: t.Union([
+    t.Literal('none'),
+    t.Literal('on_day'),
+    t.Literal('1_day'),
+    t.Literal('2_days'),
+    t.Literal('1_week'),
+  ]),
 }
 
 export const CreateTaskBody = t.Object({
@@ -23,6 +30,7 @@ export const CreateTaskBody = t.Object({
   columnId: TaskSchema.columnId,
   dueDate: t.Optional(TaskSchema.dueDate),
   priority: t.Optional(TaskSchema.priority),
+  reminder: t.Optional(TaskSchema.reminder),
   coverImageUrl: t.Optional(t.String()),
 })
 
@@ -33,6 +41,7 @@ export const UpdateTaskBody = t.Object({
   columnId: t.Optional(TaskSchema.columnId),
   dueDate: t.Optional(TaskSchema.dueDate),
   priority: t.Optional(t.Nullable(TaskSchema.priority)),
+  reminder: t.Optional(TaskSchema.reminder),
   coverImageUrl: t.Optional(t.Nullable(t.String())),
   version: t.Optional(t.Number()),
 })

@@ -8,6 +8,16 @@ export const NotificationPreferenceItemSchema = t.Object({
   email: t.Boolean()
 })
 
+export const DEFAULT_NOTIFICATION_PREFERENCES = {
+  mention: { inApp: true, email: true },
+  assignment: { inApp: true, email: true },
+  due_soon: { inApp: true, email: true },
+  due_urgent: { inApp: true, email: true },
+  overdue: { inApp: true, email: true },
+  comment: { inApp: true, email: true },
+  board_invite: { inApp: true, email: true }
+}
+
 export const NotificationPreferencesSchema = t.Object({
   mention: NotificationPreferenceItemSchema,
   assignment: NotificationPreferenceItemSchema,
