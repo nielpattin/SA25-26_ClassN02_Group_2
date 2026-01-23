@@ -376,6 +376,13 @@ export const idempotencyKeys = pgTable('idempotency_keys', {
 	unique('idempotency_user_key_idx').on(table.userId, table.key)
 ])
 
+// Rate limiting for auth and other sensitive endpoints
+export const rateLimits = pgTable('rate_limits', {
+	key: text('key').primaryKey(),
+	count: integer('count').default(0).notNull(),
+	lastResetAt: timestamp('last_reset_at').defaultNow().notNull(),
+})
+
 export const table = {
 	users, sessions, accounts, verifications,
 	workspaces, members,
@@ -389,4 +396,5 @@ export const table = {
 	boardTemplates, taskTemplates,
 	boardVisits,
 	idempotencyKeys,
+	rateLimits,
 } as const

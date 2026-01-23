@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from '../../db'
 import * as schema from '../../db/schema'
 import { eq } from 'drizzle-orm'
+import { emailService } from '../email/email.service'
 
 export const auth = betterAuth({
   basePath: '/api/auth',
@@ -18,6 +19,14 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false, // TODO: Enable when email service is configured
+    async sendResetPassword({ user, url }) {
+      await emailService.sendEmail({
+        to: user.email,
+        subject: 'Reset your Kyte password',
+        html: `Click the link to reset your password: <a href="${url}">${url}</a>`,
+      })
+    },
+    resetPasswordTokenExpiresIn: 900, // 15 minutes
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days

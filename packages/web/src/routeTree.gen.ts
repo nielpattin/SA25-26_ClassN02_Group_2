@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MembersRouteImport } from './routes/members'
 import { Route as BoardsRouteImport } from './routes/boards'
@@ -20,6 +21,11 @@ import { Route as BoardBoardIdRouteImport } from './routes/board.$boardId'
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/boards': typeof BoardsRoute
   '/members': typeof MembersRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/board/$boardId': typeof BoardBoardIdRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/boards': typeof BoardsRoute
   '/members': typeof MembersRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/board/$boardId': typeof BoardBoardIdRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/boards': typeof BoardsRoute
   '/members': typeof MembersRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/board/$boardId': typeof BoardBoardIdRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/boards'
     | '/members'
     | '/profile'
+    | '/reset-password'
     | '/settings'
     | '/board/$boardId'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/boards'
     | '/members'
     | '/profile'
+    | '/reset-password'
     | '/settings'
     | '/board/$boardId'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/boards'
     | '/members'
     | '/profile'
+    | '/reset-password'
     | '/settings'
     | '/board/$boardId'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   BoardsRoute: typeof BoardsRoute
   MembersRoute: typeof MembersRoute
   ProfileRoute: typeof ProfileRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   BoardBoardIdRoute: typeof BoardBoardIdRoute
 }
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   BoardsRoute: BoardsRoute,
   MembersRoute: MembersRoute,
   ProfileRoute: ProfileRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   BoardBoardIdRoute: BoardBoardIdRoute,
 }

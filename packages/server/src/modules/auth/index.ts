@@ -1,5 +1,6 @@
-import { Elysia } from 'elysia'
+import { Elysia, t } from 'elysia'
 import { auth } from './auth'
+import { checkRateLimit } from '../../shared/middleware/rate-limit'
 
 export type Session = typeof auth.$Infer.Session
 
@@ -20,6 +21,22 @@ export type Session = typeof auth.$Infer.Session
  * ```
  */
 export const authPlugin = new Elysia({ name: 'auth' })
+  .post(
+    '/api/auth/forget-password',
+    async ({ request, body }) => {
+      const { email } = body
+      await checkRateLimit(`password-reset:${email}`, 3, 60 * 60 * 1000)
+      return auth.api.requestPasswordReset({
+        body: { email },
+        headers: request.headers,
+      })
+    },
+    {
+      body: t.Object({
+        email: t.String({ format: 'email' }),
+      }),
+    },
+  )
   .all('/api/auth/*', ({ request }) => auth.handler(request))
   .derive({ as: 'global' }, async ({ request }) => {
     // TEST BYPASS: Allow manual session injection in tests via x-test-user-id header
