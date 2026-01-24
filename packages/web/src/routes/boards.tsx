@@ -1,21 +1,37 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useSession } from '../api/auth'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { AuthModal } from '../components/auth/AuthModal'
+import { AvatarPickerModal } from '../components/ui/AvatarPickerModal'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { SearchTrigger } from '../components/search'
 
 export const Route = createFileRoute('/boards')({
   component: DashboardComponent,
+  validateSearch: (search: Record<string, unknown>): { setup?: boolean } => {
+    return {
+      setup: search.setup === 'true' || search.setup === true || undefined,
+    }
+  },
 })
 
 function DashboardComponent() {
+  const { setup } = Route.useSearch()
+  const navigate = useNavigate()
   const { data: session, isPending: isSessionLoading } = useSession()
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showSetupModal, setShowSetupModal] = useState(!!setup)
+
+  useEffect(() => {
+    if (setup && session) {
+      // Clear search param immediately to prevent showing again on refresh
+      navigate({ to: '/boards', search: { setup: undefined }, replace: true })
+    }
+  }, [setup, session, navigate])
 
   // Derive modal state from session - show if not loading and no session
   const shouldShowModal = showAuthModal || (!isSessionLoading && !session)
@@ -33,6 +49,16 @@ function DashboardComponent() {
       <AuthModal
         isOpen={shouldShowModal}
         onClose={() => setShowAuthModal(false)}
+      />
+      <AvatarPickerModal
+        isOpen={showSetupModal}
+        onClose={() => {
+          setShowSetupModal(false)
+          // Clear search param
+          navigate({ to: '/boards', search: { setup: undefined }, replace: true })
+        }}
+        userName={session?.user.name || ''}
+        githubAvatarUrl={session?.user.image}
       />
       {session ? (
         <DashboardLayout>

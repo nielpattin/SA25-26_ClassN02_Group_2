@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
-import { useSession } from '../../api/auth'
+import { Github, X } from 'lucide-react'
+import { useSession, signIn } from '../../api/auth'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 
@@ -75,6 +75,14 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleGithubSignIn = () => {
+    signIn.social({ 
+      provider: 'github', 
+      callbackURL: '/boards',
+      newUserCallbackURL: '/boards?setup=true'
+    })
   }
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -177,6 +185,25 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           >
             {loading ? 'Loading...' : mode === 'login' ? 'Login' : mode === 'signup' ? 'Sign Up' : 'Send Reset Link'}
           </Button>
+
+          {mode !== 'forgot' && (
+            <>
+              <div className="my-2 flex items-center gap-3">
+                <div className="h-px flex-1 bg-black/20" />
+                <span className="text-xs font-bold text-black/50 uppercase">or</span>
+                <div className="h-px flex-1 bg-black/20" />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGithubSignIn}
+                className="shadow-brutal-sm hover:shadow-brutal flex w-full cursor-pointer items-center justify-center gap-2 border border-black bg-white p-3 font-bold uppercase transition-all hover:-translate-0.5 active:translate-0 active:shadow-none"
+              >
+                <Github size={18} />
+                Continue with GitHub
+              </button>
+            </>
+          )}
         </form>
         
         <div className="mt-4 flex flex-col gap-2">
