@@ -78,10 +78,11 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   }
 
   const handleGithubSignIn = () => {
+    const webUrl = window.location.origin
     signIn.social({ 
       provider: 'github', 
-      callbackURL: '/boards',
-      newUserCallbackURL: '/boards?setup=true'
+      callbackURL: `${webUrl}/boards`,
+      newUserCallbackURL: `${webUrl}/boards?setup=true`
     })
   }
 
@@ -97,7 +98,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setLoading(true)
     try {
       const { sendVerificationEmail } = await import('../../api/auth')
-      const result = await sendVerificationEmail({ email, callbackURL: '/' })
+      const result = await sendVerificationEmail({ email, callbackURL: window.location.origin })
       if (result.error) {
         if (result.error.status === 429) {
           setError('Too many requests. Please try again later.')

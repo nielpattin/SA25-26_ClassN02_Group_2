@@ -106,8 +106,13 @@ export const auth = betterAuth({
           const user = await db.query.users.findFirst({
             where: eq(schema.users.id, session.userId)
           })
+          
           if (user?.deletedAt) {
-            throw new APIError("FORBIDDEN", { message: "Account is scheduled for deletion. Contact support@kyte.dev to recover your account." })
+            await db.update(schema.users)
+              .set({ deletedAt: null })
+              .where(eq(schema.users.id, user.id))
+            
+            console.log(`[Auth] Automatically restored account for user ${user.id}`)
           }
         }
       }

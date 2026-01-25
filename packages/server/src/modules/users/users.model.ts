@@ -92,7 +92,7 @@ export const UpdateNotificationPreferencesBody = t.Partial(
 )
 
 export const DeleteAccountBody = t.Object({
-  password: t.String()
+  password: t.Optional(t.String())
 })
 
 export type User = typeof UserSchema.static

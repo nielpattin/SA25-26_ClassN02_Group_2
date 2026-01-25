@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { userService } from './users.service'
 import { CreateUserBody, UpdateUserBody, UpdateUserPreferencesBody, UpdateNotificationPreferencesBody, AvatarUploadBody, DeleteAccountBody } from './users.model'
-import { authPlugin } from '../auth'
+import { authPlugin, auth } from '../auth'
 import { UnauthorizedError, ForbiddenError } from '../../shared/errors'
 import { isValidTimezone, isValidLanguage } from '../config'
 
@@ -80,6 +80,28 @@ export const userController = new Elysia({ prefix: '/users' })
   }, {
     params: t.Object({ id: t.String() }),
     body: UpdateNotificationPreferencesBody
+  })
+
+  .post('/:id/set-password', async ({ params, body, session, request }) => {
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+
+    const hash = await userService.getPasswordHash(params.id)
+    if (hash) {
+      throw new ForbiddenError('Password already set. Use change password instead.')
+    }
+
+    await auth.api.setPassword({
+      headers: request.headers,
+      body: {
+        newPassword: body.password
+      }
+    })
+
+    return { success: true }
+  }, {
+    params: t.Object({ id: t.String() }),
+    body: t.Object({ password: t.String({ minLength: 8 }) })
   })
 
   .delete('/:id', async ({ params, body, session }) => {

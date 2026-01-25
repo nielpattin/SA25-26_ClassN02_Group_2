@@ -55,12 +55,23 @@ export const app = new Elysia()
       }
     }
 
+    if (code === 'NOT_FOUND') {
+      set.status = 404
+      return {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Route not found'
+        }
+      }
+    }
+
     set.status = 500
     return {
       success: false,
       error: {
         code: 'INTERNAL_SERVER_ERROR',
-        message: 'Something went wrong'
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
       }
     }
   })

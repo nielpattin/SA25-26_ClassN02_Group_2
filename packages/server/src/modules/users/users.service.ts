@@ -88,25 +88,29 @@ export const userService = {
     return userRepository.updateNotificationPreferences(id, data)
   },
 
+  async getPasswordHash(id: string) {
+    return userRepository.getPasswordHash(id)
+  },
+
   async delete(id: string) {
     return userRepository.delete(id)
   },
 
-  async deleteAccount(id: string, password: string) {
+  async deleteAccount(id: string, password?: string) {
     const user = await userRepository.getById(id)
     if (!user) {
       throw new NotFoundError('User not found')
     }
 
     const hash = await userRepository.getPasswordHash(id)
-    if (!hash) {
-      // This might happen if user only has OAuth accounts
-      throw new ForbiddenError('Password verification required, but no password set for this account')
-    }
-
-    const isValid = await verifyPassword({ hash, password })
-    if (!isValid) {
-      throw new ForbiddenError('Incorrect password')
+    if (hash) {
+      if (!password) {
+        throw new ForbiddenError('Password is required for this account')
+      }
+      const isValid = await verifyPassword({ hash, password })
+      if (!isValid) {
+        throw new ForbiddenError('Incorrect password')
+      }
     }
 
     await userRepository.delete(id)

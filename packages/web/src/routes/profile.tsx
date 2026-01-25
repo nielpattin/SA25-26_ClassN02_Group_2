@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Settings, Shield, Save, Key, UserCircle, Bell, Link2 } from 'lucide-react'
 import { api } from '../api/client'
 import { useSession, changePassword } from '../api/auth'
+import { useAccounts } from '../hooks/useAccounts'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
@@ -85,6 +86,8 @@ interface ProfileFormProps {
 
 function ProfileForm({ user, config }: ProfileFormProps) {
   const queryClient = useQueryClient()
+  const { data: accounts } = useAccounts()
+  const hasPassword = accounts?.some(acc => acc.providerId === 'credential')
 
   // Initialize from user data - form resets on user change via key prop
   const [name, setName] = useState(user.name)
@@ -153,17 +156,27 @@ function ProfileForm({ user, config }: ProfileFormProps) {
     }
 
     setSecurityStatus('saving')
-    const { error } = await changePassword({
-      currentPassword,
-      newPassword,
-      revokeOtherSessions: true
-    })
     
-    if (error) {
-      setSecurityError(error.message || 'Failed to change password')
+    let result
+    if (hasPassword) {
+      result = await changePassword({
+        currentPassword,
+        newPassword,
+        revokeOtherSessions: true
+      })
+    } else {
+      result = await api.v1.users({ id: user.id })['set-password'].post({
+        password: newPassword,
+      })
+    }
+    
+    if (result.error) {
+      const error = result.error as any
+      setSecurityError(error.message || 'Failed to update password')
       setSecurityStatus('error')
     } else {
       setSecurityStatus('success')
+      queryClient.invalidateQueries({ queryKey: ['auth', 'accounts'] })
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
@@ -326,20 +339,24 @@ function ProfileForm({ user, config }: ProfileFormProps) {
 
           <div className="mb-6 flex items-center gap-3 border-b border-black/10 pb-4">
             <Shield size={20} />
-            <h2 className="font-heading text-lg font-bold tracking-wider text-black uppercase">Security</h2>
+            <h2 className="font-heading text-lg font-bold tracking-wider text-black uppercase">
+              {hasPassword ? 'Security' : 'Set Account Password'}
+            </h2>
           </div>
 
           <form onSubmit={handlePasswordChange} className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-bold tracking-widest text-black uppercase">Current Password</label>
-              <Input 
-                type="password" 
-                value={currentPassword} 
-                onChange={(e) => setCurrentPassword(e.target.value)} 
-                placeholder="••••••••"
-                required
-              />
-            </div>
+            {hasPassword && (
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-bold tracking-widest text-black uppercase">Current Password</label>
+                <Input 
+                  type="password" 
+                  value={currentPassword} 
+                  onChange={(e) => setCurrentPassword(e.target.value)} 
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
@@ -371,11 +388,11 @@ function ProfileForm({ user, config }: ProfileFormProps) {
               </div>
               <button
                 type="submit"
-                disabled={securityStatus === 'saving' || !currentPassword || !newPassword}
+                disabled={securityStatus === 'saving' || (hasPassword && !currentPassword) || !newPassword}
                 className="hover:bg-accent hover:shadow-brutal-sm flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Key size={16} />
-                {securityStatus === 'saving' ? 'Changing...' : 'Change Password'}
+                {securityStatus === 'saving' ? 'Saving...' : hasPassword ? 'Change Password' : 'Set Password'}
               </button>
             </div>
           </form>
@@ -398,7 +415,7 @@ function ProfileForm({ user, config }: ProfileFormProps) {
           <ConnectedAccounts />
         </section>
 
-        <DangerZone userId={user.id} />
+        <DangerZone userId={user.id} userEmail={user.email} hasPassword={!!hasPassword} />
       </div>
     </div>
   )

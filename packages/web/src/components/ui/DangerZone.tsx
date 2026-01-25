@@ -8,18 +8,25 @@ import { signOut } from '../../api/auth'
 
 interface DangerZoneProps {
   userId: string
+  userEmail: string
+  hasPassword: boolean
 }
 
-export function DangerZone({ userId }: DangerZoneProps) {
+export function DangerZone({ userId, userEmail, hasPassword }: DangerZoneProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [password, setPassword] = useState('')
+  const [confirmValue, setConfirmValue] = useState('')
   const [error, setError] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
   const navigate = useNavigate()
 
   const handleDeleteAccount = async () => {
-    if (!password) {
-      setError('Password is required')
+    if (!confirmValue) {
+      setError(hasPassword ? 'Password is required' : 'Email is required')
+      return
+    }
+
+    if (!hasPassword && confirmValue.toLowerCase() !== userEmail.toLowerCase()) {
+      setError('Email does not match')
       return
     }
 
@@ -28,7 +35,7 @@ export function DangerZone({ userId }: DangerZoneProps) {
 
     try {
       const { error: deleteError } = await api.v1.users({ id: userId }).delete({
-        password
+        password: hasPassword ? confirmValue : undefined
       })
 
       if (deleteError) {
@@ -81,20 +88,20 @@ export function DangerZone({ userId }: DangerZoneProps) {
           onConfirm={handleDeleteAccount}
           onCancel={() => {
             setIsModalOpen(false)
-            setPassword('')
+            setConfirmValue('')
             setError('')
           }}
           variant="danger"
         >
           <div className="flex flex-col gap-3">
             <label className="text-[10px] font-bold tracking-widest text-black uppercase">
-              Confirm with Password
+              {hasPassword ? 'Confirm with Password' : `Type "${userEmail}" to confirm`}
             </label>
             <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              type={hasPassword ? 'password' : 'text'}
+              value={confirmValue}
+              onChange={(e) => setConfirmValue(e.target.value)}
+              placeholder={hasPassword ? '••••••••' : userEmail}
               required
               autoFocus
             />
