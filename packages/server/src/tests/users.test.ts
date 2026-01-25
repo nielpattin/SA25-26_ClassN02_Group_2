@@ -295,6 +295,43 @@ describe('Users & Sessions API', () => {
     expect(userRestored?.deletedAt).toBeNull()
   })
 
+  test('Session includes deletedAt field for soft-deleted users', async () => {
+    const testPassword = 'Password123!'
+    const email = `session-deleted-${Date.now()}@example.com`
+    
+    // 1. Create a user via Better Auth API
+    const signUpResult = await auth.api.signUpEmail({
+      body: {
+        email,
+        password: testPassword,
+        name: 'Session Deleted Test',
+      }
+    })
+    
+    if (!signUpResult || !('user' in signUpResult)) {
+      throw new Error('Failed to sign up test user')
+    }
+    
+    const testUserId = signUpResult.user.id
+
+    // 2. Mark as deleted and verified in DB
+    await db.update(users).set({ deletedAt: new Date(), emailVerified: true }).where(eq(users.id, testUserId))
+
+    // 3. Sign in via API
+    const signInResult = await auth.api.signInEmail({
+      body: {
+        email,
+        password: testPassword,
+      }
+    })
+    
+    expect(signInResult).toBeDefined()
+    expect(signInResult.user.id).toBe(testUserId)
+    // Verify deletedAt is included in the session user
+    expect(signInResult.user.deletedAt).toBeDefined()
+    expect(signInResult.user.deletedAt).not.toBeNull()
+  })
+
   test('GET /users/:id/export - export user data', async () => {
     const res = await app.handle(
       new Request(`http://localhost/v1/users/${userId}/export`, {

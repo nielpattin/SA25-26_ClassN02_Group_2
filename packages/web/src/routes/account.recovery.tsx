@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useSession, signOut } from '../api/auth'
 import { api } from '../api/client'
 import { Button } from '../components/ui/Button'
+import { Clock, Download, LogOut, RefreshCw, Shield } from 'lucide-react'
 
 export const Route = createFileRoute('/account/recovery')({
   component: RecoveryHub,
@@ -18,7 +19,7 @@ function RecoveryHub() {
     return null
   }
 
-  const user = session.user as any
+  const user = session.user
   const daysLeft = user.deletedAt
     ? Math.max(0, 30 - Math.floor((Date.now() - new Date(user.deletedAt).getTime()) / (1000 * 60 * 60 * 24)))
     : 0
@@ -29,12 +30,11 @@ function RecoveryHub() {
       const { error } = await api.v1.users({ id: user.id }).restore.patch()
       if (error) throw error
       
-      // Force refresh session data
-      window.location.href = '/boards'
+      await signOut()
+      navigate({ to: '/' })
     } catch (err) {
       console.error('Failed to restore account:', err)
       alert('Failed to restore account. Please try again.')
-    } finally {
       setIsRestoring(false)
     }
   }
@@ -70,57 +70,91 @@ function RecoveryHub() {
 
   return (
     <div className="bg-canvas flex min-h-screen flex-col items-center justify-center p-6">
-      <div className="shadow-brutal-xl w-full max-w-180 border-2 border-black bg-white p-12 transition-all">
-        <div className="mb-10 flex flex-col items-center text-center">
-          <div className="font-heading shadow-brutal-md mb-8 border border-black bg-black px-6 py-2 text-[20px] font-extrabold text-white">
-            RECOVERY HUB
+      <div className="w-full max-w-xl">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="mb-6 flex items-center gap-3">
+            <Shield className="text-black" size={32} />
+            <span className="font-heading text-2xl font-bold tracking-tight text-black">KYTE</span>
           </div>
-          <h1 className="font-heading m-0 mb-4 text-[48px] leading-tight font-black tracking-tight text-black uppercase">
-            Account Scheduled for Deletion
+          <h1 className="font-heading mb-2 text-3xl font-bold tracking-tight text-black">
+            Account Recovery
           </h1>
-          <p className="m-0 text-[18px] font-bold text-black/60 uppercase italic">
-            {user.name} ({user.email})
+          <p className="text-sm font-medium text-gray-500">
+            {user.name} • {user.email}
           </p>
         </div>
 
-        <div className="shadow-brutal-md mb-12 border-2 border-black bg-accent p-8 text-center">
-          <div className="mb-2 text-[14px] font-black tracking-widest text-black uppercase">
-            Time Remaining
+        <div className="border border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <div className="border-b border-black/10 bg-amber-50 p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex size-12 shrink-0 items-center justify-center border border-amber-400 bg-amber-100">
+                <Clock className="text-amber-600" size={24} />
+              </div>
+              <div className="flex-1">
+                <h2 className="mb-1 text-sm font-bold tracking-wide text-black uppercase">
+                  Deletion Scheduled
+                </h2>
+                <p className="text-[13px] leading-relaxed text-gray-600">
+                  Your account is scheduled for permanent deletion. You have{' '}
+                  <span className="font-bold text-black">{daysLeft} days</span> to recover your data or restore access.
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="text-[72px] font-black leading-none text-black">
-            {daysLeft} DAYS
-          </div>
-          <div className="mt-4 text-[14px] font-bold text-black/80 uppercase">
-            Until your data is permanently removed from our servers
+
+          <div className="flex flex-col gap-4 p-6">
+            <button
+              onClick={handleRestore}
+              disabled={isRestoring}
+              className="hover:shadow-brutal-md group flex items-center gap-4 border border-black bg-black p-4 text-left transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center border border-white/20 bg-white/10">
+                <RefreshCw className={`text-white ${isRestoring ? 'animate-spin' : ''}`} size={20} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold tracking-wide text-white uppercase">
+                  {isRestoring ? 'Restoring...' : 'Keep My Account'}
+                </h3>
+                <p className="text-xs text-white/70">
+                  Cancel deletion and restore full access
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="hover:shadow-brutal-md group flex items-center gap-4 border border-black bg-white p-4 text-left transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center border border-black/10 bg-gray-50">
+                <Download className={`text-black ${isExporting ? 'animate-bounce' : ''}`} size={20} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold tracking-wide text-black uppercase">
+                  {isExporting ? 'Preparing...' : 'Download My Data'}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Export all your boards, tasks, and settings as JSON
+                </p>
+              </div>
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Button
-            onClick={handleRestore}
-            disabled={isRestoring}
-            className="shadow-brutal-lg bg-black py-8 text-[18px] text-white hover:text-black"
-          >
-            {isRestoring ? 'RESTORING...' : 'KEEP MY ACCOUNT'}
-          </Button>
-          <Button
-            onClick={handleExport}
-            disabled={isExporting}
-            variant="secondary"
-            className="shadow-brutal-lg py-8 text-[18px]"
-          >
-            {isExporting ? 'EXPORTING...' : 'DOWNLOAD MY DATA'}
-          </Button>
-        </div>
-
-        <div className="mt-12 flex flex-col items-center border-t-2 border-black/10 pt-8">
+        <div className="mt-6 flex justify-center">
           <button
             onClick={handleLogout}
-            className="text-[14px] font-black tracking-widest text-black/40 uppercase underline-offset-4 hover:text-black hover:underline transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest text-gray-400 uppercase transition-colors hover:text-black"
           >
-            LOGOUT AND EXIT
+            <LogOut size={14} />
+            Sign Out
           </button>
         </div>
+
+        <p className="mt-8 text-center text-[11px] leading-relaxed text-gray-400">
+          If you do nothing, your account and all associated data will be permanently deleted after the grace period.
+          This action cannot be undone.
+        </p>
       </div>
     </div>
   )

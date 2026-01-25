@@ -17,7 +17,7 @@ export const Route = createRootRoute({
     const { data: session } = await authClient.getSession()
     
     // Redirect to recovery hub if account is scheduled for deletion
-    if (session?.user && (session.user as any).deletedAt) {
+    if (session?.user?.deletedAt) {
       throw redirect({
         to: '/account/recovery',
       })
