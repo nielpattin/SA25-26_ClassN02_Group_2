@@ -96,6 +96,22 @@ export const userService = {
     return userRepository.delete(id)
   },
 
+  async restore(id: string) {
+    const user = await userRepository.getById(id)
+    if (!user) {
+      throw new NotFoundError('User not found')
+    }
+    return userRepository.restore(id)
+  },
+
+  async exportData(id: string) {
+    const data = await userRepository.getExportData(id)
+    if (!data) {
+      throw new NotFoundError('User not found')
+    }
+    return data
+  },
+
   async deleteAccount(id: string, password?: string) {
     const user = await userRepository.getById(id)
     if (!user) {

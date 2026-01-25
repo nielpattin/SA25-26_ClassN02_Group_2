@@ -114,6 +114,24 @@ export const userController = new Elysia({ prefix: '/users' })
     body: DeleteAccountBody
   })
 
+  .patch('/:id/restore', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+
+    return userService.restore(params.id)
+  }, {
+    params: t.Object({ id: t.String() })
+  })
+
+  .get('/:id/export', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    if (session.user.id !== params.id) throw new ForbiddenError()
+
+    return userService.exportData(params.id)
+  }, {
+    params: t.Object({ id: t.String() })
+  })
+
   .get('/:id/sessions', async ({ params, session }) => {
     if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()

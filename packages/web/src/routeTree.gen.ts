@@ -18,6 +18,7 @@ import { Route as BoardsRouteImport } from './routes/boards'
 import { Route as ArchiveRouteImport } from './routes/archive'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BoardBoardIdRouteImport } from './routes/board.$boardId'
+import { Route as AccountRecoveryRouteImport } from './routes/account.recovery'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -64,6 +65,11 @@ const BoardBoardIdRoute = BoardBoardIdRouteImport.update({
   path: '/board/$boardId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountRecoveryRoute = AccountRecoveryRouteImport.update({
+  id: '/account/recovery',
+  path: '/account/recovery',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/account/recovery': typeof AccountRecoveryRoute
   '/board/$boardId': typeof BoardBoardIdRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/account/recovery': typeof AccountRecoveryRoute
   '/board/$boardId': typeof BoardBoardIdRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/account/recovery': typeof AccountRecoveryRoute
   '/board/$boardId': typeof BoardBoardIdRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/verify-email'
+    | '/account/recovery'
     | '/board/$boardId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/verify-email'
+    | '/account/recovery'
     | '/board/$boardId'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/verify-email'
+    | '/account/recovery'
     | '/board/$boardId'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  AccountRecoveryRoute: typeof AccountRecoveryRoute
   BoardBoardIdRoute: typeof BoardBoardIdRoute
 }
 
@@ -212,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardBoardIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/recovery': {
+      id: '/account/recovery'
+      path: '/account/recovery'
+      fullPath: '/account/recovery'
+      preLoaderRoute: typeof AccountRecoveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -224,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  AccountRecoveryRoute: AccountRecoveryRoute,
   BoardBoardIdRoute: BoardBoardIdRoute,
 }
 export const routeTree = rootRouteImport

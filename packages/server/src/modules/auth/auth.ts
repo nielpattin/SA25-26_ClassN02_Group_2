@@ -100,23 +100,6 @@ export const auth = betterAuth({
         },
       },
     },
-    session: {
-      create: {
-        before: async (session) => {
-          const user = await db.query.users.findFirst({
-            where: eq(schema.users.id, session.userId)
-          })
-          
-          if (user?.deletedAt) {
-            await db.update(schema.users)
-              .set({ deletedAt: null })
-              .where(eq(schema.users.id, user.id))
-            
-            console.log(`[Auth] Automatically restored account for user ${user.id}`)
-          }
-        }
-      }
-    }
   },
 })
 

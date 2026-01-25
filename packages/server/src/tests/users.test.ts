@@ -244,21 +244,87 @@ describe('Users & Sessions API', () => {
     // 2. Mark as deleted and verified in DB
     await db.update(users).set({ deletedAt: new Date(), emailVerified: true }).where(eq(users.id, deletedUserId))
 
-    // 3. Try to sign in via API
-    try {
-      await auth.api.signInEmail({
-        body: {
-          email,
-          password: testPassword,
-        }
+    // 3. Try to sign in via API - should succeed now (not blocked, not auto-restored)
+    const result = await auth.api.signInEmail({
+      body: {
+        email,
+        password: testPassword,
+      }
+    })
+    
+    expect(result).toBeDefined()
+    expect(result.user.id).toBe(deletedUserId)
+
+    // 4. Verify deletedAt is STILL set in DB (not auto-restored)
+    const userAfter = await db.query.users.findFirst({
+      where: eq(users.id, deletedUserId)
+    })
+    expect(userAfter?.deletedAt).not.toBeNull()
+
+    // 5. Restore account via API
+    // a. Verify 401 if no session
+    const res401 = await app.handle(
+      new Request(`http://localhost/v1/users/${deletedUserId}/restore`, {
+        method: 'PATCH'
       })
-      // Should not reach here
-      expect(true).toBe(false)
-    } catch (error: any) {
-      // Better Auth API returns error status as string (e.g. "FORBIDDEN")
-      expect(error.status).toBe('FORBIDDEN')
-      expect(error.message).toContain('Account is scheduled for deletion')
-    }
+    )
+    expect(res401.status).toBe(401)
+
+    // b. Verify 403 if user tries to restore different user
+    const res403 = await app.handle(
+      new Request(`http://localhost/v1/users/${deletedUserId}/restore`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(userId) // Use different user ID
+      })
+    )
+    expect(res403.status).toBe(403)
+
+    // c. Success case
+    const resRestore = await app.handle(
+      new Request(`http://localhost/v1/users/${deletedUserId}/restore`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(deletedUserId)
+      })
+    )
+    expect(resRestore.status).toBe(200)
+
+    // 6. Verify deletedAt is NULL in DB
+    const userRestored = await db.query.users.findFirst({
+      where: eq(users.id, deletedUserId)
+    })
+    expect(userRestored?.deletedAt).toBeNull()
+  })
+
+  test('GET /users/:id/export - export user data', async () => {
+    const res = await app.handle(
+      new Request(`http://localhost/v1/users/${userId}/export`, {
+        headers: getAuthHeaders(userId)
+      })
+    )
+    expect(res.status).toBe(200)
+    const data = await res.json()
+    
+    expect(data.user).toBeDefined()
+    expect(data.user.id).toBe(userId)
+    expect(Array.isArray(data.workspaces)).toBe(true)
+    expect(Array.isArray(data.boards)).toBe(true)
+    expect(Array.isArray(data.columns)).toBe(true)
+    expect(Array.isArray(data.tasks)).toBe(true)
+    expect(Array.isArray(data.comments)).toBe(true)
+
+    // Verify 401 if no session
+    const res401 = await app.handle(
+      new Request(`http://localhost/v1/users/${userId}/export`)
+    )
+    expect(res401.status).toBe(401)
+
+    // Verify 403 if exporting different user
+    const res403 = await app.handle(
+      new Request(`http://localhost/v1/users/${userId}/export`, {
+        headers: getAuthHeaders('some-other-id')
+      })
+    )
+    expect(res403.status).toBe(403)
   })
 
   test('POST /users/:id/avatar - upload avatar', async () => {

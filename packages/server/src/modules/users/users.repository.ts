@@ -1,6 +1,6 @@
 import { db } from '../../db'
-import { users, sessions, accounts } from '../../db/schema'
-import { eq, and, ne } from 'drizzle-orm'
+import { users, sessions, accounts, members, workspaces, boards, columns, tasks, labels, comments, checklists, checklistItems, attachments, taskLabels } from '../../db/schema'
+import { eq, and, ne, inArray } from 'drizzle-orm'
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './users.model'
 import type { CreateUserInput, UpdateUserInput, UpdateUserPreferencesInput, UpdateNotificationPreferencesInput } from './users.model'
 
@@ -99,6 +99,112 @@ export const userRepository = {
       .where(eq(users.id, id))
       .returning()
     return user
+  },
+
+  async restore(id: string) {
+    const [user] = await db.update(users)
+      .set({
+        deletedAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning()
+    return user
+  },
+
+  async getExportData(userId: string) {
+    const user = await this.getById(userId)
+    if (!user) return null
+
+    // Fetch workspaces where user is a member
+    const userMemberships = await db.select()
+      .from(members)
+      .where(eq(members.userId, userId))
+    
+    const workspaceIds = userMemberships.map(m => m.workspaceId)
+    
+    let userWorkspaces: any[] = []
+    let userBoards: any[] = []
+    let userColumns: any[] = []
+    let userTasks: any[] = []
+    let userLabels: any[] = []
+    let userTaskLabels: any[] = []
+    let userComments: any[] = []
+    let userChecklists: any[] = []
+    let userChecklistItems: any[] = []
+    let userAttachments: any[] = []
+
+    if (workspaceIds.length > 0) {
+      userWorkspaces = await db.select()
+        .from(workspaces)
+        .where(inArray(workspaces.id, workspaceIds))
+
+      userBoards = await db.select()
+        .from(boards)
+        .where(inArray(boards.workspaceId, workspaceIds))
+      
+      const boardIds = userBoards.map(b => b.id)
+
+      if (boardIds.length > 0) {
+        userColumns = await db.select()
+          .from(columns)
+          .where(inArray(columns.boardId, boardIds))
+        
+        userLabels = await db.select()
+          .from(labels)
+          .where(inArray(labels.boardId, boardIds))
+        
+        const columnIds = userColumns.map(c => c.id)
+        
+        if (columnIds.length > 0) {
+          userTasks = await db.select()
+            .from(tasks)
+            .where(inArray(tasks.columnId, columnIds))
+          
+          const taskIds = userTasks.map(t => t.id)
+          
+          if (taskIds.length > 0) {
+            userTaskLabels = await db.select()
+              .from(taskLabels)
+              .where(inArray(taskLabels.taskId, taskIds))
+            
+            userComments = await db.select()
+              .from(comments)
+              .where(inArray(comments.taskId, taskIds))
+            
+            userChecklists = await db.select()
+              .from(checklists)
+              .where(inArray(checklists.taskId, taskIds))
+            
+            userAttachments = await db.select()
+              .from(attachments)
+              .where(inArray(attachments.taskId, taskIds))
+            
+            const checklistIds = userChecklists.map(c => c.id)
+            if (checklistIds.length > 0) {
+              userChecklistItems = await db.select()
+                .from(checklistItems)
+                .where(inArray(checklistItems.checklistId, checklistIds))
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      user,
+      workspaces: userWorkspaces,
+      memberships: userMemberships,
+      boards: userBoards,
+      columns: userColumns,
+      tasks: userTasks,
+      labels: userLabels,
+      taskLabels: userTaskLabels,
+      comments: userComments,
+      checklists: userChecklists,
+      checklistItems: userChecklistItems,
+      attachments: userAttachments
+    }
   },
 
   async getSessions(userId: string) {
