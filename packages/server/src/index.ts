@@ -71,7 +71,7 @@ export const app = new Elysia()
       success: false,
       error: {
         code: 'INTERNAL_SERVER_ERROR',
-        message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+        message: process.env.NODE_ENV === 'development' && error instanceof Error ? error.message : 'Something went wrong'
       }
     }
   })

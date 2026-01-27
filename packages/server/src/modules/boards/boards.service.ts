@@ -4,6 +4,8 @@ import { columnRepository } from '../columns/columns.repository'
 import { taskRepository } from '../tasks/tasks.repository'
 import { eventBus } from '../../events/bus'
 import { ForbiddenError } from '../../shared/errors'
+import Archiver from 'archiver'
+import { Readable } from 'stream'
 
 export const boardService = {
   getAllBoards: () => boardRepository.findAll(),
@@ -190,4 +192,106 @@ export const boardService = {
 
   recordVisit: (userId: string, boardId: string) =>
     boardRepository.recordVisit(userId, boardId),
+
+  getExportData: async (boardId: string, userId: string, includeArchived: boolean = false) => {
+    const board = await boardRepository.findById(boardId)
+    if (!board) throw new Error('Board not found')
+
+    // Access check: must be workspace member or board member
+    let hasAccess = false
+    const members = await boardRepository.getMembers(boardId)
+    if (members.some(m => m.userId === userId)) {
+      hasAccess = true
+    } else if (board.workspaceId) {
+      const workspaceMember = await workspaceRepository.getMember(board.workspaceId, userId)
+      if (workspaceMember) hasAccess = true
+    }
+
+    if (!hasAccess && board.visibility !== 'public') {
+      throw new ForbiddenError('Access denied')
+    }
+
+    const data = await boardRepository.getExportData(boardId, includeArchived)
+    if (!data) throw new Error('Board not found')
+
+    return data
+  },
+
+  exportToCsvZip: async (data: any) => {
+    const archive = Archiver('zip', { zlib: { level: 9 } })
+    const stream = new Readable({
+      read() {}
+    })
+
+    const escapeCsv = (val: any) => {
+      if (val === null || val === undefined) return ''
+      let str = String(val)
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        str = `"${str.replace(/"/g, '""')}"`
+      }
+      return str
+    }
+
+    const toCsv = (rows: any[], fields: string[]) => {
+      const header = fields.join(',')
+      const body = rows.map(row => fields.map(field => escapeCsv(row[field])).join(',')).join('\n')
+      return `\uFEFF${header}\n${body}`
+    }
+
+    // board.csv
+    archive.append(toCsv([data.board], Object.keys(data.board)), { name: 'board.csv' })
+
+    // columns.csv
+    if (data.columns.length > 0) {
+      archive.append(toCsv(data.columns, Object.keys(data.columns[0])), { name: 'columns.csv' })
+    }
+
+    // tasks.csv
+    if (data.tasks.length > 0) {
+      archive.append(toCsv(data.tasks, Object.keys(data.tasks[0])), { name: 'tasks.csv' })
+    }
+
+    // labels.csv
+    if (data.labels.length > 0) {
+      archive.append(toCsv(data.labels, Object.keys(data.labels[0])), { name: 'labels.csv' })
+    }
+
+    // task_labels.csv
+    if (data.taskLabels.length > 0) {
+      archive.append(toCsv(data.taskLabels, Object.keys(data.taskLabels[0])), { name: 'task_labels.csv' })
+    }
+
+    // task_assignees.csv
+    if (data.taskAssignees.length > 0) {
+      archive.append(toCsv(data.taskAssignees, Object.keys(data.taskAssignees[0])), { name: 'task_assignees.csv' })
+    }
+
+    // checklists.csv
+    if (data.checklists.length > 0) {
+      archive.append(toCsv(data.checklists, Object.keys(data.checklists[0])), { name: 'checklists.csv' })
+    }
+
+    // checklist_items.csv
+    if (data.checklistItems.length > 0) {
+      archive.append(toCsv(data.checklistItems, Object.keys(data.checklistItems[0])), { name: 'checklist_items.csv' })
+    }
+
+    // attachments.csv
+    if (data.attachments.length > 0) {
+      archive.append(toCsv(data.attachments, Object.keys(data.attachments[0])), { name: 'attachments.csv' })
+    }
+
+    // comments.csv
+    if (data.comments.length > 0) {
+      archive.append(toCsv(data.comments, Object.keys(data.comments[0])), { name: 'comments.csv' })
+    }
+
+    // activities.csv
+    if (data.activities.length > 0) {
+      archive.append(toCsv(data.activities, Object.keys(data.activities[0])), { name: 'activities.csv' })
+    }
+
+    archive.finalize()
+    return archive
+  },
 }

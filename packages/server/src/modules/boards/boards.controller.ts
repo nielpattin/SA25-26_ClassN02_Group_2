@@ -10,6 +10,7 @@ import {
   AddMemberBody,
   UpdateMemberRoleBody,
   StarBoardParams,
+  ExportBoardQuery,
 } from './boards.model'
 
 export const boardController = new Elysia({ prefix: '/boards' })
@@ -116,4 +117,29 @@ export const boardController = new Elysia({ prefix: '/boards' })
     return boardService.recordVisit(session.user.id, id)
   }, {
     params: BoardParams,
+  })
+
+  .get('/:id/export', async ({ params: { id }, query: { format, includeArchived }, session, set }) => {
+    if (!session) throw new UnauthorizedError()
+    const isArchived = includeArchived === 'true'
+    const data = await boardService.getExportData(id, session.user.id, isArchived)
+
+    const baseFileName = data.board.name.replace(/\s+/g, '-').toLowerCase()
+    const dateStr = new Date().toISOString().split('T')[0]
+
+    if (format === 'csv') {
+      const archive = await boardService.exportToCsvZip(data)
+      set.headers['Content-Type'] = 'application/zip'
+      set.headers['Content-Disposition'] = `attachment; filename="${baseFileName}-export-${dateStr}.zip"`
+      return archive
+    }
+
+    // Default to JSON
+    set.headers['Content-Type'] = 'application/json'
+    set.headers['Content-Disposition'] = `attachment; filename="${baseFileName}-export-${dateStr}.json"`
+    
+    return data
+  }, {
+    params: BoardParams,
+    query: ExportBoardQuery,
   })

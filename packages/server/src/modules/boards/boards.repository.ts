@@ -1,5 +1,5 @@
 import { db } from '../../db'
-import { boards, boardMembers, starredBoards, boardVisits, users, members, workspaces } from '../../db/schema'
+import { boards, boardMembers, starredBoards, boardVisits, users, members, workspaces, columns, tasks, labels, taskLabels, taskAssignees, checklists, checklistItems, attachments, comments, activities } from '../../db/schema'
 import { eq, sql, and, isNull, isNotNull, or, inArray, desc } from 'drizzle-orm'
 import { ConflictError, NotFoundError } from '../../shared/errors'
 
@@ -214,5 +214,101 @@ export const boardRepository = {
       })
       .returning()
     return visit
+  },
+
+  getExportData: async (boardId: string, includeArchived: boolean = false) => {
+    const board = await db.select().from(boards).where(eq(boards.id, boardId)).then(rows => rows[0])
+    if (!board) return null
+
+    const archivedFilter = (table: any) => includeArchived ? undefined : isNull(table.archivedAt)
+
+    const [
+      cols,
+      tsks,
+      lbls,
+      tLabels,
+      tAssignees,
+      chklists,
+      chkItems,
+      attchments,
+      cmments,
+      acts,
+    ] = await Promise.all([
+      db.select().from(columns).where(and(eq(columns.boardId, boardId), archivedFilter(columns))),
+      db.select().from(tasks).where(and(
+        inArray(tasks.columnId, db.select({ id: columns.id }).from(columns).where(eq(columns.boardId, boardId))),
+        archivedFilter(tasks)
+      )),
+      db.select().from(labels).where(eq(labels.boardId, boardId)),
+      db.select().from(taskLabels).where(inArray(taskLabels.taskId,
+        db.select({ id: tasks.id }).from(tasks).where(inArray(tasks.columnId,
+          db.select({ id: columns.id }).from(columns).where(eq(columns.boardId, boardId))
+        ))
+      )),
+      db.select({
+        taskId: taskAssignees.taskId,
+        userId: taskAssignees.userId,
+        assignedAt: taskAssignees.assignedAt,
+        assignedBy: taskAssignees.assignedBy,
+        userName: users.name,
+        userEmail: users.email,
+      })
+        .from(taskAssignees)
+        .leftJoin(users, eq(taskAssignees.userId, users.id))
+        .where(inArray(taskAssignees.taskId,
+          db.select({ id: tasks.id }).from(tasks).where(inArray(tasks.columnId,
+            db.select({ id: columns.id }).from(columns).where(eq(columns.boardId, boardId))
+          ))
+        )),
+      db.select().from(checklists).where(inArray(checklists.taskId,
+        db.select({ id: tasks.id }).from(tasks).where(inArray(tasks.columnId,
+          db.select({ id: columns.id }).from(columns).where(eq(columns.boardId, boardId))
+        ))
+      )),
+      db.select().from(checklistItems).where(inArray(checklistItems.checklistId,
+        db.select({ id: checklists.id }).from(checklists).where(inArray(checklists.taskId,
+          db.select({ id: tasks.id }).from(tasks).where(inArray(tasks.columnId,
+            db.select({ id: columns.id }).from(columns).where(eq(columns.boardId, boardId))
+          ))
+        ))
+      )),
+      db.select().from(attachments).where(inArray(attachments.taskId,
+        db.select({ id: tasks.id }).from(tasks).where(inArray(tasks.columnId,
+          db.select({ id: columns.id }).from(columns).where(eq(columns.boardId, boardId))
+        ))
+      )),
+      db.select({
+        id: comments.id,
+        taskId: comments.taskId,
+        userId: comments.userId,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        updatedAt: comments.updatedAt,
+        userName: users.name,
+        userEmail: users.email,
+      })
+        .from(comments)
+        .leftJoin(users, eq(comments.userId, users.id))
+        .where(inArray(comments.taskId,
+          db.select({ id: tasks.id }).from(tasks).where(inArray(tasks.columnId,
+            db.select({ id: columns.id }).from(columns).where(eq(columns.boardId, boardId))
+          ))
+        )),
+      db.select().from(activities).where(eq(activities.boardId, boardId)),
+    ])
+
+    return {
+      board,
+      columns: cols,
+      tasks: tsks,
+      labels: lbls,
+      taskLabels: tLabels,
+      taskAssignees: tAssignees,
+      checklists: chklists,
+      checklistItems: chkItems,
+      attachments: attchments,
+      comments: cmments,
+      activities: acts,
+    }
   },
 }

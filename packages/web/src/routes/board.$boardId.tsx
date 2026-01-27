@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { ChevronRight, Archive } from 'lucide-react'
+import { ChevronRight, Archive, Download } from 'lucide-react'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
 import { useBoard, useBoards } from '../hooks/useBoards'
 import {
@@ -24,6 +24,7 @@ import { useBoardMembers } from '../hooks/useAssignees'
 import { CardModal, TaskCard } from '../components/tasks'
 import { BoardColumn } from '../components/columns'
 import { ArchivePanel } from '../components/board/ArchivePanel'
+import { ExportBoardModal } from '../components/board/ExportBoardModal'
 import { WorkspaceProvider } from '../context/WorkspaceContext'
 import { SearchTrigger } from '../components/search'
 import { BoardFilterBar } from '../components/filters'
@@ -37,6 +38,8 @@ import {
   type CardDropResult,
 } from '../components/dnd'
 import { Input } from '../components/ui/Input'
+import { Dropdown } from '../components/ui/Dropdown'
+import { MoreHorizontal } from 'lucide-react'
 
 type Column = { id: string; name: string; position: string; boardId: string }
 
@@ -57,6 +60,7 @@ function BoardComponent() {
   const [newColumnName, setNewColumnName] = useState('')
   const [selectedCardId, setSelectedCardId] = useState<string | null>(cardId ?? null)
   const [isArchiveOpen, setIsArchiveOpen] = useState(false)
+  const [isExportOpen, setIsExportOpen] = useState(false)
 
   // Sync URL cardId param to local state (intentional URL -> state sync)
   useEffect(() => {
@@ -264,6 +268,20 @@ function BoardComponent() {
               >
                 <Archive size={18} />
               </button>
+              <Dropdown
+                trigger={
+                  <button className="hover:bg-accent shadow-brutal-sm flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-none">
+                    <MoreHorizontal size={18} />
+                  </button>
+                }
+                items={[
+                  {
+                    label: 'Export Board',
+                    icon: <Download size={16} />,
+                    onClick: () => setIsExportOpen(true),
+                  },
+                ]}
+              />
               <SearchTrigger />
             </div>
           </header>
@@ -294,6 +312,13 @@ function BoardComponent() {
             isOpen={isArchiveOpen}
             onClose={() => setIsArchiveOpen(false)}
             boardId={boardId}
+          />
+
+          <ExportBoardModal
+            isOpen={isExportOpen}
+            onClose={() => setIsExportOpen(false)}
+            boardId={boardId}
+            boardName={board.name}
           />
         </div>
       </DragProvider>

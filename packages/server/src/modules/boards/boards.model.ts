@@ -46,3 +46,8 @@ export const UpdateMemberRoleBody = t.Object({
 export const StarBoardParams = t.Object({
   id: BoardSchema.id,
 })
+
+export const ExportBoardQuery = t.Object({
+  format: t.Optional(t.Union([t.Literal('json'), t.Literal('csv')])),
+  includeArchived: t.Optional(t.Union([t.Literal('true'), t.Literal('false')])),
+})
