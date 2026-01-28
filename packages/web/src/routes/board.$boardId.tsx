@@ -2,9 +2,10 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { ChevronRight, Archive, Download } from 'lucide-react'
+import { ChevronRight, Archive, Download, Kanban, Calendar } from 'lucide-react'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
 import { useBoard, useBoards } from '../hooks/useBoards'
+import { CalendarView } from '../components/calendar/CalendarView'
 import {
   useColumns,
   useCreateColumn,
@@ -43,18 +44,24 @@ import { MoreHorizontal } from 'lucide-react'
 
 type Column = { id: string; name: string; position: string; boardId: string }
 
-type BoardSearch = { cardId?: string }
+type BoardSearch = { cardId?: string; view?: 'kanban' | 'calendar'; calendarMode?: 'day' | 'week' | 'month' }
 
 export const Route = createFileRoute('/board/$boardId')({
   component: BoardComponent,
   validateSearch: (search: Record<string, unknown>): BoardSearch => ({
     cardId: (search.cardId as string) || undefined,
+    view: (['kanban', 'calendar'].includes(search.view as string)
+      ? (search.view as 'kanban' | 'calendar')
+      : undefined),
+    calendarMode: (['day', 'week', 'month'].includes(search.calendarMode as string)
+      ? (search.calendarMode as 'day' | 'week' | 'month')
+      : undefined),
   }),
 })
 
 function BoardComponent() {
   const { boardId } = Route.useParams()
-  const { cardId } = Route.useSearch()
+  const { cardId, view, calendarMode } = Route.useSearch()
   const navigate = Route.useNavigate()
   const queryClient = useQueryClient()
   const [newColumnName, setNewColumnName] = useState('')
@@ -62,11 +69,25 @@ function BoardComponent() {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false)
   const [isExportOpen, setIsExportOpen] = useState(false)
 
-  // Sync URL cardId param to local state (intentional URL -> state sync)
+  // Keep modal state in sync with URL
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (cardId && cardId !== selectedCardId) setSelectedCardId(cardId)
-  }, [cardId, selectedCardId])
+    setSelectedCardId(cardId ?? null)
+  }, [cardId])
+
+  // Handle view preference in localStorage
+  useEffect(() => {
+    if (!view) {
+      const savedView = localStorage.getItem(`board:${boardId}:view`) as 'kanban' | 'calendar' | null
+      const targetView = savedView === 'calendar' ? 'calendar' : 'kanban'
+      navigate({
+        search: prev => ({ ...prev, view: targetView }),
+        replace: true,
+      })
+    } else {
+      localStorage.setItem(`board:${boardId}:view`, view)
+    }
+  }, [boardId, view, navigate])
 
   const handleCloseModal = () => {
     setSelectedCardId(null)
@@ -79,6 +100,27 @@ function BoardComponent() {
       replace: true,
     })
   }
+
+  const handleTaskClick = useCallback(
+    (id: string) => {
+      setSelectedCardId(id)
+      navigate({
+        search: prev => ({ ...prev, cardId: id }),
+        replace: true,
+      })
+    },
+    [navigate]
+  )
+
+  const handleCalendarModeChange = useCallback(
+    (mode: 'day' | 'week' | 'month') => {
+      navigate({
+        search: prev => ({ ...prev, calendarMode: mode }),
+        replace: true,
+      })
+    },
+    [navigate]
+  )
 
   // Data Fetching via hooks
   useBoardSocket(boardId)
@@ -146,8 +188,8 @@ function BoardComponent() {
 
   // Column action handlers
   const handleAddTask = useCallback(
-    (columnId: string, title: string) => {
-      createTask.mutate({ title, columnId })
+    (columnId: string, title: string, dueDate?: string) => {
+      createTask.mutate({ title, columnId, dueDate })
     },
     [createTask]
   )
@@ -261,6 +303,37 @@ function BoardComponent() {
                 onApply={applyFilters}
                 onClear={clearFilters}
               />
+              <div className="shadow-brutal-sm flex items-center gap-0 border border-black bg-white">
+                <button
+                  onClick={() =>
+                    navigate({
+                      search: prev => ({ ...prev, view: 'kanban' }),
+                      replace: true,
+                    })
+                  }
+                  className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
+                    (view || 'kanban') === 'kanban' ? 'bg-accent' : 'hover:bg-accent/50'
+                  }`}
+                  title="Kanban View"
+                >
+                  <Kanban size={18} />
+                </button>
+                <div className="h-9 w-px bg-black" />
+                <button
+                  onClick={() =>
+                    navigate({
+                      search: prev => ({ ...prev, view: 'calendar' }),
+                      replace: true,
+                    })
+                  }
+                  className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
+                    view === 'calendar' ? 'bg-accent' : 'hover:bg-accent/50'
+                  }`}
+                  title="Calendar View"
+                >
+                  <Calendar size={18} />
+                </button>
+              </div>
               <button
                 onClick={() => setIsArchiveOpen(true)}
                 className="hover:bg-accent shadow-brutal-sm flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-none"
@@ -286,23 +359,35 @@ function BoardComponent() {
             </div>
           </header>
 
-          <BoardContent
-            boardId={boardId}
-            serverColumns={serverColumns}
-            allCards={filteredCards}
-            newColumnName={newColumnName}
-            setNewColumnName={setNewColumnName}
-            createColumn={createColumn}
-            onCardClick={setSelectedCardId}
-            onAddTask={handleAddTask}
-            onRenameColumn={handleRenameColumn}
-            onArchiveColumn={handleArchiveColumn}
-            onCopyColumn={handleCopyColumn}
-            onMoveColumnToBoard={handleMoveColumnToBoard}
-            onColumnDrop={handleColumnDrop}
-            onCardDrop={handleCardDrop}
-            isFiltering={hasActiveFilters}
-          />
+          {view === 'calendar' ? (
+            <CalendarView
+              boardId={boardId}
+              tasks={filteredCards}
+              columns={serverColumns}
+              onTaskClick={handleTaskClick}
+              onAddTask={handleAddTask}
+              viewMode={calendarMode || 'month'}
+              onViewModeChange={handleCalendarModeChange}
+            />
+          ) : (
+            <BoardContent
+              boardId={boardId}
+              serverColumns={serverColumns}
+              allCards={filteredCards}
+              newColumnName={newColumnName}
+              setNewColumnName={setNewColumnName}
+              createColumn={createColumn}
+              onCardClick={handleTaskClick}
+              onAddTask={handleAddTask}
+              onRenameColumn={handleRenameColumn}
+              onArchiveColumn={handleArchiveColumn}
+              onCopyColumn={handleCopyColumn}
+              onMoveColumnToBoard={handleMoveColumnToBoard}
+              onColumnDrop={handleColumnDrop}
+              onCardDrop={handleCardDrop}
+              isFiltering={hasActiveFilters}
+            />
+          )}
 
           {selectedCardId && (
             <CardModal cardId={selectedCardId} boardId={boardId} onClose={handleCloseModal} />

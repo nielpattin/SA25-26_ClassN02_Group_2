@@ -171,7 +171,7 @@ function ProfileForm({ user, config }: ProfileFormProps) {
     }
     
     if (result.error) {
-      const error = result.error as any
+      const error = result.error as { message?: string }
       setSecurityError(error.message || 'Failed to update password')
       setSecurityStatus('error')
     } else {

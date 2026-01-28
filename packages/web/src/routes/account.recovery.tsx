@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useSession, signOut } from '../api/auth'
 import { api } from '../api/client'
-import { Button } from '../components/ui/Button'
 import { Clock, Download, LogOut, RefreshCw, Shield } from 'lucide-react'
 
 export const Route = createFileRoute('/account/recovery')({

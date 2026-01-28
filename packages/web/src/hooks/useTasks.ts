@@ -51,6 +51,7 @@ export type Task = {
 export type CreateTaskInput = {
   title: string
   columnId: string
+  dueDate?: string | null
   reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
 }
 

@@ -84,9 +84,9 @@ export function useBoardSocket(boardId: string) {
               queryClient.invalidateQueries({ queryKey: ['archive'] })
               break
             case 'task:updated':
-              queryClient.invalidateQueries({ queryKey: ['cards', boardIdRef.current] })
+              queryClient.invalidateQueries({ queryKey: ['cards', 'list', boardIdRef.current] })
               if (message.data && typeof message.data === 'object' && 'id' in message.data) {
-                queryClient.invalidateQueries({ queryKey: ['card', message.data.id] })
+                queryClient.invalidateQueries({ queryKey: ['cards', 'detail', message.data.id] })
               }
               break
             case 'task:created':
@@ -94,7 +94,7 @@ export function useBoardSocket(boardId: string) {
             case 'task:deleted':
             case 'task:archived':
             case 'task:restored':
-              queryClient.invalidateQueries({ queryKey: ['cards', boardIdRef.current] })
+              queryClient.invalidateQueries({ queryKey: ['cards', 'list', boardIdRef.current] })
               queryClient.invalidateQueries({ queryKey: ['archive'] })
               break
           }
