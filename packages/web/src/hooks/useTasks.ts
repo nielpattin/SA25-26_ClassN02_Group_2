@@ -24,6 +24,7 @@ export type TaskWithLabels = {
   title: string
   position: string
   columnId: string
+  startDate: string | Date | null
   dueDate: string | Date | null
   description?: string | null
   createdAt?: Date | null
@@ -32,6 +33,7 @@ export type TaskWithLabels = {
   checklistProgress?: ChecklistProgress | null
   attachmentsCount?: number
   reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+  archivedAt?: string | Date | null
 }
 
 // Task type from detail endpoint (labels as string IDs)
@@ -40,17 +42,20 @@ export type Task = {
   title: string
   position: string
   columnId: string
+  startDate: string | Date | null
   dueDate: string | Date | null
   description?: string | null
   createdAt?: Date | null
   labels?: string[]
   priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
   reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+  archivedAt?: string | Date | null
 }
 
 export type CreateTaskInput = {
   title: string
   columnId: string
+  startDate?: string | null
   dueDate?: string | null
   reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
 }
@@ -58,6 +63,7 @@ export type CreateTaskInput = {
 export type UpdateTaskInput = {
   title?: string
   description?: string
+  startDate?: string | null
   dueDate?: string | null
   priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
   reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
@@ -142,7 +148,36 @@ export function useUpdateTask(boardId: string) {
       if (error) throw error
       return data
     },
-    onSuccess: (_data, variables) => {
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: taskKeys.list(boardId) })
+      await queryClient.cancelQueries({ queryKey: taskKeys.detail(variables.taskId) })
+
+      const previousTasks = queryClient.getQueryData<TaskWithLabels[]>(taskKeys.list(boardId))
+      const previousTask = queryClient.getQueryData<Task>(taskKeys.detail(variables.taskId))
+
+      if (previousTasks) {
+        queryClient.setQueryData<TaskWithLabels[]>(taskKeys.list(boardId), prev =>
+          prev?.map(task => task.id === variables.taskId ? { ...task, ...variables } : task)
+        )
+      }
+
+      if (previousTask) {
+        queryClient.setQueryData<Task>(taskKeys.detail(variables.taskId), prev =>
+          prev ? { ...prev, ...variables } : prev
+        )
+      }
+
+      return { previousTasks, previousTask }
+    },
+    onError: (_err, variables, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(taskKeys.list(boardId), context.previousTasks)
+      }
+      if (context?.previousTask) {
+        queryClient.setQueryData(taskKeys.detail(variables.taskId), context.previousTask)
+      }
+    },
+    onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: taskKeys.list(boardId) })
       queryClient.invalidateQueries({ queryKey: taskKeys.detail(variables.taskId) })
     },

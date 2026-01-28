@@ -41,6 +41,11 @@ export const activityTargetEnum = pgEnum('activity_target', [
 	'task', 'column', 'board', 'comment', 'checklist', 'checklist_item', 'attachment', 'label', 'user'
 ])
 
+// Dependency types between tasks
+export const dependencyTypeEnum = pgEnum('dependency_type', [
+	'finish_to_start', 'start_to_start', 'finish_to_finish'
+])
+
 // User accounts - Better Auth compatible
 
 export const users = pgTable('user', {
@@ -188,6 +193,7 @@ export const tasks = pgTable('tasks', {
 	// Fractional index for ordering within column
 	position: text('position').notNull(),
 	priority: priorityEnum(),
+	startDate: timestamp('start_date'),
 	dueDate: timestamp('due_date'),
 	reminder: reminderEnum().default('none').notNull(),
 	reminderSentAt: timestamp('reminder_sent_at'),
@@ -227,6 +233,17 @@ export const taskLabels = pgTable('task_labels', {
 	labelId: uuid('label_id').references(() => labels.id, { onDelete: 'cascade' }).notNull(),
 }, (table) => [
 	primaryKey({ columns: [table.taskId, table.labelId] }),
+])
+
+// Task dependencies for Gantt/timeline view
+export const taskDependencies = pgTable('task_dependencies', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	blockingTaskId: uuid('blocking_task_id').references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
+	blockedTaskId: uuid('blocked_task_id').references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
+	type: dependencyTypeEnum().default('finish_to_start').notNull(),
+	createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+	unique('task_dependencies_pair_idx').on(table.blockingTaskId, table.blockedTaskId),
 ])
 
 // Checklists within tasks
@@ -389,6 +406,7 @@ export const table = {
 	boards, boardMembers, starredBoards, columns,
 	tasks, taskAssignees,
 	labels, taskLabels,
+	taskDependencies,
 	checklists, checklistItems,
 	attachments,
 	comments, commentMentions,

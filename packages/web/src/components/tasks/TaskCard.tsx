@@ -17,6 +17,7 @@ export type TaskCardData = {
   title: string
   position: string
   columnId: string
+  startDate: string | Date | null
   dueDate: string | Date | null
   description?: string | null
   createdAt?: Date | null

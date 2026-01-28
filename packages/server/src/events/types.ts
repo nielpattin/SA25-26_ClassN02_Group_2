@@ -1,6 +1,6 @@
 import type { InferSelectModel } from 'drizzle-orm'
 import { 
-  tasks, columns, boards, labels, attachments, comments, boardMembers, checklists, checklistItems
+  tasks, columns, boards, labels, attachments, comments, boardMembers, checklists, checklistItems, taskDependencies
 } from '../db/schema'
 
 export type Task = InferSelectModel<typeof tasks>
@@ -12,6 +12,7 @@ export type Comment = InferSelectModel<typeof comments>
 export type BoardMember = InferSelectModel<typeof boardMembers>
 export type Checklist = InferSelectModel<typeof checklists>
 export type ChecklistItem = InferSelectModel<typeof checklistItems>
+export type TaskDependency = InferSelectModel<typeof taskDependencies>
 
 export interface KyteEvents {
   'task.created': { task: Task; userId: string; boardId: string }
@@ -28,6 +29,9 @@ export interface KyteEvents {
   'task.restored': { task: Task; userId: string; boardId: string }
   'task.deleted': { task: Task; userId: string; boardId: string }
   'task.copied': { task: Task; originalTaskId: string; userId: string; boardId: string }
+  
+  'task.dependency.created': { dependency: TaskDependency; userId: string; boardId: string }
+  'task.dependency.deleted': { dependency: TaskDependency; userId: string; boardId: string }
   
   'task.assignee.added': { taskId: string; userId: string; actorId: string; boardId: string; assignee: any }
   'task.assignee.removed': { taskId: string; userId: string; actorId: string; boardId: string }

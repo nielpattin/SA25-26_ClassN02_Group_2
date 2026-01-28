@@ -17,10 +17,13 @@ type WsMessage = {
     | 'task:created'
     | 'task:updated'
     | 'task:moved'
-    | 'task:deleted'
+     | 'task:deleted'
     | 'task:archived'
     | 'task:restored'
+    | 'dependency:created'
+    | 'dependency:deleted'
   data?: unknown
+
   boardId?: string
   columnId?: string
 }
@@ -93,11 +96,16 @@ export function useBoardSocket(boardId: string) {
             case 'task:moved':
             case 'task:deleted':
             case 'task:archived':
-            case 'task:restored':
+             case 'task:restored':
               queryClient.invalidateQueries({ queryKey: ['cards', 'list', boardIdRef.current] })
               queryClient.invalidateQueries({ queryKey: ['archive'] })
               break
+            case 'dependency:created':
+            case 'dependency:deleted':
+              queryClient.invalidateQueries({ queryKey: ['dependencies', 'list', boardIdRef.current] })
+              break
           }
+
         } catch {
           // ignore parse errors
         }

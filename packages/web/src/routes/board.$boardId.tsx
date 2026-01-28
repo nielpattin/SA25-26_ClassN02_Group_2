@@ -2,10 +2,11 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { ChevronRight, Archive, Download, Kanban, Calendar } from 'lucide-react'
+import { ChevronRight, Archive, Download, Kanban, Calendar, ChartGantt } from 'lucide-react'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
 import { useBoard, useBoards } from '../hooks/useBoards'
 import { CalendarView } from '../components/calendar/CalendarView'
+import { GanttView } from '../components/gantt/GanttView'
 import {
   useColumns,
   useCreateColumn,
@@ -18,6 +19,7 @@ import {
 import { useTasks, useCreateTask, type TaskWithLabels, taskKeys } from '../hooks/useTasks'
 import { useRecordBoardVisit } from '../hooks/useRecentBoards'
 import { useSearchModal } from '../context/SearchContext'
+import { type ViewMode } from '../hooks/useCalendarNavigation'
 import { useBoardFilters } from '../hooks/useBoardFilters'
 import { filterTasks } from '../hooks/filterTasks'
 import { useLabels } from '../hooks/useLabels'
@@ -44,17 +46,21 @@ import { MoreHorizontal } from 'lucide-react'
 
 type Column = { id: string; name: string; position: string; boardId: string }
 
-type BoardSearch = { cardId?: string; view?: 'kanban' | 'calendar'; calendarMode?: 'day' | 'week' | 'month' }
+type BoardSearch = {
+  cardId?: string
+  view?: 'kanban' | 'calendar' | 'gantt'
+  calendarMode?: 'day' | 'week' | 'month' | 'quarter'
+}
 
 export const Route = createFileRoute('/board/$boardId')({
   component: BoardComponent,
   validateSearch: (search: Record<string, unknown>): BoardSearch => ({
     cardId: (search.cardId as string) || undefined,
-    view: (['kanban', 'calendar'].includes(search.view as string)
-      ? (search.view as 'kanban' | 'calendar')
+    view: (['kanban', 'calendar', 'gantt'].includes(search.view as string)
+      ? (search.view as 'kanban' | 'calendar' | 'gantt')
       : undefined),
-    calendarMode: (['day', 'week', 'month'].includes(search.calendarMode as string)
-      ? (search.calendarMode as 'day' | 'week' | 'month')
+    calendarMode: (['day', 'week', 'month', 'quarter'].includes(search.calendarMode as string)
+      ? (search.calendarMode as 'day' | 'week' | 'month' | 'quarter')
       : undefined),
   }),
 })
@@ -78,8 +84,10 @@ function BoardComponent() {
   // Handle view preference in localStorage
   useEffect(() => {
     if (!view) {
-      const savedView = localStorage.getItem(`board:${boardId}:view`) as 'kanban' | 'calendar' | null
-      const targetView = savedView === 'calendar' ? 'calendar' : 'kanban'
+      const savedView = localStorage.getItem(`board:${boardId}:view`) as string | null
+      const targetView = (['kanban', 'calendar', 'gantt'].includes(savedView || '')
+        ? (savedView as BoardSearch['view'])
+        : 'kanban')
       navigate({
         search: prev => ({ ...prev, view: targetView }),
         replace: true,
@@ -88,6 +96,23 @@ function BoardComponent() {
       localStorage.setItem(`board:${boardId}:view`, view)
     }
   }, [boardId, view, navigate])
+
+  // Handle zoom level (calendarMode) persistence
+  useEffect(() => {
+    if (view === 'gantt' || view === 'calendar') {
+      if (!calendarMode) {
+        const savedMode = localStorage.getItem(`board:${boardId}:${view}:zoom`) as ViewMode | null
+        if (savedMode && ['day', 'week', 'month', 'quarter'].includes(savedMode)) {
+          navigate({
+            search: prev => ({ ...prev, calendarMode: savedMode }),
+            replace: true,
+          })
+        }
+      } else {
+        localStorage.setItem(`board:${boardId}:${view}:zoom`, calendarMode)
+      }
+    }
+  }, [boardId, view, calendarMode, navigate])
 
   const handleCloseModal = () => {
     setSelectedCardId(null)
@@ -113,7 +138,7 @@ function BoardComponent() {
   )
 
   const handleCalendarModeChange = useCallback(
-    (mode: 'day' | 'week' | 'month') => {
+    (mode: ViewMode) => {
       navigate({
         search: prev => ({ ...prev, calendarMode: mode }),
         replace: true,
@@ -333,6 +358,21 @@ function BoardComponent() {
                 >
                   <Calendar size={18} />
                 </button>
+                <div className="h-9 w-px bg-black" />
+                <button
+                  onClick={() =>
+                    navigate({
+                      search: prev => ({ ...prev, view: 'gantt' }),
+                      replace: true,
+                    })
+                  }
+                  className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
+                    view === 'gantt' ? 'bg-accent' : 'hover:bg-accent/50'
+                  }`}
+                  title="Gantt View"
+                >
+                  <ChartGantt size={18} />
+                </button>
               </div>
               <button
                 onClick={() => setIsArchiveOpen(true)}
@@ -369,7 +409,18 @@ function BoardComponent() {
               viewMode={calendarMode || 'month'}
               onViewModeChange={handleCalendarModeChange}
             />
-          ) : (
+              ) : view === 'gantt' ? (
+                <GanttView
+                  boardId={boardId}
+                  tasks={filteredCards}
+                  columns={serverColumns}
+                  onTaskClick={handleTaskClick}
+                  viewMode={calendarMode || 'month'}
+                  onViewModeChange={handleCalendarModeChange}
+                  isFiltering={hasActiveFilters}
+                />
+              ) : (
+
             <BoardContent
               boardId={boardId}
               serverColumns={serverColumns}

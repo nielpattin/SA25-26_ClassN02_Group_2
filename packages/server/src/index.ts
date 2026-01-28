@@ -9,6 +9,7 @@ import { labelController } from './modules/labels'
 import { checklistController } from './modules/checklists'
 import { attachmentController } from './modules/attachments'
 import { commentController } from './modules/comments'
+import { taskDependencyController } from './modules/task-dependencies'
 import { userController } from './modules/users'
 import { workspaceController } from './modules/workspaces'
 import { activityController } from './modules/activities'
@@ -91,6 +92,7 @@ export const app = new Elysia()
     .use(checklistController)
     .use(attachmentController)
     .use(commentController)
+    .use(taskDependencyController)
     .use(userController)
     .use(workspaceController)
     .use(activityController)

@@ -21,6 +21,7 @@ export const taskService = {
     columnId: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none'
     reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+    startDate?: Date | null
     dueDate?: Date | null
     coverImageUrl?: string
   }, userId: string) => {
@@ -47,6 +48,7 @@ export const taskService = {
     columnId?: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
     reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+    startDate?: Date | null
     dueDate?: Date | null
     coverImageUrl?: string | null
     version?: number
@@ -75,6 +77,7 @@ export const taskService = {
         if (data.title && data.title !== oldTask?.title) changes.title = { before: oldTask?.title, after: data.title }
         if (data.description !== undefined && data.description !== oldTask?.description) changes.description = { before: oldTask?.description, after: data.description }
         if (data.priority && data.priority !== oldTask?.priority) changes.priority = { before: oldTask?.priority, after: data.priority }
+        if (data.startDate !== undefined && data.startDate?.getTime() !== oldTask?.startDate?.getTime()) changes.startDate = { before: oldTask?.startDate, after: data.startDate }
         if (data.dueDate !== undefined && data.dueDate?.getTime() !== oldTask?.dueDate?.getTime()) changes.dueDate = { before: oldTask?.dueDate, after: data.dueDate }
         if (data.coverImageUrl !== undefined && data.coverImageUrl !== oldTask?.coverImageUrl) changes.coverImageUrl = { before: oldTask?.coverImageUrl, after: data.coverImageUrl }
 

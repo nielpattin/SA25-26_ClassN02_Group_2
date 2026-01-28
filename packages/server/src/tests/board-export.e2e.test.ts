@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
-import { api } from '../api/client'
 import { db } from '../db'
 import { workspaces, users, boardMembers } from '../db/schema'
 import { eq } from 'drizzle-orm'

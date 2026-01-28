@@ -54,6 +54,7 @@ export const taskRepository = {
     columnId: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none'
     reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+    startDate?: Date | null
     dueDate?: Date | null
     coverImageUrl?: string
   }) => {
@@ -68,6 +69,7 @@ export const taskRepository = {
     columnId?: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
     reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+    startDate?: Date | null
     dueDate?: Date | null
     reminderSentAt?: Date | null
     overdueSentAt?: Date | null

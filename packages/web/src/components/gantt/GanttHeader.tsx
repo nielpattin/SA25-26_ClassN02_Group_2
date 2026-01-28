@@ -1,0 +1,83 @@
+import { format, startOfWeek, endOfWeek, getQuarter, getYear } from 'date-fns'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { type ViewMode } from '../../hooks/useCalendarNavigation'
+
+type GanttHeaderProps = {
+  currentDate: Date
+  viewMode: ViewMode
+  onNext: () => void
+  onPrev: () => void
+  onToday: () => void
+  onViewModeChange: (mode: ViewMode) => void
+}
+
+export function GanttHeader({
+  currentDate,
+  viewMode,
+  onNext,
+  onPrev,
+  onToday,
+  onViewModeChange,
+}: GanttHeaderProps) {
+  const getRangeLabel = () => {
+    if (viewMode === 'day') {
+      return format(currentDate, 'MMMM d, yyyy')
+    }
+    if (viewMode === 'week') {
+      const start = startOfWeek(currentDate)
+      const end = endOfWeek(currentDate)
+      if (start.getMonth() === end.getMonth()) {
+        return `${format(start, 'MMMM d')} - ${format(end, 'd, yyyy')}`
+      }
+      return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`
+    }
+    if (viewMode === 'quarter') {
+      const quarter = getQuarter(currentDate)
+      const year = getYear(currentDate)
+      return `Q${quarter} ${year}`
+    }
+    return format(currentDate, 'MMMM yyyy')
+  }
+
+  return (
+    <div className="flex items-center justify-between border-b border-black bg-white px-6 py-4">
+      <div className="flex items-center gap-4">
+        <h2 className="font-heading w-64 text-xl font-bold text-black">{getRangeLabel()}</h2>
+        <div className="shadow-brutal-sm flex items-center border border-black bg-white">
+          <button
+            onClick={onPrev}
+            className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center border-r border-black transition-colors"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            onClick={onNext}
+            className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center transition-colors"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+        <button
+          onClick={onToday}
+          className="shadow-brutal-sm hover:bg-accent h-8 cursor-pointer border border-black bg-white px-3 text-xs font-bold uppercase transition-all hover:-translate-px hover:shadow-none"
+        >
+          Today
+        </button>
+      </div>
+
+      <div className="shadow-brutal-sm flex items-center border border-black bg-white">
+        {(['day', 'week', 'month', 'quarter'] as ViewMode[]).map(mode => (
+          <button
+            key={mode}
+            onClick={() => onViewModeChange(mode)}
+            className={`h-8 cursor-pointer border-r border-black px-4 text-xs font-bold uppercase transition-colors last:border-r-0 ${
+              viewMode === mode ? 'bg-accent' : 'hover:bg-accent/50'
+            }`}
+          >
+            {mode}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}

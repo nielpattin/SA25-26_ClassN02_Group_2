@@ -43,6 +43,14 @@ export function initWebSocketBridge() {
     wsManager.broadcast(`board:${boardId}`, { type: 'task:deleted', columnId: task.columnId ?? '' })
   })
 
+  eventBus.onDomain('task.dependency.created', ({ dependency, boardId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'dependency:created', data: dependency })
+  })
+
+  eventBus.onDomain('task.dependency.deleted', ({ dependency, boardId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'dependency:deleted', data: dependency })
+  })
+
   eventBus.onDomain('task.assignee.added', ({ assignee, boardId }) => {
     wsManager.broadcast(`board:${boardId}`, { type: 'task:assignee:added', data: assignee })
   })

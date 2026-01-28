@@ -6,6 +6,7 @@ export const TaskSchema = {
   description: t.String(),
   position: t.String(), // Fractional indexing
   columnId: t.String({ format: 'uuid' }),
+  startDate: t.Nullable(t.String({ format: 'date-time' })),
   dueDate: t.Nullable(t.String({ format: 'date-time' })),
   priority: t.Union([
     t.Literal('urgent'),
@@ -28,6 +29,7 @@ export const CreateTaskBody = t.Object({
   description: t.Optional(TaskSchema.description),
   position: t.Optional(TaskSchema.position),
   columnId: TaskSchema.columnId,
+  startDate: t.Optional(TaskSchema.startDate),
   dueDate: t.Optional(TaskSchema.dueDate),
   priority: t.Optional(TaskSchema.priority),
   reminder: t.Optional(TaskSchema.reminder),
@@ -39,6 +41,7 @@ export const UpdateTaskBody = t.Object({
   description: t.Optional(TaskSchema.description),
   position: t.Optional(TaskSchema.position),
   columnId: t.Optional(TaskSchema.columnId),
+  startDate: t.Optional(TaskSchema.startDate),
   dueDate: t.Optional(TaskSchema.dueDate),
   priority: t.Optional(t.Nullable(TaskSchema.priority)),
   reminder: t.Optional(TaskSchema.reminder),

@@ -27,20 +27,22 @@ export const taskController = new Elysia({ prefix: '/tasks' })
   })
   .post('/', ({ body, session }) => {
     if (!session) throw new UnauthorizedError()
-    const { dueDate, ...rest } = body
+    const { dueDate, startDate, ...rest } = body
     return taskService.createTask({
       ...rest,
       dueDate: dueDate ? new Date(dueDate) : null,
+      startDate: startDate ? new Date(startDate) : null,
     }, session.user.id)
   }, {
     body: CreateTaskBody,
   })
   .patch('/:id', ({ params: { id }, body, session }) => {
     if (!session) throw new UnauthorizedError()
-    const { dueDate, ...rest } = body
+    const { dueDate, startDate, ...rest } = body
     return taskService.updateTask(id, {
       ...rest,
       dueDate: dueDate !== undefined ? (dueDate ? new Date(dueDate) : null) : undefined,
+      startDate: startDate !== undefined ? (startDate ? new Date(startDate) : null) : undefined,
     }, session.user.id)
   }, {
     params: TaskParams,

@@ -121,6 +121,22 @@ describe('Tasks API', () => {
     expect(task.dueDate).toBeNull()
   })
 
+  test('PATCH /tasks/:id - update task with start date', async () => {
+    const startDate = new Date('2025-12-01').toISOString()
+    const res = await app.handle(
+      new Request(`http://localhost/v1/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          startDate
+        })
+      })
+    )
+    expect(res.status).toBe(200)
+    const task = await res.json()
+    expect(task.startDate).toBeTruthy()
+  })
+
   test('DELETE /tasks/:id - delete task', async () => {
     const res = await app.handle(
       new Request(`http://localhost/v1/tasks/${taskId}`, { 
