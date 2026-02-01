@@ -3,16 +3,16 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { type ViewMode } from '../../hooks/useCalendarNavigation'
 
 type GanttHeaderProps = {
-  currentDate: Date
+  currentDate?: Date
   viewMode: ViewMode
-  onNext: () => void
-  onPrev: () => void
-  onToday: () => void
+  onNext?: () => void
+  onPrev?: () => void
+  onToday?: () => void
   onViewModeChange: (mode: ViewMode) => void
 }
 
 export function GanttHeader({
-  currentDate,
+  currentDate = new Date(),
   viewMode,
   onNext,
   onPrev,
@@ -43,26 +43,34 @@ export function GanttHeader({
     <div className="flex items-center justify-between border-b border-black bg-white px-6 py-4">
       <div className="flex items-center gap-4">
         <h2 className="font-heading w-64 text-xl font-bold text-black">{getRangeLabel()}</h2>
-        <div className="shadow-brutal-sm flex items-center border border-black bg-white">
+        {(onPrev || onNext) && (
+          <div className="shadow-brutal-sm flex items-center border border-black bg-white">
+            {onPrev && (
+              <button
+                onClick={onPrev}
+                className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center border-r border-black transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
+            {onNext && (
+              <button
+                onClick={onNext}
+                className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center transition-colors"
+              >
+                <ChevronRight size={18} />
+              </button>
+            )}
+          </div>
+        )}
+        {onToday && (
           <button
-            onClick={onPrev}
-            className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center border-r border-black transition-colors"
+            onClick={onToday}
+            className="shadow-brutal-sm hover:bg-accent h-8 cursor-pointer border border-black bg-white px-3 text-xs font-bold uppercase transition-all hover:-translate-px hover:shadow-none"
           >
-            <ChevronLeft size={18} />
+            Today
           </button>
-          <button
-            onClick={onNext}
-            className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center transition-colors"
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-        <button
-          onClick={onToday}
-          className="shadow-brutal-sm hover:bg-accent h-8 cursor-pointer border border-black bg-white px-3 text-xs font-bold uppercase transition-all hover:-translate-px hover:shadow-none"
-        >
-          Today
-        </button>
+        )}
       </div>
 
       <div className="shadow-brutal-sm flex items-center border border-black bg-white">
