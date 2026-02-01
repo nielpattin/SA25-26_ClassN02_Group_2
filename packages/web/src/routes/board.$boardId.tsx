@@ -413,11 +413,9 @@ function BoardComponent() {
                 <GanttView
                   boardId={boardId}
                   tasks={filteredCards}
-                  columns={serverColumns}
                   onTaskClick={handleTaskClick}
-                  viewMode={calendarMode || 'month'}
-                  onViewModeChange={handleCalendarModeChange}
-                  isFiltering={hasActiveFilters}
+                  zoomMode={calendarMode || 'month'}
+                  onZoomModeChange={handleCalendarModeChange}
                 />
               ) : (
 

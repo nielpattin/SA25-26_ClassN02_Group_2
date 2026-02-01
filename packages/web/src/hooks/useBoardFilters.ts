@@ -4,9 +4,11 @@ export interface BoardFilters {
   labelIds: string[]
   assigneeIds: string[]
   dueDate: DueDateFilter | null
+  status: TaskStatusFilter
 }
 
 export type DueDateFilter = 'overdue' | 'due-today' | 'due-this-week' | 'due-this-month' | 'no-due-date'
+export type TaskStatusFilter = 'active' | 'completed' | 'all'
 
 interface UseBoardFiltersReturn {
   filters: BoardFilters
@@ -14,6 +16,7 @@ interface UseBoardFiltersReturn {
   setLabelIds: (ids: string[]) => void
   setAssigneeIds: (ids: string[]) => void
   setDueDate: (filter: DueDateFilter | null) => void
+  setStatus: (status: TaskStatusFilter) => void
   applyFilters: () => void
   clearFilters: () => void
   hasActiveFilters: boolean
@@ -24,6 +27,7 @@ const EMPTY_FILTERS: BoardFilters = {
   labelIds: [],
   assigneeIds: [],
   dueDate: null,
+  status: 'active',
 }
 
 function getStorageKey(boardId: string): string {
@@ -40,6 +44,7 @@ function loadFiltersFromStorage(boardId: string): BoardFilters {
       labelIds: Array.isArray(parsed.labelIds) ? parsed.labelIds : [],
       assigneeIds: Array.isArray(parsed.assigneeIds) ? parsed.assigneeIds : [],
       dueDate: parsed.dueDate || null,
+      status: parsed.status || 'active',
     }
   } catch {
     return { ...EMPTY_FILTERS }
@@ -55,7 +60,7 @@ function saveFiltersToStorage(boardId: string, filters: BoardFilters): void {
 }
 
 function hasActiveFilters(filters: BoardFilters): boolean {
-  return filters.labelIds.length > 0 || filters.assigneeIds.length > 0 || filters.dueDate !== null
+  return filters.labelIds.length > 0 || filters.assigneeIds.length > 0 || filters.dueDate !== null || filters.status !== 'active'
 }
 
 function filtersEqual(a: BoardFilters, b: BoardFilters): boolean {
@@ -64,7 +69,8 @@ function filtersEqual(a: BoardFilters, b: BoardFilters): boolean {
     a.labelIds.every((id, i) => id === b.labelIds[i]) &&
     a.assigneeIds.length === b.assigneeIds.length &&
     a.assigneeIds.every((id, i) => id === b.assigneeIds[i]) &&
-    a.dueDate === b.dueDate
+    a.dueDate === b.dueDate &&
+    a.status === b.status
   )
 }
 
@@ -93,6 +99,10 @@ export function useBoardFilters(boardId: string): UseBoardFiltersReturn {
     setPendingFilters(prev => ({ ...prev, dueDate: filter }))
   }, [])
 
+  const setStatus = useCallback((status: TaskStatusFilter) => {
+    setPendingFilters(prev => ({ ...prev, status }))
+  }, [])
+
   const applyFilters = useCallback(() => {
     setFilters(pendingFilters)
     saveFiltersToStorage(boardId, pendingFilters)
@@ -111,6 +121,7 @@ export function useBoardFilters(boardId: string): UseBoardFiltersReturn {
     setLabelIds,
     setAssigneeIds,
     setDueDate,
+    setStatus,
     applyFilters,
     clearFilters,
     hasActiveFilters: hasActiveFilters(filters),

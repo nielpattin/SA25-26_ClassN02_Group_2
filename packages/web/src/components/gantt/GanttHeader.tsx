@@ -1,6 +1,7 @@
 import { format, startOfWeek, endOfWeek, getQuarter, getYear } from 'date-fns'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Filter } from 'lucide-react'
 import { type ViewMode } from '../../hooks/useCalendarNavigation'
+import { TaskStatusFilter } from '../../hooks/useBoardFilters'
 
 type GanttHeaderProps = {
   currentDate?: Date
@@ -9,6 +10,8 @@ type GanttHeaderProps = {
   onPrev?: () => void
   onToday?: () => void
   onViewModeChange: (mode: ViewMode) => void
+  status: TaskStatusFilter
+  onStatusChange: (status: TaskStatusFilter) => void
 }
 
 export function GanttHeader({
@@ -18,6 +21,8 @@ export function GanttHeader({
   onPrev,
   onToday,
   onViewModeChange,
+  status,
+  onStatusChange,
 }: GanttHeaderProps) {
   const getRangeLabel = () => {
     if (viewMode === 'day') {
@@ -71,6 +76,26 @@ export function GanttHeader({
             Today
           </button>
         )}
+
+        <div className="mx-2 h-8 w-px bg-black/10" />
+
+        {/* Status Filter */}
+        <div className="flex items-center gap-2">
+          <Filter size={14} className="text-black/40" />
+          <div className="shadow-brutal-sm flex items-center border border-black bg-white">
+            {(['active', 'completed', 'all'] as TaskStatusFilter[]).map(s => (
+              <button
+                key={s}
+                onClick={() => onStatusChange(s)}
+                className={`h-8 cursor-pointer border-r border-black px-3 text-[10px] font-bold uppercase transition-colors last:border-r-0 ${
+                  status === s ? 'bg-accent' : 'hover:bg-accent/50'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="shadow-brutal-sm flex items-center border border-black bg-white">

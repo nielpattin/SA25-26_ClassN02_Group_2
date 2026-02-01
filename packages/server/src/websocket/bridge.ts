@@ -123,6 +123,30 @@ export function initWebSocketBridge() {
     wsManager.broadcast(`board:${boardId}`, { type: 'task:updated', data: { id: taskId } })
   })
 
+  eventBus.onDomain('checklist.created', ({ taskId, boardId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:updated', data: { id: taskId } })
+  })
+
+  eventBus.onDomain('checklist.updated', ({ taskId, boardId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:updated', data: { id: taskId } })
+  })
+
+  eventBus.onDomain('checklist.deleted', ({ taskId, boardId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:updated', data: { id: taskId } })
+  })
+
+  eventBus.onDomain('checklist.item.created', ({ taskId, boardId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:updated', data: { id: taskId } })
+  })
+
+  eventBus.onDomain('checklist.item.updated', ({ taskId, boardId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:updated', data: { id: taskId } })
+  })
+
+  eventBus.onDomain('checklist.item.deleted', ({ taskId, boardId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:updated', data: { id: taskId } })
+  })
+
   eventBus.onDomain('notification.created', ({ notification, userId }) => {
     wsManager.broadcast(`user:${userId}`, { 
       type: 'notification:created', 
