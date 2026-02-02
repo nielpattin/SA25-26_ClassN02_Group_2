@@ -16,13 +16,55 @@ interface ReminderSelectProps {
   value: ReminderValue
   onChange: (value: ReminderValue) => void
   disabled?: boolean
+  compact?: boolean
 }
 
-export function ReminderSelect({ value, onChange, disabled }: ReminderSelectProps) {
+export function ReminderSelect({ value, onChange, disabled, compact }: ReminderSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const triggerRef = useRef<HTMLDivElement>(null)
 
   const selectedOption = REMINDER_OPTIONS.find(opt => opt.id === value)
+
+  if (compact) {
+    return (
+      <div
+        ref={triggerRef}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`flex cursor-pointer items-center gap-2 text-right transition-opacity ${
+          disabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-80'
+        }`}
+      >
+        <span className="font-body text-[13px] font-bold text-black uppercase">
+          {selectedOption?.name || 'None'}
+        </span>
+        <Popover
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+          triggerRef={triggerRef}
+          title="Reminder"
+        >
+          <div className="flex flex-col gap-1">
+            {REMINDER_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                className={`font-body flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left text-[13px] font-bold transition-all ${
+                  value === opt.id
+                    ? 'shadow-inner-brutal bg-active'
+                    : 'hover:shadow-brutal-md hover:-translate-0.5 hover:bg-[#F5F5F5]'
+                }`}
+                onClick={() => {
+                  onChange(opt.id)
+                  setIsOpen(false)
+                }}
+              >
+                {opt.name}
+              </button>
+            ))}
+          </div>
+        </Popover>
+      </div>
+    )
+  }
 
   return (
     <>

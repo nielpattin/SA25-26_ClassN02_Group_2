@@ -3,11 +3,12 @@ import { Button } from './Button'
 import { Input } from './Input'
 
 interface DatePickerProps {
+  label?: string
   initialDate?: Date | string | null
   onSave: (date: string | null) => void
 }
 
-export function DatePicker({ initialDate, onSave }: DatePickerProps) {
+export function DatePicker({ label = 'Date', initialDate, onSave }: DatePickerProps) {
   const formattedInitial = initialDate 
     ? new Date(initialDate).toISOString().split('T')[0] 
     : ''
@@ -16,7 +17,7 @@ export function DatePicker({ initialDate, onSave }: DatePickerProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <label className="font-heading text-[11px] font-extrabold tracking-widest text-black/60 uppercase">Due Date</label>
+        <label className="font-heading text-[11px] font-extrabold tracking-widest text-black/60 uppercase">{label}</label>
         <Input
           type="date"
           value={date}

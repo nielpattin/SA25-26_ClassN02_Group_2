@@ -69,9 +69,11 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
   const [description, setDescription] = useState('')
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false)
   const [isPriorityOpen, setIsPriorityOpen] = useState(false)
   const [isCoverOpen, setIsCoverOpen] = useState(false)
-  const mainDateTriggerRef = useRef<HTMLDivElement>(null)
+  const startDateTriggerRef = useRef<HTMLButtonElement>(null)
+  const dueDateTriggerRef = useRef<HTMLButtonElement>(null)
   const priorityTriggerRef = useRef<HTMLButtonElement>(null)
   const coverTriggerRef = useRef<HTMLButtonElement>(null)
   const [coverUrl, setCoverUrl] = useState('')
@@ -243,61 +245,16 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
 
         <div className="flex min-h-0 flex-1 flex-row overflow-hidden bg-white">
           <div className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto border-r border-black p-8">
-            {/* Metadata Grid */}
+            {/* Labels Section */}
             <div className="shadow-brutal-md mb-4 shrink-0 overflow-hidden border-2 border-black bg-white">
-              <div className="bg-accent grid grid-cols-3 border-b-2 border-black">
-                <div className="font-heading flex items-center gap-2 border-r-2 border-black p-1 px-3 text-[10px] font-extrabold tracking-widest text-black uppercase">
-                  <Tag size={12} strokeWidth={2.5} /> Labels
-                </div>
-                <div className="font-heading flex items-center gap-2 border-r-2 border-black p-1 px-3 text-[10px] font-extrabold tracking-widest text-black uppercase">
-                  <Calendar size={12} strokeWidth={2.5} /> Due Date
-                </div>
-                <div className="font-heading flex items-center gap-2 p-1 px-3 text-[10px] font-extrabold tracking-widest text-black uppercase">
-                  <Bell size={12} strokeWidth={2.5} /> Reminder
-                </div>
+              <div className="bg-accent flex items-center gap-2 border-b-2 border-black p-1 px-3">
+                <Tag size={12} strokeWidth={2.5} />
+                <span className="font-heading text-[10px] font-extrabold tracking-widest text-black uppercase">
+                  Labels
+                </span>
               </div>
-              <div className="grid grid-cols-3 items-stretch">
-                <div className="flex min-w-0 flex-col justify-center overflow-hidden border-r-2 border-black bg-white p-2.5">
-                  <TaskLabels
-                    taskId={taskId}
-                    boardId={boardId}
-                    cardLabels={card.labels || []}
-                  />
-                </div>
-                <div className="flex min-w-0 items-center justify-center overflow-hidden border-r-2 border-black bg-white p-2.5">
-                  <div
-                    className="shadow-brutal-sm hover:shadow-brutal-md flex h-12 shrink-0 cursor-pointer items-center justify-center border-2 border-black bg-white px-4 transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
-                    onClick={() => setIsDatePickerOpen(prev => !prev)}
-                    ref={mainDateTriggerRef}
-                  >
-                    <div className="flex items-center gap-3">
-                      {card.dueDate ? (
-                        <>
-                          <span className="font-body text-[14px] font-extrabold text-black uppercase">
-                            {format(new Date(card.dueDate), 'MMM d, yyyy')}
-                          </span>
-                          {new Date(card.dueDate) < new Date() && (
-                            <span className="shadow-brutal-sm border-2 border-black bg-[#E74C3C] px-2 py-0.5 text-[11px] leading-none font-extrabold text-white uppercase">
-                              Overdue
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <div className="text-text-subtle flex items-center gap-2">
-                          <Plus size={16} strokeWidth={3} />
-                          <span className="font-body text-[14px] font-extrabold uppercase">Set Date</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex min-w-0 items-center justify-center overflow-hidden bg-white p-2.5">
-                  <ReminderSelect
-                    value={card.reminder}
-                    onChange={reminder => updateCard.mutate({ reminder })}
-                    disabled={!card.dueDate}
-                  />
-                </div>
+              <div className="bg-white p-2.5">
+                <TaskLabels taskId={taskId} boardId={boardId} cardLabels={card.labels || []} />
               </div>
             </div>
 
@@ -387,27 +344,104 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
           </div>
 
           <div className="bg-hover flex w-[320px] min-w-0 shrink-0 flex-col gap-6 overflow-y-auto p-8">
+            {/* Dates Section */}
+            <div className="flex flex-col gap-3">
+              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+                <Calendar size={14} /> Dates
+              </h3>
+              <div className="flex flex-col gap-2">
+                {/* Start Date */}
+                <button
+                  ref={startDateTriggerRef}
+                  className="shadow-brutal-sm hover:shadow-brutal-md flex cursor-pointer items-center justify-between border border-black bg-white p-3 text-left transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                  onClick={() => setIsStartDatePickerOpen(prev => !prev)}
+                >
+                  <span className="text-text-subtle text-[11px] font-bold uppercase">Start</span>
+                  <span className="font-body text-[13px] font-bold text-black">
+                    {card.startDate ? (
+                      format(new Date(card.startDate), 'MMM d, yyyy')
+                    ) : (
+                      <span className="text-text-subtle">+ Add</span>
+                    )}
+                  </span>
+                </button>
+
+                {/* Due Date */}
+                <button
+                  ref={dueDateTriggerRef}
+                  className="shadow-brutal-sm hover:shadow-brutal-md flex cursor-pointer items-center justify-between border border-black bg-white p-3 text-left transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                  onClick={() => setIsDatePickerOpen(prev => !prev)}
+                >
+                  <span className="text-text-subtle text-[11px] font-bold uppercase">Due</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-body text-[13px] font-bold text-black">
+                      {card.dueDate ? (
+                        format(new Date(card.dueDate), 'MMM d, yyyy')
+                      ) : (
+                        <span className="text-text-subtle">+ Add</span>
+                      )}
+                    </span>
+                    {card.dueDate && new Date(card.dueDate) < new Date() && (
+                      <span className="shadow-brutal-sm border border-black bg-[#E74C3C] px-1.5 py-0.5 text-[9px] font-extrabold text-white uppercase">
+                        Overdue
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                {/* Reminder */}
+                <div className="shadow-brutal-sm flex items-center justify-between border border-black bg-white p-3">
+                  <span className="text-text-subtle text-[11px] font-bold uppercase">Reminder</span>
+                  <ReminderSelect
+                    value={card.reminder}
+                    onChange={reminder => updateCard.mutate({ reminder })}
+                    disabled={!card.dueDate}
+                    compact
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Start Date Popover */}
+            <Popover
+              isOpen={isStartDatePickerOpen}
+              onClose={() => setIsStartDatePickerOpen(false)}
+              triggerRef={startDateTriggerRef}
+              title="Start Date"
+            >
+              <DatePicker
+                label="Start Date"
+                initialDate={card.startDate}
+                onSave={date => {
+                  updateCard.mutate({ startDate: date })
+                  setIsStartDatePickerOpen(false)
+                }}
+              />
+            </Popover>
+
+            {/* Due Date Popover */}
+            <Popover
+              isOpen={isDatePickerOpen}
+              onClose={() => setIsDatePickerOpen(false)}
+              triggerRef={dueDateTriggerRef}
+              title="Due Date"
+            >
+              <DatePicker
+                label="Due Date"
+                initialDate={card.dueDate}
+                onSave={date => {
+                  updateCard.mutate({ dueDate: date })
+                  setIsDatePickerOpen(false)
+                }}
+              />
+            </Popover>
+
             <div className="flex flex-col gap-3">
               <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
                 Add to card
               </h3>
               <div className="flex flex-col gap-2">
                 <ChecklistCreator onCreate={title => createChecklist.mutate(title)} />
-
-                <Popover
-                  isOpen={isDatePickerOpen}
-                  onClose={() => setIsDatePickerOpen(false)}
-                  triggerRef={mainDateTriggerRef}
-                  title="Dates"
-                >
-                  <DatePicker
-                    initialDate={card.dueDate}
-                    onSave={date => {
-                      updateCard.mutate({ dueDate: date })
-                      setIsDatePickerOpen(false)
-                    }}
-                  />
-                </Popover>
 
                 <Button
                   variant="secondary"

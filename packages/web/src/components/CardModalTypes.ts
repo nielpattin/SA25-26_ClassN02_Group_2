@@ -5,6 +5,7 @@ export interface Card {
   columnId: string
   position: string
   priority: 'none' | 'low' | 'medium' | 'high' | 'urgent' | null
+  startDate: string | Date | null
   dueDate: string | Date | null
   reminder: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
   coverImageUrl?: string | null

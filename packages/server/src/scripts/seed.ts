@@ -1,8 +1,8 @@
-import { auth } from '../modules/auth/auth'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { generatePositions } from '../shared/position'
 import { eq, sql } from 'drizzle-orm'
+import { hashPassword } from 'better-auth/crypto'
 
 const TEST_USER = {
   email: 'test@kyte.dev',
@@ -29,29 +29,57 @@ const COMMENTS_POOL = [
   "Is this blocking anyone?",
 ]
 
-async function ensureUserExists(userData: { email: string; password: string; name: string }) {
-  try {
-    const signUpResult = await auth.api.signUpEmail({
-      body: {
-        email: userData.email,
-        password: userData.password,
-        name: userData.name,
-      },
-    })
-    
-    if (signUpResult && 'user' in signUpResult) {
-      return signUpResult.user.id
-    }
-  } catch {
-    // User likely exists
+function generateId(length = 32) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
+  return result
+}
 
+async function createUserDirectly(userData: { email: string; password: string; name: string }) {
   const existingUser = await db.query.users.findFirst({
     where: eq(schema.users.email, userData.email),
   })
-  
-  if (!existingUser) throw new Error(`Failed to create or find test user: ${userData.email}`)
-  return existingUser.id
+
+  if (existingUser) {
+    return existingUser.id
+  }
+
+  const userId = generateId()
+  const hashedPassword = await hashPassword(userData.password)
+
+  await db.insert(schema.users).values({
+    id: userId,
+    name: userData.name,
+    email: userData.email,
+    emailVerified: true,
+  })
+
+  await db.insert(schema.accounts).values({
+    id: generateId(),
+    accountId: userId,
+    providerId: 'credential',
+    userId: userId,
+    password: hashedPassword,
+  })
+
+  const slug = `personal-${userId.slice(0, 8)}`
+  const [workspace] = await db.insert(schema.workspaces).values({
+    name: 'Personal',
+    slug,
+    personal: true,
+  }).returning()
+
+  await db.insert(schema.members).values({
+    workspaceId: workspace.id,
+    userId: userId,
+    role: 'owner',
+  })
+
+  console.log(`Created personal workspace for user ${userId}`)
+  return userId
 }
 
 async function cleanDatabase() {
@@ -116,8 +144,8 @@ async function seed() {
 
   console.log('Creating users...')
   const allUserIds = await Promise.all([
-    ensureUserExists(TEST_USER),
-    ...ADDITIONAL_USERS.map(u => ensureUserExists(u))
+    createUserDirectly(TEST_USER),
+    ...ADDITIONAL_USERS.map(u => createUserDirectly(u))
   ])
   const ownerId = allUserIds[0]
 
@@ -137,9 +165,16 @@ async function seed() {
   )
 
   const priorities = ['low', 'medium', 'high', 'urgent', 'none'] as const
-  const getRandomDate = () => {
-    const dayOffset = Math.floor(Math.random() * 15) - 7
-    return new Date(Date.now() + dayOffset * 24 * 60 * 60 * 1000)
+  const getTaskDates = () => {
+    // Start date between -30 and +30 days from now
+    const startOffset = Math.floor(Math.random() * 60) - 30
+    const startDate = new Date(Date.now() + startOffset * 24 * 60 * 60 * 1000)
+    
+    // Due date is 1-14 days after start date
+    const duration = Math.floor(Math.random() * 14) + 1
+    const dueDate = new Date(startDate.getTime() + duration * 24 * 60 * 60 * 1000)
+    
+    return { startDate, dueDate }
   }
 
   const taskLabelsToInsert: any[] = []
@@ -219,13 +254,18 @@ async function seed() {
   for (const col of smallColumns) {
     const taskPositions = generatePositions(null, null, 3)
     const tasks = await db.insert(schema.tasks).values(
-      Array.from({ length: 3 }).map((_, i) => ({
-        title: `Simple Task ${i + 1} in ${col.name}`,
-        columnId: col.id,
-        position: taskPositions[i],
-        priority: priorities[Math.floor(Math.random() * priorities.length)],
-        dueDate: Math.random() > 0.4 ? getRandomDate() : null,
-      }))
+      Array.from({ length: 3 }).map((_, i) => {
+        const { startDate, dueDate } = getTaskDates()
+        const hasDates = Math.random() > 0.3
+        return {
+          title: `Simple Task ${i + 1} in ${col.name}`,
+          columnId: col.id,
+          position: taskPositions[i],
+          priority: priorities[Math.floor(Math.random() * priorities.length)],
+          startDate: hasDates ? startDate : null,
+          dueDate: hasDates ? dueDate : null,
+        }
+      })
     ).returning()
     
     for (const task of tasks) {
@@ -266,14 +306,19 @@ async function seed() {
   for (const col of bigColumns) {
     const taskPositions = generatePositions(null, null, 15)
     const tasks = await db.insert(schema.tasks).values(
-      Array.from({ length: 15 }).map((_, i) => ({
-        title: `Detailed Task ${i + 1} in ${col.name}`,
-        description: `Description for task ${i + 1}.`,
-        columnId: col.id,
-        position: taskPositions[i],
-        priority: priorities[Math.floor(Math.random() * priorities.length)],
-        dueDate: Math.random() > 0.3 ? getRandomDate() : null,
-      }))
+      Array.from({ length: 15 }).map((_, i) => {
+        const { startDate, dueDate } = getTaskDates()
+        const hasDates = Math.random() > 0.2
+        return {
+          title: `Detailed Task ${i + 1} in ${col.name}`,
+          description: `Description for task ${i + 1}.`,
+          columnId: col.id,
+          position: taskPositions[i],
+          priority: priorities[Math.floor(Math.random() * priorities.length)],
+          startDate: hasDates ? startDate : null,
+          dueDate: hasDates ? dueDate : null,
+        }
+      })
     ).returning()
 
     for (const task of tasks) {
