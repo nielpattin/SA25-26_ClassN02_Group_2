@@ -374,8 +374,10 @@ export const boardTemplates = pgTable('board_templates', {
 	submittedAt: timestamp('submitted_at'),
 	approvedAt: timestamp('approved_at'),
 	approvedBy: text('approved_by').references(() => users.id),
-	takedownRequestedAt: timestamp('takedown_requested_at'),
+  takedownRequestedAt: timestamp('takedown_requested_at'),
 	takedownAt: timestamp('takedown_at'),
+	rejectionReason: text('rejection_reason'),
+	rejectionComment: text('rejection_comment'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

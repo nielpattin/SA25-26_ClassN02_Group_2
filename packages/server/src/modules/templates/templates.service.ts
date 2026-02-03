@@ -5,14 +5,22 @@ import { boardService } from '../boards/boards.service'
 import { workspaceRepository } from '../workspaces/workspaces.repository'
 import { columnRepository } from '../columns/columns.repository'
 import { labelRepository } from '../labels/labels.repository'
-import { NotFoundError, ForbiddenError } from '../../shared/errors'
+import { auditLogService, ADMIN_ACTIONS } from '../admin/auditLog.service'
+import { NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors'
 import type { CreateBoardTemplateInput, UpdateBoardTemplateInput, CreateTaskTemplateInput, UpdateTaskTemplateInput, MarketplaceQuerySchema, SubmitTemplateBody } from './templates.model'
 
-const ADMIN_EMAILS = ['test@kyte.dev', 'test-00000000-0000-4000-a000-000000000001@example.com']
-
-const isAdmin = async (userId: string) => {
+const hasModeratorAccess = async (userId: string): Promise<boolean> => {
   const user = await userRepository.getById(userId)
-  return user && ADMIN_EMAILS.includes(user.email)
+  if (!user || !user.adminRole) return false
+  // moderator, super_admin, and support can access moderation queues
+  return ['moderator', 'super_admin', 'support'].includes(user.adminRole)
+}
+
+const canModerate = async (userId: string): Promise<boolean> => {
+  const user = await userRepository.getById(userId)
+  if (!user || !user.adminRole) return false
+  // Only moderator and super_admin can perform moderation actions
+  return ['moderator', 'super_admin'].includes(user.adminRole)
 }
 
 export const templateService = {
@@ -69,26 +77,53 @@ export const templateService = {
   },
 
   approveTemplate: async (adminId: string, templateId: string) => {
-    if (!await isAdmin(adminId)) throw new ForbiddenError('Only platform admins can approve templates')
+    if (!await canModerate(adminId)) throw new ForbiddenError('Only moderators can approve templates')
 
-    return templateRepository.updateBoardTemplate(templateId, {
+    const template = await templateRepository.updateBoardTemplate(templateId, {
       status: 'approved',
       approvedAt: new Date(),
       approvedBy: adminId,
     })
-  },
 
-  rejectTemplate: async (adminId: string, templateId: string) => {
-    if (!await isAdmin(adminId)) throw new ForbiddenError('Only platform admins can reject templates')
-
-    return templateRepository.updateBoardTemplate(templateId, {
-      status: 'rejected',
+    await auditLogService.log({
+      adminId,
+      action: ADMIN_ACTIONS.TEMPLATE_APPROVED,
+      targetType: 'template',
+      targetId: templateId,
+      metadata: { templateName: template.name }
     })
+
+    return template
   },
 
-  getPendingSubmissions: async (userId: string) => {
-    if (!await isAdmin(userId)) throw new ForbiddenError('Only platform admins can view submissions')
-    return templateRepository.findPendingSubmissions()
+  rejectTemplate: async (adminId: string, templateId: string, data?: { reason?: string; comment?: string }) => {
+    if (!await canModerate(adminId)) throw new ForbiddenError('Only moderators can reject templates')
+
+    const template = await templateRepository.updateBoardTemplate(templateId, {
+      status: 'rejected',
+      rejectionReason: data?.reason,
+      rejectionComment: data?.comment,
+    })
+
+    await auditLogService.log({
+      adminId,
+      action: ADMIN_ACTIONS.TEMPLATE_REJECTED,
+      targetType: 'template',
+      targetId: templateId,
+      metadata: { templateName: template.name, reason: data?.reason, comment: data?.comment }
+    })
+
+    return template
+  },
+
+  getPendingSubmissions: async (userId: string, filters?: { status?: string; category?: string }) => {
+    if (!await hasModeratorAccess(userId)) throw new ForbiddenError('Admin access required')
+    return templateRepository.findPendingSubmissions(filters)
+  },
+
+  getTakedownRequests: async (userId: string) => {
+    if (!await hasModeratorAccess(userId)) throw new ForbiddenError('Admin access required')
+    return templateRepository.findTakedownRequests()
   },
 
   requestTakedown: async (userId: string, templateId: string) => {
@@ -106,11 +141,21 @@ export const templateService = {
   },
 
   removeTemplate: async (adminId: string, templateId: string) => {
-    if (!await isAdmin(adminId)) throw new ForbiddenError('Only platform admins can remove templates')
+    if (!await canModerate(adminId)) throw new ForbiddenError('Only moderators can remove templates')
 
-    return templateRepository.updateBoardTemplate(templateId, {
+    const template = await templateRepository.updateBoardTemplate(templateId, {
       takedownAt: new Date(),
     })
+
+    await auditLogService.log({
+      adminId,
+      action: ADMIN_ACTIONS.TEMPLATE_REMOVED,
+      targetType: 'template',
+      targetId: templateId,
+      metadata: { templateName: template.name }
+    })
+
+    return template
   },
 
   cloneMarketplaceTemplate: async (templateId: string, workspaceId: string, userId: string, boardName?: string) => {
@@ -170,8 +215,18 @@ export const templateService = {
   createBoardTemplate: (data: CreateBoardTemplateInput & { createdBy: string }) =>
     templateRepository.createBoardTemplate(data),
 
-  updateBoardTemplate: (id: string, data: UpdateBoardTemplateInput) =>
-    templateRepository.updateBoardTemplate(id, data),
+  updateBoardTemplate: async (id: string, data: UpdateBoardTemplateInput) => {
+    // Check if template exists and is immutable
+    const existing = await templateRepository.findBoardTemplateById(id)
+    if (!existing) throw new NotFoundError('Template not found')
+    
+    // Templates are immutable after submission (pending, approved, or rejected)
+    if (existing.status !== 'none') {
+      throw new ConflictError('Template is immutable after submission')
+    }
+    
+    return templateRepository.updateBoardTemplate(id, data)
+  },
 
   deleteBoardTemplate: (id: string) => templateRepository.deleteBoardTemplate(id),
 

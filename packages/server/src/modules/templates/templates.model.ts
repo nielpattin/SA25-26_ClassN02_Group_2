@@ -38,6 +38,8 @@ export const CreateBoardTemplateBody = t.Object({
   status: t.Optional(TemplateStatusSchema),
   categories: t.Optional(t.Array(t.String())),
   submittedAt: t.Optional(t.Date()),
+  approvedAt: t.Optional(t.Date()),
+  approvedBy: t.Optional(t.String()),
 })
 
 export const UpdateBoardTemplateBody = t.Object({
@@ -53,6 +55,8 @@ export const UpdateBoardTemplateBody = t.Object({
   approvedBy: t.Optional(t.String()),
   takedownRequestedAt: t.Optional(t.Date()),
   takedownAt: t.Optional(t.Date()),
+  rejectionReason: t.Optional(t.String()),
+  rejectionComment: t.Optional(t.String()),
 })
 
 export const MarketplaceQuerySchema = t.Object({

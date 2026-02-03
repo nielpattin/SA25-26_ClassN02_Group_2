@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ArrowLeft, User, Calendar, Copy, Layout, Tag, Shield } from 'lucide-react'
+import { ArrowLeft, User, Calendar, Copy, Layout, Tag, Shield, AlertCircle, MessageSquare, Trash2, Lock, Info } from 'lucide-react'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { Button } from '../components/ui/Button'
-import { useMarketplaceTemplate } from '../hooks/useTemplates'
+import { useMarketplaceTemplate, useBoardTemplate, useRequestTakedown } from '../hooks/useTemplates'
 import { CloneTemplateModal } from '../components/templates/CloneTemplateModal'
 import { useSession } from '../api/auth'
 
@@ -13,9 +13,15 @@ export const Route = createFileRoute('/templates/marketplace/$id')({
 
 function TemplateDetailComponent() {
   const { id } = Route.useParams()
-  const { data: template, isLoading } = useMarketplaceTemplate(id)
+  const { data: marketplaceTemplate, isLoading: isMarketplaceLoading } = useMarketplaceTemplate(id)
+  const { data: boardTemplate, isLoading: isBoardLoading } = useBoardTemplate(id)
   const [isCloneModalOpen, setIsCloneModalOpen] = useState(false)
   const { data: session } = useSession()
+  const requestTakedown = useRequestTakedown()
+
+  // Use marketplace template if available (approved), otherwise fall back to board template (for owners)
+  const template = marketplaceTemplate || boardTemplate
+  const isLoading = isMarketplaceLoading || isBoardLoading
 
   if (isLoading) {
     return <DashboardLayout><div>Loading template...</div></DashboardLayout>
@@ -26,6 +32,7 @@ function TemplateDetailComponent() {
   }
 
   const isOwner = session?.user?.id === template.author?.id
+  const isRemoved = template.takedownAt && new Date(template.takedownAt) < new Date()
 
   return (
     <DashboardLayout>
@@ -38,16 +45,90 @@ function TemplateDetailComponent() {
           Back to Marketplace
         </Link>
 
-        {isOwner && template.status !== 'approved' && (
-          <div className="mb-8 flex items-center gap-3 border-2 border-black bg-accent/10 p-4">
-            <Shield size={20} className="text-black" />
-            <div className="flex flex-col">
-              <span className="text-xs font-black text-black uppercase">Submission Status: {template.status}</span>
-              <p className="text-[10px] font-bold text-black uppercase opacity-60">
-                {template.status === 'pending' ? 'Your template is currently being reviewed by an admin.' : 'Your template was rejected and is not visible in the marketplace.'}
-              </p>
-            </div>
-          </div>
+        {/* Owner status alerts */}
+        {isOwner && (
+          <>
+            {/* Removed template alert */}
+            {isRemoved && (
+              <div className="mb-8 flex items-start gap-3 border-2 border-error bg-error/10 p-4">
+                <Trash2 size={20} className="mt-0.5 shrink-0 text-error" />
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-black text-error uppercase">Template Removed</span>
+                  <p className="text-[10px] font-bold text-black uppercase opacity-60">
+                    This template has been removed from the marketplace and is no longer visible to other users.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Pending/Rejected status alert */}
+            {template.status !== 'approved' && !isRemoved && (
+              <div className="mb-8 flex items-start gap-3 border-2 border-black bg-accent/10 p-4">
+                <Shield size={20} className="mt-0.5 shrink-0 text-black" />
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-black text-black uppercase">Submission Status: {template.status}</span>
+                  <p className="text-[10px] font-bold text-black uppercase opacity-60">
+                    {template.status === 'pending' ? 'Your template is currently being reviewed by an admin.' : 'Your template was rejected and is not visible in the marketplace.'}
+                  </p>
+
+                  {/* Show rejection reason and comment for rejected templates */}
+                  {template.status === 'rejected' && (
+                    <div className="mt-2 space-y-2">
+                      {template.rejectionReason && (
+                        <div className="flex items-start gap-2 rounded border border-black/20 bg-white/50 p-3">
+                          <AlertCircle size={14} className="mt-0.5 shrink-0 text-error" />
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-gray-500 uppercase">Rejection Reason</span>
+                            <span className="text-xs font-bold text-black uppercase">{template.rejectionReason}</span>
+                          </div>
+                        </div>
+                      )}
+                      {template.rejectionComment && (
+                        <div className="flex items-start gap-2 rounded border border-black/20 bg-white/50 p-3">
+                          <MessageSquare size={14} className="mt-0.5 shrink-0 text-gray-500" />
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-gray-500 uppercase">Moderator Comment</span>
+                            <span className="text-xs font-bold text-black">{template.rejectionComment}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Takedown requested alert */}
+            {template.takedownRequestedAt && !isRemoved && (
+              <div className="mb-8 flex items-start gap-3 border-2 border-warning bg-warning/10 p-4">
+                <Info size={20} className="mt-0.5 shrink-0 text-warning" />
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-black text-warning uppercase">Takedown Requested</span>
+                  <p className="text-[10px] font-bold text-black uppercase opacity-60">
+                    You requested this template be removed from the marketplace.
+                  </p>
+                  {template.takedownAt && (
+                    <p className="text-[10px] font-bold text-black uppercase">
+                      Scheduled removal: {new Date(template.takedownAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Immutability notice for submitted templates */}
+            {template.status !== 'none' && !isRemoved && (
+              <div className="mb-8 flex items-start gap-3 border-2 border-gray-300 bg-gray-50 p-4">
+                <Lock size={20} className="mt-0.5 shrink-0 text-gray-500" />
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-black text-gray-600 uppercase">Template is Immutable</span>
+                  <p className="text-[10px] font-bold text-black uppercase opacity-60">
+                    Submitted templates cannot be edited. To make changes, submit a new version as a separate template.
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         <div className="flex flex-col gap-12 lg:flex-row lg:items-start">
@@ -148,14 +229,40 @@ function TemplateDetailComponent() {
               <p className="mb-8 text-sm font-bold text-black uppercase leading-tight">
                 Click below to clone this template into one of your workspaces.
               </p>
-              <Button 
-                fullWidth 
+              <Button
+                fullWidth
                 size="lg"
                 onClick={() => setIsCloneModalOpen(true)}
               >
                 <Copy size={18} />
                 Clone this Template
               </Button>
+
+              {/* Takedown request button for approved templates (owner only) */}
+              {isOwner && template.status === 'approved' && !template.takedownRequestedAt && (
+                <>
+                  <div className="my-6 border-t-2 border-gray-200" />
+                  <div className="space-y-3">
+                    <h4 className="font-heading text-xs font-black text-gray-500 uppercase">Template Management</h4>
+                    <p className="text-[10px] font-bold text-black uppercase opacity-60">
+                      Request to remove this template from the marketplace. The template will be scheduled for removal in 7 days.
+                    </p>
+                    <Button
+                      fullWidth
+                      variant="secondary"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to request removal of this template from the marketplace?')) {
+                          requestTakedown.mutate(template.id)
+                        }
+                      }}
+                      disabled={requestTakedown.isPending}
+                    >
+                      <Trash2 size={16} />
+                      {requestTakedown.isPending ? 'Requesting...' : 'Request Takedown'}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

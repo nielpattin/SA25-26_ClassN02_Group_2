@@ -3,17 +3,23 @@ import { app } from '../index'
 import { getAuthHeaders, ensureTestUser, TEST_USER_ID } from './helpers'
 import { templateService } from '../modules/templates/templates.service'
 import { db } from '../db'
-import { boardTemplates, workspaces, members } from '../db/schema'
+import { boardTemplates, workspaces, members, users } from '../db/schema'
 import { eq } from 'drizzle-orm'
+
+const getModeratorHeaders = (userId = TEST_USER_ID) => ({
+  ...getAuthHeaders(userId),
+  'x-test-admin-role': 'moderator'
+})
 
 describe('Template Policy API', () => {
   let templateId: string
   const AUTHOR_ID = '00000000-0000-4000-a000-000000000002'
-  const ADMIN_ID = TEST_USER_ID // This is an admin in templates.service.ts
+  const ADMIN_ID = TEST_USER_ID
 
   beforeAll(async () => {
     await ensureTestUser(ADMIN_ID)
     await ensureTestUser(AUTHOR_ID)
+    await db.update(users).set({ adminRole: 'moderator' }).where(eq(users.id, ADMIN_ID))
     await db.delete(boardTemplates)
 
     const template = await templateService.createBoardTemplate({
@@ -101,7 +107,7 @@ describe('Template Policy API', () => {
     const res = await app.handle(
       new Request(`http://localhost/v1/templates/marketplace/${template.id}/remove`, {
         method: 'POST',
-        headers: getAuthHeaders(ADMIN_ID),
+        headers: getModeratorHeaders(ADMIN_ID),
       })
     )
     expect(res.status).toBe(200)

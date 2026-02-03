@@ -2,8 +2,13 @@ import { describe, test, expect, beforeAll } from 'bun:test'
 import { app } from '../index'
 import { getAuthHeaders, ensureTestUser, TEST_USER_ID } from './helpers'
 import { db } from '../db'
-import { boardTemplates, boards } from '../db/schema'
+import { boardTemplates, boards, users } from '../db/schema'
 import { eq } from 'drizzle-orm'
+
+const getModeratorHeaders = (userId = TEST_USER_ID) => ({
+  ...getAuthHeaders(userId),
+  'x-test-admin-role': 'moderator'
+})
 
 describe('Template Submission & Review', () => {
   let boardId: string
@@ -12,6 +17,8 @@ describe('Template Submission & Review', () => {
   beforeAll(async () => {
     await ensureTestUser()
     await db.delete(boardTemplates)
+    // Set up test user as moderator for RBAC
+    await db.update(users).set({ adminRole: 'moderator' }).where(eq(users.id, TEST_USER_ID))
 
     // Create a board to submit
     const [board] = await db.insert(boards).values({
@@ -44,7 +51,7 @@ describe('Template Submission & Review', () => {
   test('GET /v1/templates/marketplace/submissions - list pending submissions', async () => {
     const res = await app.handle(
       new Request('http://localhost/v1/templates/marketplace/submissions', {
-        headers: getAuthHeaders(), // test@kyte.dev is admin
+        headers: getModeratorHeaders(),
       })
     )
 
@@ -58,7 +65,7 @@ describe('Template Submission & Review', () => {
     const res = await app.handle(
       new Request(`http://localhost/v1/templates/marketplace/${templateId}/approve`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: getModeratorHeaders(),
       })
     )
 
@@ -82,7 +89,7 @@ describe('Template Submission & Review', () => {
     const resSub = await app.handle(
       new Request('http://localhost/v1/templates/marketplace/submit', {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: getModeratorHeaders(),
         body: JSON.stringify({ boardId })
       })
     )
@@ -91,7 +98,7 @@ describe('Template Submission & Review', () => {
     const res = await app.handle(
       new Request(`http://localhost/v1/templates/marketplace/${newTemplate.id}/reject`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: getModeratorHeaders(),
       })
     )
 

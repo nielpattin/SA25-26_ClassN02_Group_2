@@ -1,6 +1,6 @@
 import { db } from '../../db'
 import { boardTemplates, taskTemplates, users } from '../../db/schema'
-import { eq, and, or, ilike, sql, desc, asc, isNull, gt } from 'drizzle-orm'
+import { eq, and, or, ilike, sql, desc, asc, isNull, isNotNull, gt } from 'drizzle-orm'
 import type { CreateBoardTemplateInput, UpdateBoardTemplateInput, CreateTaskTemplateInput, UpdateTaskTemplateInput, MarketplaceQuerySchema } from './templates.model'
 
 export const templateRepository = {
@@ -87,12 +87,25 @@ export const templateRepository = {
     return template
   },
 
-  findPendingSubmissions: async () => {
+  findPendingSubmissions: async (filters?: { status?: string; category?: string }) => {
+    const conditions = [eq(boardTemplates.status, 'pending')]
+
+    if (filters?.status && filters.status !== 'pending') {
+      // If a different status is explicitly requested, use it instead
+      conditions.length = 0
+      conditions.push(eq(boardTemplates.status, filters.status as 'none' | 'pending' | 'approved' | 'rejected'))
+    }
+
+    if (filters?.category) {
+      conditions.push(sql`${boardTemplates.categories} @> ARRAY[${filters.category}]`)
+    }
+
     return db.select({
       id: boardTemplates.id,
       name: boardTemplates.name,
       description: boardTemplates.description,
       categories: boardTemplates.categories,
+      status: boardTemplates.status,
       submittedAt: boardTemplates.submittedAt,
       author: {
         id: users.id,
@@ -102,8 +115,35 @@ export const templateRepository = {
     })
       .from(boardTemplates)
       .leftJoin(users, eq(boardTemplates.createdBy, users.id))
-      .where(eq(boardTemplates.status, 'pending'))
-      .orderBy(desc(boardTemplates.submittedAt))
+      .where(and(...conditions))
+      .orderBy(asc(boardTemplates.submittedAt))
+  },
+
+  findTakedownRequests: async () => {
+    return db.select({
+      id: boardTemplates.id,
+      name: boardTemplates.name,
+      description: boardTemplates.description,
+      categories: boardTemplates.categories,
+      status: boardTemplates.status,
+      takedownRequestedAt: boardTemplates.takedownRequestedAt,
+      takedownAt: boardTemplates.takedownAt,
+      author: {
+        id: users.id,
+        name: users.name,
+        image: users.image,
+      },
+    })
+      .from(boardTemplates)
+      .leftJoin(users, eq(boardTemplates.createdBy, users.id))
+      .where(and(
+        isNotNull(boardTemplates.takedownRequestedAt),
+        or(
+          isNull(boardTemplates.takedownAt),
+          gt(boardTemplates.takedownAt, new Date())
+        )!
+      ))
+      .orderBy(asc(boardTemplates.takedownAt))
   },
 
   findBoardTemplates: async (userId: string, workspaceId?: string) => {

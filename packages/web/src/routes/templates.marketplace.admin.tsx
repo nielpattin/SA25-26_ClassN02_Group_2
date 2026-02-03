@@ -82,7 +82,7 @@ function AdminReviewComponent() {
                     Approve
                   </button>
                   <button
-                    onClick={() => rejectMutation.mutate(template.id)}
+                    onClick={() => rejectMutation.mutate({ id: template.id })}
                     disabled={approveMutation.isPending || rejectMutation.isPending}
                     className="flex flex-1 items-center justify-center gap-2 bg-white px-6 py-4 text-xs font-black text-black uppercase transition-all hover:bg-error/10 hover:text-error disabled:opacity-50"
                   >

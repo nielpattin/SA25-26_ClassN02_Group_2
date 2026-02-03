@@ -8,6 +8,7 @@ const TEST_USER = {
   email: 'test@kyte.dev',
   password: 'password123',
   name: 'Test User',
+  adminRole: 'super_admin',
 }
 
 const ADDITIONAL_USERS = Array.from({ length: 21 }, (_, i) => ({
@@ -38,12 +39,17 @@ function generateId(length = 32) {
   return result
 }
 
-async function createUserDirectly(userData: { email: string; password: string; name: string }) {
+async function createUserDirectly(userData: { email: string; password: string; name: string; adminRole?: string }) {
   const existingUser = await db.query.users.findFirst({
     where: eq(schema.users.email, userData.email),
   })
 
   if (existingUser) {
+    if (userData.adminRole && existingUser.adminRole !== userData.adminRole) {
+      await db.update(schema.users)
+        .set({ adminRole: userData.adminRole as any })
+        .where(eq(schema.users.id, existingUser.id))
+    }
     return existingUser.id
   }
 
@@ -55,6 +61,7 @@ async function createUserDirectly(userData: { email: string; password: string; n
     name: userData.name,
     email: userData.email,
     emailVerified: true,
+    adminRole: userData.adminRole as any,
   })
 
   await db.insert(schema.accounts).values({

@@ -6,6 +6,7 @@ export const ADMIN_ACTIONS = {
   USER_DEMOTED: 'user.demoted',
   TEMPLATE_APPROVED: 'template.approved',
   TEMPLATE_REJECTED: 'template.rejected',
+  TEMPLATE_REMOVED: 'template.removed',
   WORKSPACE_DELETED: 'workspace.deleted',
 } as const
 
