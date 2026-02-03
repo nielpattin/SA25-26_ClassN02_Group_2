@@ -1,10 +1,111 @@
 import { db } from '../../db'
-import { boardTemplates, taskTemplates } from '../../db/schema'
-import { eq, and, or } from 'drizzle-orm'
-import type { CreateBoardTemplateInput, UpdateBoardTemplateInput, CreateTaskTemplateInput, UpdateTaskTemplateInput } from './templates.model'
+import { boardTemplates, taskTemplates, users } from '../../db/schema'
+import { eq, and, or, ilike, sql, desc, asc, isNull, gt } from 'drizzle-orm'
+import type { CreateBoardTemplateInput, UpdateBoardTemplateInput, CreateTaskTemplateInput, UpdateTaskTemplateInput, MarketplaceQuerySchema } from './templates.model'
 
 export const templateRepository = {
   // Board Templates
+  findMarketplaceTemplates: async (query: typeof MarketplaceQuerySchema.static) => {
+    const { q, category, sort, limit = 20, offset = 0 } = query
+
+    const conditions = [
+      eq(boardTemplates.status, 'approved'),
+      or(
+        isNull(boardTemplates.takedownAt),
+        gt(boardTemplates.takedownAt, new Date())
+      )!
+    ]
+
+    if (q) {
+      conditions.push(or(
+        ilike(boardTemplates.name, `%${q}%`),
+        ilike(boardTemplates.description, `%${q}%`)
+      )!)
+    }
+
+    if (category) {
+      conditions.push(sql`${boardTemplates.categories} @> ARRAY[${category}]`)
+    }
+
+    let orderBy = desc(boardTemplates.approvedAt)
+    if (sort === 'popular') {
+      orderBy = desc(boardTemplates.createdAt)
+    } else if (sort === 'alphabetical') {
+      orderBy = asc(boardTemplates.name)
+    }
+
+    return db.select({
+      id: boardTemplates.id,
+      name: boardTemplates.name,
+      description: boardTemplates.description,
+      categories: boardTemplates.categories,
+      columnDefinitions: boardTemplates.columnDefinitions,
+      defaultLabels: boardTemplates.defaultLabels,
+      createdAt: boardTemplates.createdAt,
+      approvedAt: boardTemplates.approvedAt,
+      author: {
+        id: users.id,
+        name: users.name,
+        image: users.image,
+      },
+    })
+      .from(boardTemplates)
+      .leftJoin(users, eq(boardTemplates.createdBy, users.id))
+      .where(and(...conditions))
+      .orderBy(orderBy, asc(boardTemplates.id))
+      .limit(limit)
+      .offset(offset)
+  },
+
+  findMarketplaceTemplateById: async (id: string) => {
+    const [template] = await db.select({
+      id: boardTemplates.id,
+      name: boardTemplates.name,
+      description: boardTemplates.description,
+      categories: boardTemplates.categories,
+      columnDefinitions: boardTemplates.columnDefinitions,
+      defaultLabels: boardTemplates.defaultLabels,
+      createdAt: boardTemplates.createdAt,
+      approvedAt: boardTemplates.approvedAt,
+      author: {
+        id: users.id,
+        name: users.name,
+        image: users.image,
+      },
+    })
+      .from(boardTemplates)
+      .leftJoin(users, eq(boardTemplates.createdBy, users.id))
+      .where(and(
+        eq(boardTemplates.id, id),
+        eq(boardTemplates.status, 'approved'),
+        or(
+          isNull(boardTemplates.takedownAt),
+          gt(boardTemplates.takedownAt, new Date())
+        )!
+      ))
+
+    return template
+  },
+
+  findPendingSubmissions: async () => {
+    return db.select({
+      id: boardTemplates.id,
+      name: boardTemplates.name,
+      description: boardTemplates.description,
+      categories: boardTemplates.categories,
+      submittedAt: boardTemplates.submittedAt,
+      author: {
+        id: users.id,
+        name: users.name,
+        image: users.image,
+      },
+    })
+      .from(boardTemplates)
+      .leftJoin(users, eq(boardTemplates.createdBy, users.id))
+      .where(eq(boardTemplates.status, 'pending'))
+      .orderBy(desc(boardTemplates.submittedAt))
+  },
+
   findBoardTemplates: async (userId: string, workspaceId?: string) => {
     if (workspaceId) {
       return db.select().from(boardTemplates).where(

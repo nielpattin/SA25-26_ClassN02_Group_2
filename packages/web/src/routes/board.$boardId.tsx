@@ -2,7 +2,8 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { ChevronRight, Archive, Download, Kanban, Calendar, ChartGantt, MoreHorizontal } from 'lucide-react'
+import { ChevronRight, Archive, Download, Kanban, Calendar, ChartGantt, MoreHorizontal, Share2 } from 'lucide-react'
+import { PublishTemplateModal } from '../components/board/PublishTemplateModal'
 import { useBoardFiltersStore } from '../store/boardViewStore'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
 import { PresenceStrip } from '../components/board/PresenceStrip'
@@ -73,6 +74,7 @@ function BoardComponent() {
   // Local UI state
   const [isArchiveOpen, setArchiveOpen] = useState(false)
   const [isExportOpen, setExportOpen] = useState(false)
+  const [isPublishOpen, setPublishOpen] = useState(false)
 
   // Fetch preferences from server (source of truth for view/zoom/filters)
   const { data: preferences, isSuccess: prefsLoaded } = useBoardPreferences(boardId)
@@ -373,6 +375,11 @@ function BoardComponent() {
                     icon: <Download size={16} />,
                     onClick: () => setExportOpen(true),
                   },
+                  {
+                    label: 'Publish to Market',
+                    icon: <Share2 size={16} />,
+                    onClick: () => setPublishOpen(true),
+                  },
                 ]}
               />
               <SearchTrigger />
@@ -434,6 +441,13 @@ function BoardComponent() {
           <ExportBoardModal
             isOpen={isExportOpen}
             onClose={() => setExportOpen(false)}
+            boardId={boardId}
+            boardName={board.name}
+          />
+
+          <PublishTemplateModal
+            isOpen={isPublishOpen}
+            onClose={() => setPublishOpen(false)}
             boardId={boardId}
             boardName={board.name}
           />

@@ -5,11 +5,75 @@ import { UnauthorizedError } from '../../shared/errors'
 import {
   CreateBoardTemplateBody, UpdateBoardTemplateBody,
   CreateTaskTemplateBody, UpdateTaskTemplateBody,
-  TemplateParams, BoardTemplatesParams
+  TemplateParams, BoardTemplatesParams, MarketplaceQuerySchema,
+  CloneMarketplaceTemplateBody, SubmitTemplateBody
 } from './templates.model'
 
 export const templateController = new Elysia({ prefix: '/templates' })
   .use(authPlugin)
+  // Marketplace
+  .get('/marketplace', async ({ query }) => {
+    return templateService.getMarketplaceTemplates(query)
+  }, {
+    query: MarketplaceQuerySchema,
+  })
+
+  .get('/marketplace/submissions', async ({ session }) => {
+    if (!session) throw new UnauthorizedError()
+    return templateService.getPendingSubmissions(session.user.id)
+  })
+
+  .get('/marketplace/:id', async ({ params }) => {
+    return templateService.getMarketplaceTemplateById(params.id)
+  }, {
+    params: TemplateParams,
+  })
+
+  .post('/marketplace/submit', async ({ body, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return templateService.submitTemplate(session.user.id, body)
+  }, {
+    body: SubmitTemplateBody,
+  })
+
+  .post('/marketplace/:id/approve', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return templateService.approveTemplate(session.user.id, params.id)
+  }, {
+    params: TemplateParams,
+  })
+
+  .post('/marketplace/:id/reject', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return templateService.rejectTemplate(session.user.id, params.id)
+  }, {
+    params: TemplateParams,
+  })
+
+  .post('/marketplace/:id/takedown', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return templateService.requestTakedown(session.user.id, params.id)
+  }, {
+    params: TemplateParams,
+  })
+
+  .post('/marketplace/:id/remove', async ({ params, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return templateService.removeTemplate(session.user.id, params.id)
+  }, {
+    params: TemplateParams,
+  })
+
+  .post('/marketplace/:id/clone', async ({ params, body, session, set }) => {
+    if (!session) throw new UnauthorizedError()
+    const board = await templateService.cloneMarketplaceTemplate(params.id, body.workspaceId, session.user.id, body.boardName)
+    set.status = 201
+    return board
+  }, {
+    params: TemplateParams,
+    body: CloneMarketplaceTemplateBody,
+  })
+
   // Board Templates
   .get('/boards', async ({ query, session }) => {
     if (!session) throw new UnauthorizedError()

@@ -17,8 +17,11 @@ import { Route as MembersRouteImport } from './routes/members'
 import { Route as BoardsRouteImport } from './routes/boards'
 import { Route as ArchiveRouteImport } from './routes/archive'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TemplatesMarketplaceRouteImport } from './routes/templates.marketplace'
 import { Route as BoardBoardIdRouteImport } from './routes/board.$boardId'
 import { Route as AccountRecoveryRouteImport } from './routes/account.recovery'
+import { Route as TemplatesMarketplaceAdminRouteImport } from './routes/templates.marketplace.admin'
+import { Route as TemplatesMarketplaceIdRouteImport } from './routes/templates.marketplace.$id'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -60,6 +63,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TemplatesMarketplaceRoute = TemplatesMarketplaceRouteImport.update({
+  id: '/templates/marketplace',
+  path: '/templates/marketplace',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BoardBoardIdRoute = BoardBoardIdRouteImport.update({
   id: '/board/$boardId',
   path: '/board/$boardId',
@@ -69,6 +77,17 @@ const AccountRecoveryRoute = AccountRecoveryRouteImport.update({
   id: '/account/recovery',
   path: '/account/recovery',
   getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatesMarketplaceAdminRoute =
+  TemplatesMarketplaceAdminRouteImport.update({
+    id: '/admin',
+    path: '/admin',
+    getParentRoute: () => TemplatesMarketplaceRoute,
+  } as any)
+const TemplatesMarketplaceIdRoute = TemplatesMarketplaceIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TemplatesMarketplaceRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -82,6 +101,9 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/account/recovery': typeof AccountRecoveryRoute
   '/board/$boardId': typeof BoardBoardIdRoute
+  '/templates/marketplace': typeof TemplatesMarketplaceRouteWithChildren
+  '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
+  '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +116,9 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/account/recovery': typeof AccountRecoveryRoute
   '/board/$boardId': typeof BoardBoardIdRoute
+  '/templates/marketplace': typeof TemplatesMarketplaceRouteWithChildren
+  '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
+  '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +132,9 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/account/recovery': typeof AccountRecoveryRoute
   '/board/$boardId': typeof BoardBoardIdRoute
+  '/templates/marketplace': typeof TemplatesMarketplaceRouteWithChildren
+  '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
+  '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +149,9 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/account/recovery'
     | '/board/$boardId'
+    | '/templates/marketplace'
+    | '/templates/marketplace/$id'
+    | '/templates/marketplace/admin'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +164,9 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/account/recovery'
     | '/board/$boardId'
+    | '/templates/marketplace'
+    | '/templates/marketplace/$id'
+    | '/templates/marketplace/admin'
   id:
     | '__root__'
     | '/'
@@ -145,6 +179,9 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/account/recovery'
     | '/board/$boardId'
+    | '/templates/marketplace'
+    | '/templates/marketplace/$id'
+    | '/templates/marketplace/admin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +195,7 @@ export interface RootRouteChildren {
   VerifyEmailRoute: typeof VerifyEmailRoute
   AccountRecoveryRoute: typeof AccountRecoveryRoute
   BoardBoardIdRoute: typeof BoardBoardIdRoute
+  TemplatesMarketplaceRoute: typeof TemplatesMarketplaceRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -218,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/templates/marketplace': {
+      id: '/templates/marketplace'
+      path: '/templates/marketplace'
+      fullPath: '/templates/marketplace'
+      preLoaderRoute: typeof TemplatesMarketplaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/board/$boardId': {
       id: '/board/$boardId'
       path: '/board/$boardId'
@@ -232,8 +277,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountRecoveryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/templates/marketplace/admin': {
+      id: '/templates/marketplace/admin'
+      path: '/admin'
+      fullPath: '/templates/marketplace/admin'
+      preLoaderRoute: typeof TemplatesMarketplaceAdminRouteImport
+      parentRoute: typeof TemplatesMarketplaceRoute
+    }
+    '/templates/marketplace/$id': {
+      id: '/templates/marketplace/$id'
+      path: '/$id'
+      fullPath: '/templates/marketplace/$id'
+      preLoaderRoute: typeof TemplatesMarketplaceIdRouteImport
+      parentRoute: typeof TemplatesMarketplaceRoute
+    }
   }
 }
+
+interface TemplatesMarketplaceRouteChildren {
+  TemplatesMarketplaceIdRoute: typeof TemplatesMarketplaceIdRoute
+  TemplatesMarketplaceAdminRoute: typeof TemplatesMarketplaceAdminRoute
+}
+
+const TemplatesMarketplaceRouteChildren: TemplatesMarketplaceRouteChildren = {
+  TemplatesMarketplaceIdRoute: TemplatesMarketplaceIdRoute,
+  TemplatesMarketplaceAdminRoute: TemplatesMarketplaceAdminRoute,
+}
+
+const TemplatesMarketplaceRouteWithChildren =
+  TemplatesMarketplaceRoute._addFileChildren(TemplatesMarketplaceRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -246,6 +318,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyEmailRoute: VerifyEmailRoute,
   AccountRecoveryRoute: AccountRecoveryRoute,
   BoardBoardIdRoute: BoardBoardIdRoute,
+  TemplatesMarketplaceRoute: TemplatesMarketplaceRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

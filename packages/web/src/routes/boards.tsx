@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useSession } from '../api/auth'
 import { useState, useEffect } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, ShoppingBag } from 'lucide-react'
 import { AuthModal } from '../components/auth/AuthModal'
 import { AvatarPickerModal } from '../components/ui/AvatarPickerModal'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
@@ -151,7 +151,17 @@ function BoardsDashboard() {
             {currentWorkspace?.personal ? 'Personal Workspace' : 'Team Workspace'}
           </p>
         </div>
-        <SearchTrigger />
+        <div className="flex items-center gap-4">
+          <Link
+            to="/templates/marketplace"
+            search={{ q: '', category: '', sort: 'newest', page: 1 }}
+            className="hover:bg-accent hover:shadow-brutal-md flex items-center gap-2 rounded-none border border-black bg-white px-4 py-2 text-sm font-extrabold text-black uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5"
+          >
+            <ShoppingBag size={16} />
+            Templates
+          </Link>
+          <SearchTrigger />
+        </div>
       </header>
 
       <div className="mb-12 flex max-w-150 gap-4">

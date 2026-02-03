@@ -1,5 +1,8 @@
 import { pgTable, pgEnum, varchar, text, integer, timestamp, uuid, boolean, primaryKey, jsonb, unique, index } from 'drizzle-orm/pg-core'
 
+// Template marketplace status
+export const templateStatusEnum = pgEnum('template_status', ['none', 'pending', 'approved', 'rejected'])
+
 // Workspace membership role
 export const workspaceRoleEnum = pgEnum('workspace_role', ['owner', 'admin', 'member', 'viewer'])
 
@@ -346,6 +349,14 @@ export const boardTemplates = pgTable('board_templates', {
 	defaultLabels: jsonb('default_labels'),
 	// Visible to all org members
 	isPublic: boolean('is_public').default(false).notNull(),
+	// Marketplace metadata
+	status: templateStatusEnum('status').default('none').notNull(),
+	categories: text('categories').array(),
+	submittedAt: timestamp('submitted_at'),
+	approvedAt: timestamp('approved_at'),
+	approvedBy: text('approved_by').references(() => users.id),
+	takedownRequestedAt: timestamp('takedown_requested_at'),
+	takedownAt: timestamp('takedown_at'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -426,6 +437,7 @@ export const table = {
 	activities, notifications,
 	boardTemplates, taskTemplates,
 	userBoardPreferences,
+	templateStatusEnum,
 	boardVisits,
 	idempotencyKeys,
 	rateLimits,
