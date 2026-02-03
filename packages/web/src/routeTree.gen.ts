@@ -22,11 +22,13 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TemplatesMarketplaceRouteImport } from './routes/templates.marketplace'
 import { Route as BoardBoardIdRouteImport } from './routes/board.$boardId'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminUserLookupRouteImport } from './routes/admin/user-lookup'
 import { Route as AdminModerationRouteImport } from './routes/admin/moderation'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as AccountRecoveryRouteImport } from './routes/account.recovery'
 import { Route as TemplatesMarketplaceAdminRouteImport } from './routes/templates.marketplace.admin'
 import { Route as TemplatesMarketplaceIdRouteImport } from './routes/templates.marketplace.$id'
+import { Route as AdminUsersIdRouteImport } from './routes/admin/users.$id'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -93,6 +95,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminUserLookupRoute = AdminUserLookupRouteImport.update({
+  id: '/user-lookup',
+  path: '/user-lookup',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminModerationRoute = AdminModerationRouteImport.update({
   id: '/moderation',
   path: '/moderation',
@@ -119,6 +126,11 @@ const TemplatesMarketplaceIdRoute = TemplatesMarketplaceIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => TemplatesMarketplaceRoute,
 } as any)
+const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminUsersRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -133,10 +145,12 @@ export interface FileRoutesByFullPath {
   '/account/recovery': typeof AccountRecoveryRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/moderation': typeof AdminModerationRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin/user-lookup': typeof AdminUserLookupRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/board/$boardId': typeof BoardBoardIdRoute
   '/templates/marketplace': typeof TemplatesMarketplaceRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
   '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
 }
@@ -152,10 +166,12 @@ export interface FileRoutesByTo {
   '/account/recovery': typeof AccountRecoveryRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/moderation': typeof AdminModerationRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin/user-lookup': typeof AdminUserLookupRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/board/$boardId': typeof BoardBoardIdRoute
   '/templates/marketplace': typeof TemplatesMarketplaceRouteWithChildren
   '/admin': typeof AdminIndexRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
   '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
 }
@@ -173,10 +189,12 @@ export interface FileRoutesById {
   '/account/recovery': typeof AccountRecoveryRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/moderation': typeof AdminModerationRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin/user-lookup': typeof AdminUserLookupRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/board/$boardId': typeof BoardBoardIdRoute
   '/templates/marketplace': typeof TemplatesMarketplaceRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
   '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
 }
@@ -195,10 +213,12 @@ export interface FileRouteTypes {
     | '/account/recovery'
     | '/admin/audit'
     | '/admin/moderation'
+    | '/admin/user-lookup'
     | '/admin/users'
     | '/board/$boardId'
     | '/templates/marketplace'
     | '/admin/'
+    | '/admin/users/$id'
     | '/templates/marketplace/$id'
     | '/templates/marketplace/admin'
   fileRoutesByTo: FileRoutesByTo
@@ -214,10 +234,12 @@ export interface FileRouteTypes {
     | '/account/recovery'
     | '/admin/audit'
     | '/admin/moderation'
+    | '/admin/user-lookup'
     | '/admin/users'
     | '/board/$boardId'
     | '/templates/marketplace'
     | '/admin'
+    | '/admin/users/$id'
     | '/templates/marketplace/$id'
     | '/templates/marketplace/admin'
   id:
@@ -234,10 +256,12 @@ export interface FileRouteTypes {
     | '/account/recovery'
     | '/admin/audit'
     | '/admin/moderation'
+    | '/admin/user-lookup'
     | '/admin/users'
     | '/board/$boardId'
     | '/templates/marketplace'
     | '/admin/'
+    | '/admin/users/$id'
     | '/templates/marketplace/$id'
     | '/templates/marketplace/admin'
   fileRoutesById: FileRoutesById
@@ -350,6 +374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/user-lookup': {
+      id: '/admin/user-lookup'
+      path: '/user-lookup'
+      fullPath: '/admin/user-lookup'
+      preLoaderRoute: typeof AdminUserLookupRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/moderation': {
       id: '/admin/moderation'
       path: '/moderation'
@@ -385,20 +416,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TemplatesMarketplaceIdRouteImport
       parentRoute: typeof TemplatesMarketplaceRoute
     }
+    '/admin/users/$id': {
+      id: '/admin/users/$id'
+      path: '/$id'
+      fullPath: '/admin/users/$id'
+      preLoaderRoute: typeof AdminUsersIdRouteImport
+      parentRoute: typeof AdminUsersRoute
+    }
   }
 }
+
+interface AdminUsersRouteChildren {
+  AdminUsersIdRoute: typeof AdminUsersIdRoute
+}
+
+const AdminUsersRouteChildren: AdminUsersRouteChildren = {
+  AdminUsersIdRoute: AdminUsersIdRoute,
+}
+
+const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
+  AdminUsersRouteChildren,
+)
 
 interface AdminRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminModerationRoute: typeof AdminModerationRoute
-  AdminUsersRoute: typeof AdminUsersRoute
+  AdminUserLookupRoute: typeof AdminUserLookupRoute
+  AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminModerationRoute: AdminModerationRoute,
-  AdminUsersRoute: AdminUsersRoute,
+  AdminUserLookupRoute: AdminUserLookupRoute,
+  AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 

@@ -1,5 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { LayoutDashboard, Users, ShieldAlert, FileText, LogOut, ArrowLeft, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Users, ShieldAlert, FileText, LogOut, ArrowLeft, ShieldCheck, Search } from 'lucide-react'
 import { useSession, signOut } from '../../api/auth'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -10,7 +10,9 @@ export function AdminSidebar() {
 
   const adminRole = session?.user?.adminRole
   const isSuperAdmin = adminRole === 'super_admin'
+  const isSupport = adminRole === 'support'
   const isModeratorPlus = adminRole === 'super_admin' || adminRole === 'moderator'
+  const canUserLookup = isSuperAdmin || isSupport
 
   const handleSignOut = async () => {
     await signOut()
@@ -53,6 +55,20 @@ export function AdminSidebar() {
             <LayoutDashboard size={16} />
             Dashboard
           </Link>
+
+          {canUserLookup && (
+            <Link
+              to="/admin/user-lookup"
+              className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
+                isActive('/admin/user-lookup')
+                  ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                  : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+              }`}
+            >
+              <Search size={16} />
+              User Lookup
+            </Link>
+          )}
 
           {isSuperAdmin && (
             <Link

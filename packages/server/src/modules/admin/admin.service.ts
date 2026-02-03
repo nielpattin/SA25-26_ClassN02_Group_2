@@ -1,7 +1,7 @@
 import { adminRepository } from './admin.repository'
 import { auditLogService, ADMIN_ACTIONS } from './auditLog.service'
 import { AdminRole } from './admin.model'
-import { BadRequestError, NotFoundError } from '../../shared/errors'
+import { BadRequestError, NotFoundError, ForbiddenError } from '../../shared/errors'
 
 export const adminService = {
   async listAdmins(pagination: { limit?: number; offset?: number }) {
@@ -82,5 +82,146 @@ export const adminService = {
     }
 
     return await adminRepository.exportAuditLogs()
+  },
+
+  async getDashboardMetrics() {
+    const [activeUsers24h, pendingModerationCount, recentAdminActions] = await Promise.all([
+      adminRepository.countActiveUsersLast24h(),
+      adminRepository.countPendingModeration(),
+      adminRepository.getRecentAdminActions(10)
+    ])
+
+    return {
+      activeUsers24h,
+      pendingModerationCount,
+      recentAdminActions: recentAdminActions.map(action => ({
+        action: action.action,
+        createdAt: action.createdAt.toISOString()
+      }))
+    }
+  },
+
+  async searchUsers(query: string, pagination: { limit?: number; offset?: number }) {
+    const results = await adminRepository.searchUsers({
+      query,
+      limit: pagination.limit,
+      offset: pagination.offset
+    })
+
+    return results.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      adminRole: user.adminRole,
+      deletedAt: user.deletedAt?.toISOString() ?? null,
+      lastActive: user.lastActive ?? null
+    }))
+  },
+
+  async getUserDetail(userId: string) {
+    const user = await adminRepository.getUserDetail(userId)
+    if (!user) throw new NotFoundError('User not found')
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      createdAt: user.createdAt.toISOString(),
+      emailVerified: user.emailVerified,
+      deletedAt: user.deletedAt?.toISOString() ?? null,
+      adminRole: user.adminRole,
+      workspacesCount: user.workspacesCount,
+      boardsCount: user.boardsCount,
+      lastActive: user.lastActive
+    }
+  },
+
+  async resetUserPassword(adminId: string, targetUserId: string) {
+    const targetUser = await adminRepository.findById(targetUserId)
+    if (!targetUser) throw new NotFoundError('User not found')
+
+    // Cannot reset password for admin users (security restriction)
+    if (targetUser.adminRole) {
+      throw new ForbiddenError('Cannot reset password for admin users')
+    }
+
+    // Delete all sessions to force re-authentication
+    await adminRepository.deleteAllSessions(targetUserId)
+
+    await auditLogService.log({
+      adminId,
+      action: ADMIN_ACTIONS.USER_PASSWORD_RESET,
+      targetType: 'user',
+      targetId: targetUserId,
+      metadata: { email: targetUser.email }
+    })
+
+    return { success: true }
+  },
+
+  async revokeUserSessions(adminId: string, targetUserId: string) {
+    const targetUser = await adminRepository.findById(targetUserId)
+    if (!targetUser) throw new NotFoundError('User not found')
+
+    // Cannot revoke sessions for admin users (security restriction)
+    if (targetUser.adminRole) {
+      throw new ForbiddenError('Cannot revoke sessions for admin users')
+    }
+
+    const revoked = await adminRepository.deleteAllSessions(targetUserId)
+
+    await auditLogService.log({
+      adminId,
+      action: ADMIN_ACTIONS.USER_SESSIONS_REVOKED,
+      targetType: 'user',
+      targetId: targetUserId,
+      metadata: { email: targetUser.email, sessionCount: revoked.length }
+    })
+
+    return { success: true, count: revoked.length }
+  },
+
+  async cancelUserDeletion(adminId: string, targetUserId: string) {
+    const targetUser = await adminRepository.findById(targetUserId)
+    if (!targetUser) throw new NotFoundError('User not found')
+
+    // Cannot cancel deletion for admin users (security restriction)
+    if (targetUser.adminRole) {
+      throw new ForbiddenError('Cannot cancel deletion for admin users')
+    }
+
+    // Check if user is actually marked for deletion
+    if (!targetUser.deletedAt) {
+      throw new BadRequestError('User is not marked for deletion')
+    }
+
+    const updatedUser = await adminRepository.cancelUserDeletion(targetUserId)
+
+    await auditLogService.log({
+      adminId,
+      action: ADMIN_ACTIONS.USER_DELETION_CANCELED,
+      targetType: 'user',
+      targetId: targetUserId,
+      metadata: { email: targetUser.email, previousDeletedAt: targetUser.deletedAt.toISOString() }
+    })
+
+    return { success: true, user: updatedUser }
+  },
+
+  async exportUserData(adminId: string, targetUserId: string) {
+    const targetUser = await adminRepository.findById(targetUserId)
+    if (!targetUser) throw new NotFoundError('User not found')
+
+    const exportData = await adminRepository.getUserExportData(targetUserId)
+
+    await auditLogService.log({
+      adminId,
+      action: ADMIN_ACTIONS.USER_EXPORTED,
+      targetType: 'user',
+      targetId: targetUserId,
+      metadata: { email: targetUser.email }
+    })
+
+    return { success: true, export: exportData }
   }
 }

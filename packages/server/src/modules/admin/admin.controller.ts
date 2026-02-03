@@ -1,10 +1,16 @@
 import { Elysia, t } from 'elysia'
 import { adminPlugin } from './admin.plugin'
 import { adminService } from './admin.service'
-import { PromoteUserSchema, AuditLogQuerySchema } from './admin.model'
+import { PromoteUserSchema, AuditLogQuerySchema, DashboardMetricsSchema, UserSearchResponseSchema, UserDetailSchema } from './admin.model'
 
 export const adminController = new Elysia({ prefix: '/admin' })
   .use(adminPlugin)
+  .get('/dashboard', async ({ requireAdmin }) => {
+    requireAdmin()
+    return await adminService.getDashboardMetrics()
+  }, {
+    response: DashboardMetricsSchema
+  })
   .get('/users', async ({ requireAdmin, query }) => {
     requireAdmin()
     const limit = query.limit ? parseInt(query.limit) : 50
@@ -57,4 +63,59 @@ export const adminController = new Elysia({ prefix: '/admin' })
       session!.user.id,
       session!.user.adminRole as any
     )
+  })
+  .get('/users/search', async ({ requireRole, query }) => {
+    requireRole(['super_admin', 'support'])
+    const limit = query.limit ? parseInt(query.limit) : 20
+    const offset = query.offset ? parseInt(query.offset) : 0
+
+    return await adminService.searchUsers(query.query, { limit, offset })
+  }, {
+    query: t.Object({
+      query: t.String(),
+      limit: t.Optional(t.String()),
+      offset: t.Optional(t.String())
+    }),
+    response: UserSearchResponseSchema
+  })
+  .get('/users/:id', async ({ requireRole, params }) => {
+    requireRole(['super_admin', 'support'])
+    return await adminService.getUserDetail(params.id)
+  }, {
+    params: t.Object({
+      id: t.String()
+    }),
+    response: UserDetailSchema
+  })
+  .post('/users/:id/password-reset', async ({ requireRole, params, session }) => {
+    requireRole(['super_admin', 'support'])
+    return await adminService.resetUserPassword(session!.user.id, params.id)
+  }, {
+    params: t.Object({
+      id: t.String()
+    })
+  })
+  .post('/users/:id/revoke-sessions', async ({ requireRole, params, session }) => {
+    requireRole(['super_admin', 'support'])
+    return await adminService.revokeUserSessions(session!.user.id, params.id)
+  }, {
+    params: t.Object({
+      id: t.String()
+    })
+  })
+  .post('/users/:id/cancel-deletion', async ({ requireRole, params, session }) => {
+    requireRole(['super_admin'])
+    return await adminService.cancelUserDeletion(session!.user.id, params.id)
+  }, {
+    params: t.Object({
+      id: t.String()
+    })
+  })
+  .post('/users/:id/export', async ({ requireRole, params, session }) => {
+    requireRole(['super_admin'])
+    return await adminService.exportUserData(session!.user.id, params.id)
+  }, {
+    params: t.Object({
+      id: t.String()
+    })
   })

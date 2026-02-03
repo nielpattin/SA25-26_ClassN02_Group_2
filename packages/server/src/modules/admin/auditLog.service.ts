@@ -8,6 +8,10 @@ export const ADMIN_ACTIONS = {
   TEMPLATE_REJECTED: 'template.rejected',
   TEMPLATE_REMOVED: 'template.removed',
   WORKSPACE_DELETED: 'workspace.deleted',
+  USER_PASSWORD_RESET: 'user.password_reset',
+  USER_SESSIONS_REVOKED: 'user.sessions_revoked',
+  USER_DELETION_CANCELED: 'user.deletion_canceled',
+  USER_EXPORTED: 'user.exported',
 } as const
 
 export type AdminAction = typeof ADMIN_ACTIONS[keyof typeof ADMIN_ACTIONS]
