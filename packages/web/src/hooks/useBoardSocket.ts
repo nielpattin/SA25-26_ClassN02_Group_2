@@ -1,7 +1,12 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws'
+
+export type PresenceUser = {
+  id: string
+  name: string
+}
 
 type WsMessage = {
   type: 
@@ -22,6 +27,7 @@ type WsMessage = {
     | 'task:restored'
     | 'dependency:created'
     | 'dependency:deleted'
+    | 'presence:updated'
   data?: unknown
 
   boardId?: string
@@ -41,6 +47,8 @@ export function useBoardSocket(boardId: string) {
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isCleaningUpRef = useRef(false)
   const boardIdRef = useRef(boardId)
+  const [presence, setPresence] = useState<PresenceUser[]>([])
+  const lastActivityRef = useRef(0)
 
   // Keep boardId ref up to date
   useEffect(() => {
@@ -48,7 +56,30 @@ export function useBoardSocket(boardId: string) {
   }, [boardId])
 
   useEffect(() => {
+    const handleActivity = () => {
+      const now = Date.now()
+      if (now - lastActivityRef.current > 30000) {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: 'presence:activity' }))
+          lastActivityRef.current = now
+        }
+      }
+    }
+
+    window.addEventListener('mousemove', handleActivity)
+    window.addEventListener('keydown', handleActivity)
+    window.addEventListener('mousedown', handleActivity)
+
+    return () => {
+      window.removeEventListener('mousemove', handleActivity)
+      window.removeEventListener('keydown', handleActivity)
+      window.removeEventListener('mousedown', handleActivity)
+    }
+  }, [boardId])
+
+  useEffect(() => {
     isCleaningUpRef.current = false
+    let reconnectAttempts = 0
 
     function connect() {
       if (isCleaningUpRef.current) return
@@ -61,14 +92,22 @@ export function useBoardSocket(boardId: string) {
 
       ws.onopen = () => {
         if (!isCleaningUpRef.current) {
+          reconnectAttempts = 0
           ws.send(JSON.stringify({ type: 'subscribe', boardId: boardIdRef.current }))
         }
       }
 
       ws.onmessage = (event) => {
-        if (isCleaningUpRef.current || isDragging) return
+        if (isCleaningUpRef.current) return
         try {
           const message: WsMessage = JSON.parse(event.data)
+
+          if (message.type === 'presence:updated') {
+            setPresence(message.data as PresenceUser[])
+            return
+          }
+
+          if (isDragging) return
 
           switch (message.type) {
             case 'board:updated':
@@ -115,9 +154,11 @@ export function useBoardSocket(boardId: string) {
 
       ws.onclose = () => {
         if (!isCleaningUpRef.current) {
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000)
+          reconnectAttempts++
           reconnectTimeoutRef.current = setTimeout(() => {
             connect()
-          }, 2000)
+          }, delay)
         }
       }
     }
@@ -143,5 +184,5 @@ export function useBoardSocket(boardId: string) {
     }
   }, [boardId, queryClient])
 
-  return wsRef
+  return { wsRef, presence }
 }

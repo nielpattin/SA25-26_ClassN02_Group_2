@@ -25,7 +25,7 @@ export function GanttView({
   onFiltersChange,
 }: GanttViewProps) {
   const [todayTrigger, setTodayTrigger] = useState(0)
-  const { currentDate, next, prev, goToToday, setCurrentDate } = useCalendarNavigation(zoomMode)
+  const { currentDate, next, prev, goToToday } = useCalendarNavigation(zoomMode)
 
   const handleStatusChange = (status: TaskStatusFilter) => {
     onFiltersChange({ status })

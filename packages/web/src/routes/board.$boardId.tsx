@@ -5,6 +5,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { ChevronRight, Archive, Download, Kanban, Calendar, ChartGantt, MoreHorizontal } from 'lucide-react'
 import { useBoardFiltersStore } from '../store/boardViewStore'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
+import { PresenceStrip } from '../components/board/PresenceStrip'
 import { useBoard, useBoards } from '../hooks/useBoards'
 import {
   useBoardPreferences,
@@ -156,7 +157,7 @@ function BoardComponent() {
   )
 
   // Data Fetching via hooks
-  useBoardSocket(boardId)
+  const { presence } = useBoardSocket(boardId)
   const { data: board, isLoading: boardLoading } = useBoard(boardId)
   const { data: serverColumns = [], isLoading: columnsLoading } = useColumns(boardId)
   const { data: allCards = [], isLoading: tasksLoading } = useTasks(boardId)
@@ -305,6 +306,9 @@ function BoardComponent() {
               </Link>
               <ChevronRight size={14} className="text-text-muted" />
               <h1 className="font-heading m-0 text-[18px] font-bold text-black">{board.name}</h1>
+              <div className="ml-4">
+                <PresenceStrip presence={presence} />
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <BoardFilterBar

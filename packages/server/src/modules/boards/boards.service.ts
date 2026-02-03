@@ -173,6 +173,23 @@ export const boardService = {
     return { columns, tasks }
   },
 
+  canAccessBoard: async (boardId: string, userId: string) => {
+    const board = await boardRepository.findById(boardId)
+    if (!board) return false
+
+    if (board.visibility === 'public') return true
+
+    const members = await boardRepository.getMembers(boardId)
+    if (members.some(m => m.userId === userId)) return true
+
+    if (board.workspaceId) {
+      const workspaceMember = await workspaceRepository.getMember(board.workspaceId, userId)
+      if (workspaceMember) return true
+    }
+
+    return false
+  },
+
   starBoard: async (userId: string, boardId: string) => {
     const result = await boardRepository.star(userId, boardId)
     eventBus.emitDomain('board.starred', { boardId, userId })

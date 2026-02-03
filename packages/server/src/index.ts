@@ -19,10 +19,12 @@ import { searchController } from './modules/search'
 import { configController } from './modules/config/config.controller'
 import { wsManager } from './websocket/manager'
 import { initWebSocketBridge } from './websocket/bridge'
+import { presenceManager } from './websocket/presence'
 import { initActivitySubscriber } from './modules/activities/activity.subscriber'
 import { initNotificationSubscriber } from './modules/notifications/notification.subscriber'
 import { runReminderJob } from './jobs/reminder-job'
 
+import { boardService } from './modules/boards/boards.service'
 import { activityRepository } from './modules/activities/activities.repository'
 import { AppError } from './shared/errors'
 
@@ -108,13 +110,54 @@ export const app = new Elysia()
       userId: t.Optional(t.String()),
       since: t.Optional(t.String())
     }),
-    message(ws, { type, boardId, userId, since }) {
+    close(ws) {
+      const data = ws.data as any
+      if (data.currentBoardId && data.session?.user?.id) {
+        presenceManager.leave(data.currentBoardId, data.session.user.id)
+      }
+    },
+    async message(ws, { type, boardId, userId, since }) {
       const authenticatedUserId = ws.data.session?.user.id
+      const user = ws.data.session?.user
 
       if (type === 'subscribe') {
-        if (boardId) ws.subscribe(`board:${boardId}`)
+        if (boardId) {
+          const data = ws.data as any
+          
+          if (authenticatedUserId) {
+            const hasAccess = await boardService.canAccessBoard(boardId, authenticatedUserId)
+            if (!hasAccess) {
+              ws.send(JSON.stringify({ type: 'error', message: 'Access denied' }))
+              return
+            }
+          }
+
+          if (data.currentBoardId && data.currentBoardId !== boardId && authenticatedUserId) {
+            presenceManager.leave(data.currentBoardId, authenticatedUserId)
+          }
+
+          ws.subscribe(`board:${boardId}`)
+          data.currentBoardId = boardId
+
+          if (user) {
+            presenceManager.join(boardId, {
+              id: user.id,
+              name: user.name ?? 'Unknown'
+            })
+          }
+        }
         if (userId && authenticatedUserId === userId) {
           ws.subscribe(`user:${userId}`)
+        }
+      }
+
+      if (type === 'presence:activity' && authenticatedUserId && user) {
+        const data = ws.data as any
+        if (data.currentBoardId) {
+          presenceManager.updateActivity(data.currentBoardId, {
+            id: user.id,
+            name: user.name ?? 'Unknown'
+          })
         }
       }
 
