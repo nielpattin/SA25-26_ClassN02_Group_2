@@ -12,6 +12,7 @@ import {
   StarBoardParams,
   ExportBoardQuery,
 } from './boards.model'
+import { UpdateBoardPreferenceBody } from './preferences.model'
 
 export const boardController = new Elysia({ prefix: '/boards' })
   .use(authPlugin)
@@ -142,4 +143,18 @@ export const boardController = new Elysia({ prefix: '/boards' })
   }, {
     params: BoardParams,
     query: ExportBoardQuery,
+  })
+
+  .get('/:id/preferences', ({ params: { id }, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return boardService.getPreferences(session.user.id, id)
+  }, {
+    params: BoardParams,
+  })
+  .put('/:id/preferences', ({ params: { id }, body, session }) => {
+    if (!session) throw new UnauthorizedError()
+    return boardService.updatePreferences(session.user.id, id, body)
+  }, {
+    params: BoardParams,
+    body: UpdateBoardPreferenceBody,
   })

@@ -8,18 +8,28 @@ import {
   subWeeks,
   subMonths,
   subQuarters,
+  startOfDay,
   startOfToday,
+  isSameDay,
 } from 'date-fns'
 
 export type ViewMode = 'day' | 'week' | 'month' | 'quarter'
 
-export function useCalendarNavigation(initialViewMode: ViewMode = 'month') {
-  const [currentDate, setCurrentDate] = useState(startOfToday())
+export function useCalendarNavigation(initialViewMode: ViewMode = 'month', initialDate?: Date) {
+  const [currentDate, setCurrentDate] = useState(() => (
+    initialDate ? startOfDay(initialDate) : startOfToday()
+  ))
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode)
 
   useEffect(() => {
     setViewMode(initialViewMode)
   }, [initialViewMode])
+
+  useEffect(() => {
+    if (!initialDate) return
+    const normalized = startOfDay(initialDate)
+    setCurrentDate(prev => (isSameDay(prev, normalized) ? prev : normalized))
+  }, [initialDate])
 
   const next = useCallback(() => {
     setCurrentDate(prev => {
@@ -47,6 +57,7 @@ export function useCalendarNavigation(initialViewMode: ViewMode = 'month') {
     currentDate,
     viewMode,
     setViewMode,
+    setCurrentDate,
     next,
     prev,
     goToToday,

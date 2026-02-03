@@ -1,3 +1,6 @@
 export { boardController } from './boards.controller'
 export { boardService } from './boards.service'
 export { boardRepository } from './boards.repository'
+export { boardPreferenceRepository } from './preferences.repository'
+export * from './boards.model'
+export * from './preferences.model'

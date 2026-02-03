@@ -5,7 +5,7 @@ import {
   subDays,
   isBefore,
   isAfter,
-  differenceInDays,
+  differenceInCalendarDays,
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
@@ -17,9 +17,10 @@ import {
 } from 'date-fns'
 import type { TaskWithLabels } from './useTasks'
 
-export function useGanttRange(tasks: TaskWithLabels[]) {
+export function useGanttRange(tasks: TaskWithLabels[], focusDate?: Date) {
   return useMemo(() => {
     const today = startOfDay(new Date())
+    const focus = focusDate ? startOfDay(focusDate) : null
     
     const datedTasks = tasks.filter(t => t.startDate || t.dueDate)
     
@@ -27,15 +28,18 @@ export function useGanttRange(tasks: TaskWithLabels[]) {
     let end: Date
 
     if (datedTasks.length === 0) {
-      start = startOfMonth(today)
-      end = endOfMonth(today)
+      const baseDate = focus ?? today
+      start = startOfMonth(baseDate)
+      end = endOfMonth(baseDate)
     } else {
       const dates = datedTasks.flatMap(t => {
         const d = []
-        if (t.startDate) d.push(new Date(t.startDate))
-        if (t.dueDate) d.push(new Date(t.dueDate))
+        if (t.startDate) d.push(startOfDay(new Date(t.startDate)))
+        if (t.dueDate) d.push(startOfDay(new Date(t.dueDate)))
         return d
       })
+
+      if (focus) dates.push(focus)
       
       start = min(dates)
       end = max(dates)
@@ -50,11 +54,11 @@ export function useGanttRange(tasks: TaskWithLabels[]) {
     }
 
     // Align to week boundaries for better grid rendering
-    start = startOfWeek(start, { weekStartsOn: 1 })
-    end = endOfWeek(end, { weekStartsOn: 1 })
+    start = startOfDay(startOfWeek(start, { weekStartsOn: 1 }))
+    end = startOfDay(endOfWeek(end, { weekStartsOn: 1 }))
 
     // Cap at 2 years
-    const totalDays = differenceInDays(end, start)
+    const totalDays = differenceInCalendarDays(end, start)
     if (totalDays > 730) {
       end = addDays(start, 730)
     }
@@ -76,5 +80,5 @@ export function useGanttRange(tasks: TaskWithLabels[]) {
       months,
       totalDays: days.length
     }
-  }, [tasks])
+  }, [tasks, focusDate])
 }

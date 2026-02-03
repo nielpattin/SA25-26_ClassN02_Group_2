@@ -352,19 +352,32 @@ export const boardTemplates = pgTable('board_templates', {
 // Saved task templates for quick creation
 export const taskTemplates = pgTable('task_templates', {
 	id: uuid('id').defaultRandom().primaryKey(),
-	name: varchar('name', { length: 255 }).notNull(),
 	boardId: uuid('board_id').references(() => boards.id, { onDelete: 'cascade' }).notNull(),
-	// Auto-prefix for new task titles
-	titlePrefix: varchar('title_prefix', { length: 100 }),
-	// Markdown template with placeholders
-	descriptionTemplate: text('description_template'),
-	// Label IDs to auto-apply
-	defaultLabels: jsonb('default_labels'),
-	// Checklist items to auto-create
-	defaultChecklist: jsonb('default_checklist'),
-	createdBy: text('created_by').references(() => users.id),
+	name: text('name').notNull(),
+	description: text('description'),
+	content: jsonb('content'),
+	createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
+
+export const viewModeEnum = pgEnum('view_mode', ['kanban', 'calendar', 'gantt'])
+export const zoomModeEnum = pgEnum('zoom_mode', ['day', 'week', 'month', 'quarter'])
+
+export const userBoardPreferences = pgTable('user_board_preferences', {
+	userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+	boardId: uuid('board_id').references(() => boards.id, { onDelete: 'cascade' }).notNull(),
+	view: viewModeEnum().default('kanban').notNull(),
+	zoomMode: zoomModeEnum().default('month').notNull(),
+	filters: jsonb('filters').default({
+		labelIds: [],
+		assigneeIds: [],
+		dueDate: null,
+		status: 'active',
+	}).notNull(),
+	updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+	primaryKey({ columns: [table.userId, table.boardId] }),
+])
 
 // User's recently visited boards for search quick-access
 export const boardVisits = pgTable('board_visits', {
@@ -412,6 +425,7 @@ export const table = {
 	comments, commentMentions,
 	activities, notifications,
 	boardTemplates, taskTemplates,
+	userBoardPreferences,
 	boardVisits,
 	idempotencyKeys,
 	rateLimits,

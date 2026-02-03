@@ -1,16 +1,18 @@
-import { useState, useMemo } from 'react'
+import { useState, useCallback } from 'react'
 import { GanttHeader } from './GanttHeader'
 import { GanttContainer } from './GanttContainer'
-import { useBoardFilters, TaskStatusFilter } from '../../hooks/useBoardFilters'
-import { type ViewMode } from '../../hooks/useCalendarNavigation'
+import { type ZoomMode, type TaskStatusFilter, type BoardFilters } from '../../hooks/useBoardPreferences'
+import { useCalendarNavigation } from '../../hooks/useCalendarNavigation'
 import type { TaskWithLabels } from '../../hooks/useTasks'
 
 type GanttViewProps = {
   boardId: string
   tasks: TaskWithLabels[]
   onTaskClick?: (id: string) => void
-  zoomMode: ViewMode
-  onZoomModeChange: (mode: ViewMode) => void
+  zoomMode: ZoomMode
+  onZoomModeChange: (mode: ZoomMode) => void
+  filters: BoardFilters
+  onFiltersChange: (filters: Partial<BoardFilters>) => void
 }
 
 export function GanttView({
@@ -19,50 +21,49 @@ export function GanttView({
   onTaskClick,
   zoomMode,
   onZoomModeChange,
+  filters,
+  onFiltersChange,
 }: GanttViewProps) {
   const [todayTrigger, setTodayTrigger] = useState(0)
-  const { filters, setStatus, applyFilters } = useBoardFilters(boardId)
-
-  const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
-      // Status filter
-      if (filters.status === 'active') {
-        const isCompleted = task.checklistProgress 
-          ? task.checklistProgress.completed === task.checklistProgress.total && task.checklistProgress.total > 0
-          : false
-        return !isCompleted
-      }
-      if (filters.status === 'completed') {
-        const isCompleted = task.checklistProgress 
-          ? task.checklistProgress.completed === task.checklistProgress.total && task.checklistProgress.total > 0
-          : false
-        return isCompleted
-      }
-      return true
-    })
-  }, [tasks, filters.status])
+  const { currentDate, next, prev, goToToday, setCurrentDate } = useCalendarNavigation(zoomMode)
 
   const handleStatusChange = (status: TaskStatusFilter) => {
-    setStatus(status)
-    // Small delay to ensure state update before apply
-    setTimeout(() => applyFilters(), 0)
+    onFiltersChange({ status })
   }
 
+  const handleToday = useCallback(() => {
+    goToToday()
+    setTodayTrigger(prev => prev + 1)
+  }, [goToToday])
+
+  const handleNext = useCallback(() => {
+    next()
+  }, [next])
+
+  const handlePrev = useCallback(() => {
+    prev()
+  }, [prev])
+
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex flex-1 min-h-0 flex-col bg-white">
       <GanttHeader 
-        viewMode={zoomMode}
-        onViewModeChange={onZoomModeChange}
-        onToday={() => setTodayTrigger(prev => prev + 1)}
+        currentDate={currentDate}
+        zoomMode={zoomMode}
+        onZoomModeChange={onZoomModeChange}
+        onToday={handleToday}
+        onNext={handleNext}
+        onPrev={handlePrev}
         status={filters.status}
         onStatusChange={handleStatusChange}
       />
       
       <GanttContainer 
-        tasks={filteredTasks} 
+        tasks={tasks} 
         boardId={boardId}
         onTaskClick={onTaskClick}
         todayTrigger={todayTrigger}
+        zoomMode={zoomMode}
+        currentDate={currentDate}
       />
     </div>
   )

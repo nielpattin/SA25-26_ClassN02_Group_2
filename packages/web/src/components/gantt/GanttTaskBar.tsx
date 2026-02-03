@@ -1,4 +1,4 @@
-import { differenceInDays, startOfDay } from 'date-fns'
+import { differenceInCalendarDays, startOfDay } from 'date-fns'
 import type { TaskWithLabels } from '../../hooks/useTasks'
 
 type GanttTaskBarProps = {
@@ -20,8 +20,8 @@ export function GanttTaskBar({
   const start = startOfDay(new Date(task.startDate))
   const end = startOfDay(new Date(task.dueDate))
   
-  const offsetDays = differenceInDays(start, timelineStart)
-  const durationDays = differenceInDays(end, start) + 1
+  const offsetDays = differenceInCalendarDays(start, timelineStart)
+  const durationDays = differenceInCalendarDays(end, start) + 1
   
   const left = offsetDays * columnWidth
   const width = Math.max(durationDays * columnWidth, 80)
@@ -34,15 +34,16 @@ export function GanttTaskBar({
 
   return (
     <div
+      data-role="task-bar"
       onClick={() => onClick?.(task.id)}
-      className="group absolute z-10 flex h-8 cursor-pointer items-center transition-all"
+      className="absolute z-10 flex h-8 cursor-pointer items-center"
       style={{
         left,
         width,
         top: 8, // Center in 48px row
       }}
     >
-      <div className="shadow-brutal-sm relative flex h-full w-full items-center gap-2 border border-black bg-white px-2 transition-all group-hover:-translate-px group-hover:shadow-none">
+      <div className="shadow-brutal-sm relative flex h-full w-full items-center gap-2 border border-black bg-white px-2">
         {/* Status Badge */}
         <div 
           className="size-2 shrink-0 rounded-full border border-black" 
@@ -83,15 +84,6 @@ export function GanttTaskBar({
           </div>
         )}
       </div>
-
-      {/* 
-        Notion-style overflow: If the text is very long, it could be rendered here.
-        However, for simplicity and following the "min-width 80px" and "truncate" pattern,
-        we'll stick to internal content for now unless the user specifically asks for external text.
-        The PRD says "Verify long text pushes progress/status indicators out".
-        This usually means they stay visible while the title truncates, or they move.
-        With flex-1 truncate on the title, the indicators will stay visible at the ends.
-      */}
     </div>
   )
 }

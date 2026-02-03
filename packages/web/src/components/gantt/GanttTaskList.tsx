@@ -38,18 +38,25 @@ export function GanttTaskList({
 
   return (
     <div 
-      className={`bg-canvas flex h-full flex-col border-r border-black transition-all duration-300 ${
+      className={`bg-canvas flex min-h-0 shrink-0 flex-col border-r border-black transition-all duration-300 ${
         isCollapsed ? 'w-0 overflow-hidden opacity-0' : 'w-72'
       }`}
     >
-      <div className="sticky top-0 z-20 flex h-[80px] items-center border-b border-black bg-white px-4">
-        <span className="text-xs font-bold tracking-widest text-black uppercase">Tasks</span>
+      <div className="sticky top-0 z-20 flex h-[100px] flex-col border-b border-black bg-white">
+        {/* Today marker row spacer */}
+        <div className="h-5 border-b border-black/10" />
+        {/* Month header row spacer */}
+        <div className="flex h-10 items-center border-b border-black/10 px-4">
+          <span className="text-xs font-bold tracking-widest text-black uppercase">Tasks</span>
+        </div>
+        {/* Day header row spacer */}
+        <div className="h-10" />
       </div>
 
       <div 
         ref={containerRef}
         onScroll={handleScroll}
-        className="scrollbar-hide flex-1 overflow-x-hidden overflow-y-auto"
+        className="scrollbar-hide min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
       >
         <div
           style={{

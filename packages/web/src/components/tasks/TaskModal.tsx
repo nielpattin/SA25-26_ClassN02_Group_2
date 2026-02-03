@@ -5,14 +5,12 @@ import {
   Type,
   Paperclip,
   MessageSquare,
-  Bell,
   Tag,
   Move,
   MoreHorizontal,
   Archive,
   Flag,
   Image,
-  Plus,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api/client'
@@ -134,16 +132,24 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
 
   const updateCard = useMutation({
     mutationFn: async (updates: Partial<Card>) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await api.v1.tasks({ id: taskId }).patch(updates as any)
+      const { data, error } = await api.v1.tasks({ id: taskId }).patch({
+        title: updates.title,
+        description: updates.description ?? undefined,
+        position: updates.position,
+        columnId: updates.columnId,
+        startDate: updates.startDate ? new Date(updates.startDate).toISOString() : undefined,
+        dueDate: updates.dueDate ? new Date(updates.dueDate).toISOString() : undefined,
+        priority: updates.priority,
+        reminder: updates.reminder,
+        coverImageUrl: updates.coverImageUrl,
+      })
       if (error) throw error
       return data
     },
     onMutate: async (updates) => {
       await queryClient.cancelQueries({ queryKey: ['card', taskId] })
       const previousCard = queryClient.getQueryData(['card', taskId])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      queryClient.setQueryData(['card', taskId], (old: any) => ({ ...old, ...updates }))
+      queryClient.setQueryData(['card', taskId], (old: Card | undefined) => old ? ({ ...old, ...updates }) : undefined)
       return { previousCard }
     },
     onError: (_err, _updates, context) => {
@@ -210,8 +216,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
             <img src={card.coverImageUrl} alt="Cover" className="h-full w-full object-cover" />
             <button
               className="absolute top-3 right-3 flex cursor-pointer items-center justify-center border border-white bg-black p-2 text-white hover:bg-[#E74C3C]"
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              onClick={() => updateCard.mutate({ coverImageUrl: null } as any)}
+              onClick={() => updateCard.mutate({ coverImageUrl: null })}
             >
               <X size={16} />
             </button>

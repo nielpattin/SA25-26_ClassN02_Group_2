@@ -1,4 +1,4 @@
-import { differenceInDays, startOfDay } from 'date-fns'
+import { differenceInCalendarDays, startOfDay } from 'date-fns'
 import type { TaskWithLabels } from '../../hooks/useTasks'
 import type { TaskDependency } from '../../hooks/useDependencies'
 
@@ -28,8 +28,8 @@ export function GanttDependencyLines({
     const start = startOfDay(new Date(task.startDate!))
     const end = startOfDay(new Date(task.dueDate!))
     
-    const offsetDays = differenceInDays(start, timelineStart)
-    const durationDays = differenceInDays(end, start) + 1
+    const offsetDays = differenceInCalendarDays(start, timelineStart)
+    const durationDays = differenceInCalendarDays(end, start) + 1
     
     const left = offsetDays * columnWidth
     const width = Math.max(durationDays * columnWidth, 80)

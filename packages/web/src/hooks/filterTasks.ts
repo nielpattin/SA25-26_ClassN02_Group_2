@@ -1,6 +1,7 @@
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isBefore } from 'date-fns'
-import type { BoardFilters, DueDateFilter } from './useBoardFilters'
+import type { BoardFilters, DueDateFilter } from '../store/boardViewStore'
 import type { TaskWithLabels } from './useTasks'
+import type { Column } from './useColumns'
 
 function matchesDueDateFilter(dueDate: string | Date | null | undefined, filter: DueDateFilter): boolean {
   const now = new Date()
@@ -28,50 +29,58 @@ function matchesDueDateFilter(dueDate: string | Date | null | undefined, filter:
   }
 }
 
-export function filterTasks(tasks: TaskWithLabels[], filters: BoardFilters): TaskWithLabels[] {
-  const { labelIds, assigneeIds, dueDate } = filters
+export function filterTasks(tasks: TaskWithLabels[], filters: BoardFilters, columns: Column[] = []): TaskWithLabels[] {
+  const { labelIds, assigneeIds, dueDate, status } = filters
 
   const hasLabelFilter = labelIds.length > 0
   const hasAssigneeFilter = assigneeIds.length > 0
   const hasDueDateFilter = dueDate !== null
+  const hasStatusFilter = status !== 'all'
 
-  if (!hasLabelFilter && !hasAssigneeFilter && !hasDueDateFilter) {
+  if (!hasLabelFilter && !hasAssigneeFilter && !hasDueDateFilter && !hasStatusFilter) {
     return tasks
   }
 
-  return tasks.filter(task => {
-    // AND logic across categories - must match ALL active filter types
+  const completedColumnIds = new Set(
+    columns
+      .filter(c => {
+        const name = c.name.toLowerCase()
+        return name === 'done' || name === 'completed' || name === 'finished'
+      })
+      .map(c => c.id)
+  )
 
-    // Label filter (OR within): task matches if has ANY selected label
-    if (hasLabelFilter) {
-      const taskLabelIds = (task.labels || []).map(l => l.id)
-      const hasMatchingLabel = labelIds.some(id => taskLabelIds.includes(id))
-      if (!hasMatchingLabel) return false
+  return tasks.filter(task => {
+    if (hasStatusFilter) {
+      const isCompleted = 
+        !!task.archivedAt ||
+        completedColumnIds.has(task.columnId) ||
+        (!!task.checklistProgress && 
+         task.checklistProgress.total > 0 && 
+         task.checklistProgress.completed === task.checklistProgress.total)
+
+      if (status === 'active' && isCompleted) return false
+      if (status === 'completed' && !isCompleted) return false
     }
 
-    // Assignee filter (OR within): task matches if has ANY selected assignee
-    if (hasAssigneeFilter) {
-      const taskAssigneeIds = (task.assignees || []).map(a => a.userId)
-
-      // Special case: 'unassigned' means task has no assignees
-      const wantsUnassigned = assigneeIds.includes('unassigned')
-      const otherAssigneeIds = assigneeIds.filter(id => id !== 'unassigned')
-
-      const isUnassigned = taskAssigneeIds.length === 0
-      const hasMatchingAssignee = otherAssigneeIds.some(id => taskAssigneeIds.includes(id))
-
-      if (wantsUnassigned && isUnassigned) {
-        // Matches the "unassigned" filter
-      } else if (hasMatchingAssignee) {
-        // Matches one of the selected assignees
-      } else {
+    if (hasLabelFilter) {
+      const taskLabelIds = (task.labels || []).map(l => l.id)
+      if (!labelIds.some(id => taskLabelIds.includes(id))) {
         return false
       }
     }
 
-    // Due date filter: single preset match
+    if (hasAssigneeFilter) {
+      const taskAssigneeIds = (task.assignees || []).map(a => a.userId)
+      if (!assigneeIds.some(id => taskAssigneeIds.includes(id))) {
+        return false
+      }
+    }
+
     if (hasDueDateFilter) {
-      if (!matchesDueDateFilter(task.dueDate, dueDate)) return false
+      if (!matchesDueDateFilter(task.dueDate, dueDate)) {
+        return false
+      }
     }
 
     return true

@@ -220,7 +220,7 @@ export const boardRepository = {
     const board = await db.select().from(boards).where(eq(boards.id, boardId)).then(rows => rows[0])
     if (!board) return null
 
-    const archivedFilter = (table: any) => includeArchived ? undefined : isNull(table.archivedAt)
+    const archivedFilter = (table: { archivedAt: any }) => includeArchived ? undefined : isNull(table.archivedAt)
 
     const [
       cols,

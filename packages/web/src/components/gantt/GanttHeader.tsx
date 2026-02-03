@@ -1,34 +1,33 @@
 import { format, startOfWeek, endOfWeek, getQuarter, getYear } from 'date-fns'
 import { ChevronLeft, ChevronRight, Filter } from 'lucide-react'
-import { type ViewMode } from '../../hooks/useCalendarNavigation'
-import { TaskStatusFilter } from '../../hooks/useBoardFilters'
+import { type ZoomMode, type TaskStatusFilter } from '../../hooks/useBoardPreferences'
 
 type GanttHeaderProps = {
   currentDate?: Date
-  viewMode: ViewMode
+  zoomMode: ZoomMode
   onNext?: () => void
   onPrev?: () => void
   onToday?: () => void
-  onViewModeChange: (mode: ViewMode) => void
+  onZoomModeChange: (mode: ZoomMode) => void
   status: TaskStatusFilter
   onStatusChange: (status: TaskStatusFilter) => void
 }
 
 export function GanttHeader({
   currentDate = new Date(),
-  viewMode,
+  zoomMode,
   onNext,
   onPrev,
   onToday,
-  onViewModeChange,
+  onZoomModeChange,
   status,
   onStatusChange,
 }: GanttHeaderProps) {
   const getRangeLabel = () => {
-    if (viewMode === 'day') {
+    if (zoomMode === 'day') {
       return format(currentDate, 'MMMM d, yyyy')
     }
-    if (viewMode === 'week') {
+    if (zoomMode === 'week') {
       const start = startOfWeek(currentDate)
       const end = endOfWeek(currentDate)
       if (start.getMonth() === end.getMonth()) {
@@ -36,7 +35,7 @@ export function GanttHeader({
       }
       return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`
     }
-    if (viewMode === 'quarter') {
+    if (zoomMode === 'quarter') {
       const quarter = getQuarter(currentDate)
       const year = getYear(currentDate)
       return `Q${quarter} ${year}`
@@ -99,12 +98,12 @@ export function GanttHeader({
       </div>
 
       <div className="shadow-brutal-sm flex items-center border border-black bg-white">
-        {(['day', 'week', 'month', 'quarter'] as ViewMode[]).map(mode => (
+        {(['day', 'week', 'month', 'quarter'] as ZoomMode[]).map(mode => (
           <button
             key={mode}
-            onClick={() => onViewModeChange(mode)}
+            onClick={() => onZoomModeChange(mode)}
             className={`h-8 cursor-pointer border-r border-black px-4 text-xs font-bold uppercase transition-colors last:border-r-0 ${
-              viewMode === mode ? 'bg-accent' : 'hover:bg-accent/50'
+              zoomMode === mode ? 'bg-accent' : 'hover:bg-accent/50'
             }`}
           >
             {mode}

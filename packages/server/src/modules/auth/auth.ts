@@ -7,6 +7,7 @@ import { emailService, verifyEmailTemplate } from '../email'
 import { checkRateLimit } from '../../shared/middleware/rate-limit'
 
 const webUrl = process.env.WEB_URL || 'http://localhost:5173'
+const isE2E = process.env.E2E_TEST === 'true'
 
 export const auth = betterAuth({
   basePath: '/api/auth',
@@ -30,7 +31,7 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    requireEmailVerification: !isE2E,
     async sendResetPassword({ user, url }) {
       await emailService.sendEmail({
         to: user.email,
@@ -41,7 +42,7 @@ export const auth = betterAuth({
     resetPasswordTokenExpiresIn: 900, // 15 minutes
   },
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: !isE2E,
     async sendVerificationEmail({ user, url }) {
       await checkRateLimit(`email-verify:${user.email}`, 3, 60 * 60 * 1000)
       const token = new URL(url, webUrl).searchParams.get('token')

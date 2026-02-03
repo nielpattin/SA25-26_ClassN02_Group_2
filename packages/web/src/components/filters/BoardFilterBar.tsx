@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown, Tag, Users, Calendar, X, Check } from 'lucide-react'
 import { FilterDropdown } from './FilterDropdown'
-import type { BoardFilters, DueDateFilter } from '../../hooks/useBoardFilters'
+import type { BoardFilters, DueDateFilter } from '../../store/boardViewStore'
 import type { Label } from '../../hooks/useLabels'
 import type { BoardMember } from '../../hooks/useAssignees'
 

@@ -1,10 +1,18 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import { useState, useMemo, useCallback, useEffect } from 'react'
-import { ChevronRight, Archive, Download, Kanban, Calendar, ChartGantt } from 'lucide-react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { ChevronRight, Archive, Download, Kanban, Calendar, ChartGantt, MoreHorizontal } from 'lucide-react'
+import { useBoardFiltersStore } from '../store/boardViewStore'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
 import { useBoard, useBoards } from '../hooks/useBoards'
+import {
+  useBoardPreferences,
+  useSaveBoardPreferences,
+  type ViewMode,
+  type ZoomMode,
+  type BoardFilters,
+} from '../hooks/useBoardPreferences'
 import { CalendarView } from '../components/calendar/CalendarView'
 import { GanttView } from '../components/gantt/GanttView'
 import {
@@ -19,8 +27,6 @@ import {
 import { useTasks, useCreateTask, type TaskWithLabels, taskKeys } from '../hooks/useTasks'
 import { useRecordBoardVisit } from '../hooks/useRecentBoards'
 import { useSearchModal } from '../context/SearchContext'
-import { type ViewMode } from '../hooks/useCalendarNavigation'
-import { useBoardFilters } from '../hooks/useBoardFilters'
 import { filterTasks } from '../hooks/filterTasks'
 import { useLabels } from '../hooks/useLabels'
 import { useBoardMembers } from '../hooks/useAssignees'
@@ -42,95 +48,100 @@ import {
 } from '../components/dnd'
 import { Input } from '../components/ui/Input'
 import { Dropdown } from '../components/ui/Dropdown'
-import { MoreHorizontal } from 'lucide-react'
 
 type Column = { id: string; name: string; position: string; boardId: string }
 
 type BoardSearch = {
   cardId?: string
-  view?: 'kanban' | 'calendar' | 'gantt'
-  calendarMode?: 'day' | 'week' | 'month' | 'quarter'
 }
 
 export const Route = createFileRoute('/board/$boardId')({
   component: BoardComponent,
   validateSearch: (search: Record<string, unknown>): BoardSearch => ({
     cardId: (search.cardId as string) || undefined,
-    view: (['kanban', 'calendar', 'gantt'].includes(search.view as string)
-      ? (search.view as 'kanban' | 'calendar' | 'gantt')
-      : undefined),
-    calendarMode: (['day', 'week', 'month', 'quarter'].includes(search.calendarMode as string)
-      ? (search.calendarMode as 'day' | 'week' | 'month' | 'quarter')
-      : undefined),
   }),
 })
 
 function BoardComponent() {
   const { boardId } = Route.useParams()
-  const { cardId, view, calendarMode } = Route.useSearch()
+  const { cardId: urlCardId } = Route.useSearch()
   const navigate = Route.useNavigate()
   const queryClient = useQueryClient()
   const [newColumnName, setNewColumnName] = useState('')
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(cardId ?? null)
-  const [isArchiveOpen, setIsArchiveOpen] = useState(false)
-  const [isExportOpen, setIsExportOpen] = useState(false)
 
-  // Keep modal state in sync with URL
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedCardId(cardId ?? null)
-  }, [cardId])
+  // Local UI state
+  const [isArchiveOpen, setArchiveOpen] = useState(false)
+  const [isExportOpen, setExportOpen] = useState(false)
 
-  // Handle view preference in localStorage
+  // Fetch preferences from server (source of truth for view/zoom/filters)
+  const { data: preferences, isSuccess: prefsLoaded } = useBoardPreferences(boardId)
+  const { saveDebounced } = useSaveBoardPreferences(boardId)
+
+  const {
+    pendingFilters,
+    hasActiveFilters,
+    hasPendingChanges,
+    setDueDate,
+    toggleLabel,
+    toggleAssignee,
+    clearFilters,
+    setPendingFilters,
+  } = useBoardFiltersStore(preferences.filters)
+
+  // Sync pending filters when preferences change (initial load)
+  const initialized = useRef<string | null>(null)
   useEffect(() => {
-    if (!view) {
-      const savedView = localStorage.getItem(`board:${boardId}:view`) as string | null
-      const targetView = (['kanban', 'calendar', 'gantt'].includes(savedView || '')
-        ? (savedView as BoardSearch['view'])
-        : 'kanban')
-      navigate({
-        search: prev => ({ ...prev, view: targetView }),
-        replace: true,
-      })
-    } else {
-      localStorage.setItem(`board:${boardId}:view`, view)
+    if (prefsLoaded && initialized.current !== boardId) {
+      setPendingFilters(preferences.filters)
+      initialized.current = boardId
     }
-  }, [boardId, view, navigate])
+  }, [boardId, preferences.filters, prefsLoaded, setPendingFilters])
 
-  // Handle zoom level (calendarMode) persistence
-  useEffect(() => {
-    if (view === 'gantt' || view === 'calendar') {
-      if (!calendarMode) {
-        const savedMode = localStorage.getItem(`board:${boardId}:${view}:zoom`) as ViewMode | null
-        if (savedMode && ['day', 'week', 'month', 'quarter'].includes(savedMode)) {
-          navigate({
-            search: prev => ({ ...prev, calendarMode: savedMode }),
-            replace: true,
-          })
-        }
-      } else {
-        localStorage.setItem(`board:${boardId}:${view}:zoom`, calendarMode)
-      }
-    }
-  }, [boardId, view, calendarMode, navigate])
+  const handleApplyFilters = useCallback(() => {
+    saveDebounced({ filters: pendingFilters })
+  }, [pendingFilters, saveDebounced])
 
-  const handleCloseModal = () => {
-    setSelectedCardId(null)
+  const handleClearFilters = useCallback(() => {
+    clearFilters()
+    saveDebounced({
+      filters: {
+        labelIds: [],
+        assigneeIds: [],
+        dueDate: null,
+        status: 'active',
+      },
+    })
+  }, [clearFilters, saveDebounced])
+
+  const setView = useCallback(
+    (view: ViewMode) => {
+      saveDebounced({ view })
+    },
+    [saveDebounced]
+  )
+
+  const setZoomMode = useCallback(
+    (zoomMode: ZoomMode) => {
+      saveDebounced({ zoomMode })
+    },
+    [saveDebounced]
+  )
+
+  const handleCloseModal = useCallback(() => {
     navigate({
-      search: prev => {
-        const rest = { ...prev }
-        delete rest.cardId
-        return rest
+      search: (prev) => {
+        const next = { ...prev }
+        delete next.cardId
+        return next
       },
       replace: true,
     })
-  }
+  }, [navigate])
 
   const handleTaskClick = useCallback(
     (id: string) => {
-      setSelectedCardId(id)
       navigate({
-        search: prev => ({ ...prev, cardId: id }),
+        search: (prev) => ({ ...prev, cardId: id }),
         replace: true,
       })
     },
@@ -138,20 +149,17 @@ function BoardComponent() {
   )
 
   const handleCalendarModeChange = useCallback(
-    (mode: ViewMode) => {
-      navigate({
-        search: prev => ({ ...prev, calendarMode: mode }),
-        replace: true,
-      })
+    (mode: ZoomMode) => {
+      setZoomMode(mode)
     },
-    [navigate]
+    [setZoomMode]
   )
 
   // Data Fetching via hooks
   useBoardSocket(boardId)
   const { data: board, isLoading: boardLoading } = useBoard(boardId)
   const { data: serverColumns = [], isLoading: columnsLoading } = useColumns(boardId)
-  const { data: allCards = [] } = useTasks(boardId)
+  const { data: allCards = [], isLoading: tasksLoading } = useTasks(boardId)
   const { data: labels = [] } = useLabels(boardId)
   const { data: members = [] } = useBoardMembers(boardId)
   const createTask = useCreateTask(boardId)
@@ -163,37 +171,20 @@ function BoardComponent() {
   const recordVisit = useRecordBoardVisit()
   const { setBoardContext } = useSearchModal()
 
-  // Filtering
-  const {
-    filters,
-    pendingFilters,
-    setLabelIds,
-    setAssigneeIds,
-    setDueDate,
-    applyFilters,
-    clearFilters,
-    hasActiveFilters,
-    hasPendingChanges,
-  } = useBoardFilters(boardId)
-
-  const filteredCards = useMemo(() => filterTasks(allCards, filters), [allCards, filters])
+  const filteredCards = useMemo(() => filterTasks(allCards, preferences.filters, serverColumns), [allCards, preferences.filters, serverColumns])
 
   const handleLabelToggle = useCallback(
     (labelId: string) => {
-      const current = pendingFilters.labelIds
-      const next = current.includes(labelId) ? current.filter(id => id !== labelId) : [...current, labelId]
-      setLabelIds(next)
+      toggleLabel(labelId)
     },
-    [pendingFilters.labelIds, setLabelIds]
+    [toggleLabel]
   )
 
   const handleAssigneeToggle = useCallback(
     (userId: string) => {
-      const current = pendingFilters.assigneeIds
-      const next = current.includes(userId) ? current.filter(id => id !== userId) : [...current, userId]
-      setAssigneeIds(next)
+      toggleAssignee(userId)
     },
-    [pendingFilters.assigneeIds, setAssigneeIds]
+    [toggleAssignee]
   )
 
   // Record board visit for recent boards feature
@@ -284,7 +275,7 @@ function BoardComponent() {
     [boardId, queryClient]
   )
 
-  if (boardLoading || columnsLoading) {
+  if (boardLoading || columnsLoading || tasksLoading || !prefsLoaded) {
     return (
       <div className="font-heading bg-canvas flex h-screen items-center justify-center font-extrabold text-black uppercase">
         Loading workspace...
@@ -325,19 +316,14 @@ function BoardComponent() {
                 onLabelToggle={handleLabelToggle}
                 onAssigneeToggle={handleAssigneeToggle}
                 onDueDateChange={setDueDate}
-                onApply={applyFilters}
-                onClear={clearFilters}
+                onApply={handleApplyFilters}
+                onClear={handleClearFilters}
               />
               <div className="shadow-brutal-sm flex items-center gap-0 border border-black bg-white">
                 <button
-                  onClick={() =>
-                    navigate({
-                      search: prev => ({ ...prev, view: 'kanban' }),
-                      replace: true,
-                    })
-                  }
+                  onClick={() => setView('kanban')}
                   className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
-                    (view || 'kanban') === 'kanban' ? 'bg-accent' : 'hover:bg-accent/50'
+                    (preferences.view || 'kanban') === 'kanban' ? 'bg-accent' : 'hover:bg-accent/50'
                   }`}
                   title="Kanban View"
                 >
@@ -345,14 +331,9 @@ function BoardComponent() {
                 </button>
                 <div className="h-9 w-px bg-black" />
                 <button
-                  onClick={() =>
-                    navigate({
-                      search: prev => ({ ...prev, view: 'calendar' }),
-                      replace: true,
-                    })
-                  }
+                  onClick={() => setView('calendar')}
                   className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
-                    view === 'calendar' ? 'bg-accent' : 'hover:bg-accent/50'
+                    preferences.view === 'calendar' ? 'bg-accent' : 'hover:bg-accent/50'
                   }`}
                   title="Calendar View"
                 >
@@ -360,14 +341,9 @@ function BoardComponent() {
                 </button>
                 <div className="h-9 w-px bg-black" />
                 <button
-                  onClick={() =>
-                    navigate({
-                      search: prev => ({ ...prev, view: 'gantt' }),
-                      replace: true,
-                    })
-                  }
+                  onClick={() => setView('gantt')}
                   className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
-                    view === 'gantt' ? 'bg-accent' : 'hover:bg-accent/50'
+                    preferences.view === 'gantt' ? 'bg-accent' : 'hover:bg-accent/50'
                   }`}
                   title="Gantt View"
                 >
@@ -375,7 +351,7 @@ function BoardComponent() {
                 </button>
               </div>
               <button
-                onClick={() => setIsArchiveOpen(true)}
+                onClick={() => setArchiveOpen(true)}
                 className="hover:bg-accent shadow-brutal-sm flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-none"
                 title="Open Archive"
               >
@@ -391,7 +367,7 @@ function BoardComponent() {
                   {
                     label: 'Export Board',
                     icon: <Download size={16} />,
-                    onClick: () => setIsExportOpen(true),
+                    onClick: () => setExportOpen(true),
                   },
                 ]}
               />
@@ -399,30 +375,33 @@ function BoardComponent() {
             </div>
           </header>
 
-          {view === 'calendar' ? (
+          {preferences.view === 'calendar' ? (
             <CalendarView
               boardId={boardId}
               tasks={filteredCards}
               columns={serverColumns}
               onTaskClick={handleTaskClick}
               onAddTask={handleAddTask}
-              viewMode={calendarMode || 'month'}
+              viewMode={preferences.zoomMode || 'month'}
               onViewModeChange={handleCalendarModeChange}
             />
-              ) : view === 'gantt' ? (
-                <GanttView
-                  boardId={boardId}
-                  tasks={filteredCards}
-                  onTaskClick={handleTaskClick}
-                  zoomMode={calendarMode || 'month'}
-                  onZoomModeChange={handleCalendarModeChange}
-                />
-              ) : (
-
+          ) : preferences.view === 'gantt' ? (
+            <GanttView
+              boardId={boardId}
+              tasks={filteredCards}
+              onTaskClick={handleTaskClick}
+              zoomMode={preferences.zoomMode || 'month'}
+              onZoomModeChange={handleCalendarModeChange}
+              filters={preferences.filters}
+              onFiltersChange={f => saveDebounced({ filters: { ...preferences.filters, ...f } })}
+            />
+          ) : (
             <BoardContent
               boardId={boardId}
               serverColumns={serverColumns}
-              allCards={filteredCards}
+              allCards={allCards}
+              filteredCards={filteredCards}
+              filters={preferences.filters}
               newColumnName={newColumnName}
               setNewColumnName={setNewColumnName}
               createColumn={createColumn}
@@ -438,19 +417,19 @@ function BoardComponent() {
             />
           )}
 
-          {selectedCardId && (
-            <CardModal cardId={selectedCardId} boardId={boardId} onClose={handleCloseModal} />
+          {urlCardId && (
+            <CardModal cardId={urlCardId} boardId={boardId} onClose={handleCloseModal} />
           )}
 
           <ArchivePanel
             isOpen={isArchiveOpen}
-            onClose={() => setIsArchiveOpen(false)}
+            onClose={() => setArchiveOpen(false)}
             boardId={boardId}
           />
 
           <ExportBoardModal
             isOpen={isExportOpen}
-            onClose={() => setIsExportOpen(false)}
+            onClose={() => setExportOpen(false)}
             boardId={boardId}
             boardName={board.name}
           />
@@ -464,6 +443,8 @@ type BoardContentProps = {
   boardId: string
   serverColumns: Column[]
   allCards: TaskWithLabels[]
+  filteredCards: TaskWithLabels[]
+  filters: BoardFilters
   newColumnName: string
   setNewColumnName: (name: string) => void
   createColumn: { mutate: (input: { name: string; boardId: string }) => void }
@@ -482,6 +463,8 @@ function BoardContent({
   boardId,
   serverColumns,
   allCards,
+  filteredCards,
+  filters,
   newColumnName,
   setNewColumnName,
   createColumn,
@@ -510,7 +493,18 @@ function BoardContent({
   } = useDragContext<Column, TaskWithLabels>()
 
   const displayColumns = draggedColumnId ? localColumns : serverColumns
-  const displayCards = draggedCardId ? localCards : allCards
+  const displayCards = useMemo(() => {
+    if (draggedCardId) {
+      const filtered = filterTasks(localCards, filters, serverColumns)
+      // Ensure dragged card is in the list even if it would be filtered out
+      if (!filtered.some(c => c.id === draggedCardId)) {
+        const draggedCard = localCards.find(c => c.id === draggedCardId)
+        if (draggedCard) filtered.push(draggedCard)
+      }
+      return filtered
+    }
+    return filteredCards
+  }, [draggedCardId, localCards, filteredCards, filters, serverColumns])
 
   const cardsByColumn = useMemo(() => {
     const map: Record<string, TaskWithLabels[]> = {}

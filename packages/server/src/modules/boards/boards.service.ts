@@ -1,4 +1,5 @@
 import { boardRepository } from './boards.repository'
+import { boardPreferenceRepository } from './preferences.repository'
 import { workspaceRepository } from '../workspaces/workspaces.repository'
 import { columnRepository } from '../columns/columns.repository'
 import { taskRepository } from '../tasks/tasks.repository'
@@ -29,9 +30,9 @@ export const boardService = {
     // If no workspace specified, find user's personal workspace
     if (!workspaceId) {
       const userWorkspaces = await workspaceRepository.getUserWorkspaces(data.ownerId)
-      const personalWorkspace = userWorkspaces.find(o => (o as any).workspace.personal)
+      const personalWorkspace = userWorkspaces.find(o => o.workspace.personal)
       if (personalWorkspace) {
-        workspaceId = (personalWorkspace as any).workspace.id
+        workspaceId = personalWorkspace.workspace.id
       }
     }
 
@@ -59,7 +60,7 @@ export const boardService = {
     const { version, ...updateData } = data
     const board = await boardRepository.update(id, updateData, version)
     
-    const changes: any = {}
+    const changes: Record<string, { before: unknown; after: unknown }> = {}
     if (data.name && data.name !== oldBoard?.name) changes.name = { before: oldBoard?.name, after: data.name }
     if (data.description !== undefined && data.description !== oldBoard?.description) changes.description = { before: oldBoard?.description, after: data.description }
     if (data.visibility && data.visibility !== oldBoard?.visibility) changes.visibility = { before: oldBoard?.visibility, after: data.visibility }
@@ -217,13 +218,25 @@ export const boardService = {
     return data
   },
 
-  exportToCsvZip: async (data: any) => {
+  exportToCsvZip: async (data: {
+    board: Record<string, unknown>
+    columns: Record<string, unknown>[]
+    tasks: Record<string, unknown>[]
+    labels: Record<string, unknown>[]
+    taskLabels: Record<string, unknown>[]
+    taskAssignees: Record<string, unknown>[]
+    checklists: Record<string, unknown>[]
+    checklistItems: Record<string, unknown>[]
+    attachments: Record<string, unknown>[]
+    comments: Record<string, unknown>[]
+    activities: Record<string, unknown>[]
+  }) => {
     const archive = Archiver('zip', { zlib: { level: 9 } })
     const stream = new Readable({
       read() {}
     })
 
-    const escapeCsv = (val: any) => {
+    const escapeCsv = (val: unknown) => {
       if (val === null || val === undefined) return ''
       let str = String(val)
       if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -232,7 +245,7 @@ export const boardService = {
       return str
     }
 
-    const toCsv = (rows: any[], fields: string[]) => {
+    const toCsv = (rows: Record<string, unknown>[], fields: string[]) => {
       const header = fields.join(',')
       const body = rows.map(row => fields.map(field => escapeCsv(row[field])).join(',')).join('\n')
       return `\uFEFF${header}\n${body}`
@@ -294,4 +307,19 @@ export const boardService = {
     archive.finalize()
     return archive
   },
+
+  getPreferences: (userId: string, boardId: string) =>
+    boardPreferenceRepository.findByUserAndBoard(userId, boardId),
+
+  updatePreferences: (userId: string, boardId: string, data: {
+    view?: 'kanban' | 'calendar' | 'gantt'
+    zoomMode?: 'day' | 'week' | 'month' | 'quarter'
+    filters?: {
+      labelIds?: string[]
+      assigneeIds?: string[]
+      dueDate?: string | null
+      status?: 'active' | 'completed' | 'all'
+    }
+  }) =>
+    boardPreferenceRepository.upsert(userId, boardId, data),
 }
