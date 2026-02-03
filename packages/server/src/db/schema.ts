@@ -12,6 +12,9 @@ export const boardRoleEnum = pgEnum('board_role', ['admin', 'member', 'viewer'])
 // Board visibility setting
 export const visibilityEnum = pgEnum('visibility', ['private', 'workspace', 'public'])
 
+// Platform admin roles
+export const adminRoleEnum = pgEnum('admin_role', ['super_admin', 'moderator', 'support'])
+
 // Task priority level
 export const priorityEnum = pgEnum('priority', ['urgent', 'high', 'medium', 'low', 'none'])
 
@@ -63,6 +66,7 @@ export const users = pgTable('user', {
 	timezone: varchar('timezone', { length: 50 }).default('UTC').notNull(),
 	theme: themeEnum().default('system').notNull(),
 	emailDigest: emailDigestEnum().default('daily').notNull(),
+	adminRole: adminRoleEnum('admin_role'),
 	notificationPreferences: jsonb('notification_preferences').default({
 		mention: { inApp: true, email: true },
 		assignment: { inApp: true, email: true },
@@ -320,6 +324,21 @@ export const activities = pgTable('activities', {
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+// Platform admin audit log
+export const adminAuditLog = pgTable('admin_audit_log', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	adminId: text('admin_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+	action: text('action').notNull(),
+	targetType: text('target_type').notNull(),
+	targetId: text('target_id'),
+	metadata: jsonb('metadata'),
+	createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+	index('admin_audit_log_admin_idx').on(table.adminId),
+	index('admin_audit_log_action_idx').on(table.action),
+	index('admin_audit_log_created_at_idx').on(table.createdAt),
+])
+
 // In-app notifications
 export const notifications = pgTable('notifications', {
 	id: uuid('id').defaultRandom().primaryKey(),
@@ -435,6 +454,7 @@ export const table = {
 	attachments,
 	comments, commentMentions,
 	activities, notifications,
+	adminAuditLog,
 	boardTemplates, taskTemplates,
 	userBoardPreferences,
 	templateStatusEnum,

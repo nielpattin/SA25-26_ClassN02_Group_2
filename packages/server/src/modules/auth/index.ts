@@ -42,6 +42,7 @@ export const authPlugin = new Elysia({ name: 'auth' })
     // TEST BYPASS: Allow manual session injection in tests via x-test-user-id header
     if (process.env.NODE_ENV === 'test') {
       const testUserId = request.headers.get('x-test-user-id')
+      const testAdminRole = request.headers.get('x-test-admin-role')
       if (testUserId) {
         return {
           session: {
@@ -52,7 +53,8 @@ export const authPlugin = new Elysia({ name: 'auth' })
               name: 'Test User',
               createdAt: new Date(),
               updatedAt: new Date(),
-              image: null
+              image: null,
+              adminRole: testAdminRole || null
             },
             session: {
               id: 'test-session-id',

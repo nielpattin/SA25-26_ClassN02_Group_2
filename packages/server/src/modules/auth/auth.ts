@@ -27,6 +27,11 @@ export const auth = betterAuth({
         required: false,
         input: false,
       },
+      adminRole: {
+        type: 'string',
+        required: false,
+        input: false,
+      },
     },
   },
   emailAndPassword: {

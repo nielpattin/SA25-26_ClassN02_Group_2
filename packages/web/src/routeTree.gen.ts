@@ -16,9 +16,14 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MembersRouteImport } from './routes/members'
 import { Route as BoardsRouteImport } from './routes/boards'
 import { Route as ArchiveRouteImport } from './routes/archive'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TemplatesMarketplaceRouteImport } from './routes/templates.marketplace'
 import { Route as BoardBoardIdRouteImport } from './routes/board.$boardId'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminModerationRouteImport } from './routes/admin/moderation'
+import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as AccountRecoveryRouteImport } from './routes/account.recovery'
 import { Route as TemplatesMarketplaceAdminRouteImport } from './routes/templates.marketplace.admin'
 import { Route as TemplatesMarketplaceIdRouteImport } from './routes/templates.marketplace.$id'
@@ -58,10 +63,20 @@ const ArchiveRoute = ArchiveRouteImport.update({
   path: '/archive',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const TemplatesMarketplaceRoute = TemplatesMarketplaceRouteImport.update({
   id: '/templates/marketplace',
@@ -72,6 +87,21 @@ const BoardBoardIdRoute = BoardBoardIdRouteImport.update({
   id: '/board/$boardId',
   path: '/board/$boardId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminModerationRoute = AdminModerationRouteImport.update({
+  id: '/moderation',
+  path: '/moderation',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AccountRecoveryRoute = AccountRecoveryRouteImport.update({
   id: '/account/recovery',
@@ -92,6 +122,7 @@ const TemplatesMarketplaceIdRoute = TemplatesMarketplaceIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/archive': typeof ArchiveRoute
   '/boards': typeof BoardsRoute
   '/members': typeof MembersRoute
@@ -100,8 +131,12 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/account/recovery': typeof AccountRecoveryRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/moderation': typeof AdminModerationRoute
+  '/admin/users': typeof AdminUsersRoute
   '/board/$boardId': typeof BoardBoardIdRoute
   '/templates/marketplace': typeof TemplatesMarketplaceRouteWithChildren
+  '/admin/': typeof AdminIndexRoute
   '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
   '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
 }
@@ -115,14 +150,19 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/account/recovery': typeof AccountRecoveryRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/moderation': typeof AdminModerationRoute
+  '/admin/users': typeof AdminUsersRoute
   '/board/$boardId': typeof BoardBoardIdRoute
   '/templates/marketplace': typeof TemplatesMarketplaceRouteWithChildren
+  '/admin': typeof AdminIndexRoute
   '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
   '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/archive': typeof ArchiveRoute
   '/boards': typeof BoardsRoute
   '/members': typeof MembersRoute
@@ -131,8 +171,12 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/account/recovery': typeof AccountRecoveryRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/moderation': typeof AdminModerationRoute
+  '/admin/users': typeof AdminUsersRoute
   '/board/$boardId': typeof BoardBoardIdRoute
   '/templates/marketplace': typeof TemplatesMarketplaceRouteWithChildren
+  '/admin/': typeof AdminIndexRoute
   '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
   '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
 }
@@ -140,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/archive'
     | '/boards'
     | '/members'
@@ -148,8 +193,12 @@ export interface FileRouteTypes {
     | '/settings'
     | '/verify-email'
     | '/account/recovery'
+    | '/admin/audit'
+    | '/admin/moderation'
+    | '/admin/users'
     | '/board/$boardId'
     | '/templates/marketplace'
+    | '/admin/'
     | '/templates/marketplace/$id'
     | '/templates/marketplace/admin'
   fileRoutesByTo: FileRoutesByTo
@@ -163,13 +212,18 @@ export interface FileRouteTypes {
     | '/settings'
     | '/verify-email'
     | '/account/recovery'
+    | '/admin/audit'
+    | '/admin/moderation'
+    | '/admin/users'
     | '/board/$boardId'
     | '/templates/marketplace'
+    | '/admin'
     | '/templates/marketplace/$id'
     | '/templates/marketplace/admin'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/archive'
     | '/boards'
     | '/members'
@@ -178,14 +232,19 @@ export interface FileRouteTypes {
     | '/settings'
     | '/verify-email'
     | '/account/recovery'
+    | '/admin/audit'
+    | '/admin/moderation'
+    | '/admin/users'
     | '/board/$boardId'
     | '/templates/marketplace'
+    | '/admin/'
     | '/templates/marketplace/$id'
     | '/templates/marketplace/admin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   ArchiveRoute: typeof ArchiveRoute
   BoardsRoute: typeof BoardsRoute
   MembersRoute: typeof MembersRoute
@@ -249,12 +308,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArchiveRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/templates/marketplace': {
       id: '/templates/marketplace'
@@ -269,6 +342,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/board/$boardId'
       preLoaderRoute: typeof BoardBoardIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/moderation': {
+      id: '/admin/moderation'
+      path: '/moderation'
+      fullPath: '/admin/moderation'
+      preLoaderRoute: typeof AdminModerationRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/account/recovery': {
       id: '/account/recovery'
@@ -294,6 +388,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminModerationRoute: typeof AdminModerationRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAuditRoute: AdminAuditRoute,
+  AdminModerationRoute: AdminModerationRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface TemplatesMarketplaceRouteChildren {
   TemplatesMarketplaceIdRoute: typeof TemplatesMarketplaceIdRoute
   TemplatesMarketplaceAdminRoute: typeof TemplatesMarketplaceAdminRoute
@@ -309,6 +419,7 @@ const TemplatesMarketplaceRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   ArchiveRoute: ArchiveRoute,
   BoardsRoute: BoardsRoute,
   MembersRoute: MembersRoute,

@@ -17,6 +17,7 @@ import { templateController } from './modules/templates'
 import { notificationController } from './modules/notifications'
 import { searchController } from './modules/search'
 import { configController } from './modules/config/config.controller'
+import { adminController } from './modules/admin'
 import { wsManager } from './websocket/manager'
 import { initWebSocketBridge } from './websocket/bridge'
 import { presenceManager } from './websocket/presence'
@@ -102,6 +103,7 @@ export const app = new Elysia()
     .use(notificationController)
     .use(searchController)
     .use(configController)
+    .use(adminController)
   )
   .ws('/ws', {
     body: t.Object({

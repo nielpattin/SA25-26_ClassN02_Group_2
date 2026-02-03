@@ -13,6 +13,10 @@ export const authClient = createAuthClient({
           type: 'date',
           required: false,
         },
+        adminRole: {
+          type: 'string',
+          required: false,
+        },
       },
     }),
   ],
