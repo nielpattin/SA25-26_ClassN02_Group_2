@@ -40,13 +40,15 @@ export function TaskModalHeader({
       )}
 
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-black">
-        <Input
-          value={card.title}
-          onChange={e => onUpdateTitle(e.target.value)}
-          className="h-full border-none bg-transparent p-0 font-heading text-[20px] font-extrabold uppercase"
-          brutal={false}
-        />
-        <div className="flex items-center gap-2 pr-4">
+        <div className="min-w-0 flex-1 pl-4">
+          <Input
+            value={card.title}
+            onChange={e => onUpdateTitle(e.target.value)}
+            className="h-full border-none bg-transparent p-0 font-heading text-[20px] font-extrabold uppercase"
+            brutal={false}
+          />
+        </div>
+        <div className="flex shrink-0 items-center gap-2 pr-4">
           <Dropdown
             trigger={
               <button className="flex h-10 w-10 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-0.5 hover:bg-accent hover:shadow-brutal-sm active:translate-0 active:shadow-none">
