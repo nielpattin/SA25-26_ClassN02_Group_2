@@ -163,7 +163,7 @@ function BoardPage() {
   const moveColumnToBoard = useMoveColumnToBoard(boardId)
   const moveColumn = useMoveColumn(boardId)
   const moveTask = useMoveTask(boardId)
-  const recordVisit = useRecordBoardVisit()
+  const { mutate: recordBoardVisit } = useRecordBoardVisit()
   const { setBoardContext } = useSearchModal()
 
   const viewFilters = useMemo(() => {
@@ -184,9 +184,9 @@ function BoardPage() {
   // Record board visit for recent boards feature
   useEffect(() => {
     if (boardId) {
-      recordVisit.mutate(boardId)
+      recordBoardVisit(boardId)
     }
-  }, [boardId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [boardId, recordBoardVisit])
 
   // Set board context for search modal (enables per-board search)
   useEffect(() => {
