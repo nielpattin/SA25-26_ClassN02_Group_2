@@ -198,3 +198,25 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 export type App = typeof app
+
+export type {
+  Priority,
+  Size,
+  Reminder,
+  BoardRole,
+  WorkspaceRole,
+  Label,
+  TaskAssignee,
+  ChecklistProgress,
+  Task,
+  TaskWithLabels,
+  Column,
+  Board,
+  BoardMember,
+  Workspace,
+  Comment,
+  Activity,
+  ChecklistItem,
+  Checklist,
+  Attachment,
+} from './types/domain'

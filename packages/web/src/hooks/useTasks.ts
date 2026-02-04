@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { Priority, Size, Reminder } from '@kyte/server/src'
 import { api } from '../api/client'
+
+export type { Priority, Size, Reminder }
 
 export type TaskLabel = {
   id: string
@@ -18,7 +21,7 @@ export type ChecklistProgress = {
   total: number
 }
 
-// Task type for list views (enriched endpoint returns labels as objects)
+// Task type for list views
 export type TaskWithLabels = {
   id: string
   title: string
@@ -32,9 +35,9 @@ export type TaskWithLabels = {
   assignees?: TaskAssignee[]
   checklistProgress?: ChecklistProgress | null
   attachmentsCount?: number
-  reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+  reminder?: Reminder
   archivedAt?: string | Date | null
-  size?: 'xs' | 's' | 'm' | 'l' | 'xl' | null
+  size?: Size | null
   version?: number
 }
 
@@ -49,8 +52,8 @@ export type Task = {
   description?: string | null
   createdAt?: Date | null
   labels?: string[]
-  priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
-  reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+  priority?: Priority | null
+  reminder?: Reminder
   archivedAt?: string | Date | null
 }
 
@@ -59,7 +62,7 @@ export type CreateTaskInput = {
   columnId: string
   startDate?: string | null
   dueDate?: string | null
-  reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+  reminder?: Reminder
 }
 
 export type UpdateTaskInput = {
@@ -67,8 +70,8 @@ export type UpdateTaskInput = {
   description?: string
   startDate?: string | null
   dueDate?: string | null
-  priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
-  reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+  priority?: Priority | null
+  reminder?: Reminder
 }
 
 export type MoveTaskInput = {

@@ -1,14 +1,18 @@
+import type { Priority, Size, Reminder, BoardRole } from '@kyte/server/src'
+
+export type { Priority, Size, Reminder, BoardRole }
+
 export interface Card {
   id: string
   title: string
   description: string | null
   columnId: string
   position: string
-  priority: 'none' | 'low' | 'medium' | 'high' | 'urgent' | null
-  size: 'xs' | 's' | 'm' | 'l' | 'xl' | null
+  priority: Priority | null
+  size: Size | null
   startDate: string | Date | null
   dueDate: string | Date | null
-  reminder: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
+  reminder: Reminder
   coverImageUrl?: string | null
   labels: string[] // Label IDs
   assignees: string[] // User IDs
@@ -77,6 +81,6 @@ export interface BoardMember {
   userId: string
   userName: string | null
   userImage: string | null
-  role: 'admin' | 'member' | 'viewer'
+  role: BoardRole
 }
 
