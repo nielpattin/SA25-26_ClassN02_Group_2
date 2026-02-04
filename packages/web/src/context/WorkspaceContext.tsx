@@ -38,11 +38,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const savedWorkspace = workspaces.find(w => w.id === savedWorkspaceId)
 
     if (savedWorkspace) {
-      setTimeout(() => setCurrentWorkspace(savedWorkspace), 0)
+      setCurrentWorkspace(savedWorkspace)
     } else {
       // Default to personal
       const personal = workspaces.find(w => w.personal)
-      setTimeout(() => setCurrentWorkspace(personal || workspaces[0]), 0)
+      setCurrentWorkspace(personal || workspaces[0])
     }
   }, [workspaces, currentWorkspace])
 
