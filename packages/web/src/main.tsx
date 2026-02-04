@@ -9,7 +9,19 @@ import './index.css'
 
 const SHOW_DEVTOOLS = false
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes - data stays fresh
+      gcTime: 1000 * 60 * 30, // 30 minutes - cache retention
+      retry: 1, // Only retry once on failure
+      refetchOnWindowFocus: false, // Reduce unnecessary refetches
+    },
+    mutations: {
+      retry: 0, // Don't retry mutations
+    },
+  },
+})
 
 const router = createRouter({
   routeTree,
