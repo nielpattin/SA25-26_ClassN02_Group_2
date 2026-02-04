@@ -139,11 +139,106 @@ describe('Tasks API', () => {
 
   test('DELETE /tasks/:id - delete task', async () => {
     const res = await app.handle(
-      new Request(`http://localhost/v1/tasks/${taskId}`, { 
+      new Request(`http://localhost/v1/tasks/${taskId}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       })
     )
     expect(res.status).toBe(200)
+  })
+
+  test('POST /tasks - create task with size', async () => {
+    const res = await app.handle(
+      new Request('http://localhost/v1/tasks', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          title: 'Sized Task',
+          description: 'Task with size',
+          columnId,
+          position: 'a1',
+          size: 'xl'
+        })
+      })
+    )
+    expect(res.status).toBe(200)
+    const task = await res.json()
+    expect(task.title).toBe('Sized Task')
+    expect(task.size).toBe('xl')
+    taskId = task.id
+  })
+
+  test('GET /tasks/:id - includes size in response', async () => {
+    const res = await app.handle(
+      new Request(`http://localhost/v1/tasks/${taskId}`, {
+        headers: getAuthHeaders()
+      })
+    )
+    expect(res.status).toBe(200)
+    const task = await res.json()
+    expect(task.id).toBe(taskId)
+    expect(task.size).toBe('xl')
+  })
+
+  test('PATCH /tasks/:id - update task size', async () => {
+    const res = await app.handle(
+      new Request(`http://localhost/v1/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          size: 's'
+        })
+      })
+    )
+    expect(res.status).toBe(200)
+    const task = await res.json()
+    expect(task.size).toBe('s')
+  })
+
+  test('PATCH /tasks/:id - clear size', async () => {
+    const res = await app.handle(
+      new Request(`http://localhost/v1/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ size: null })
+      })
+    )
+    expect(res.status).toBe(200)
+    const task = await res.json()
+    expect(task.size).toBeNull()
+  })
+
+  test('POST /tasks - create task with all sizes', async () => {
+    const sizes = ['xs', 's', 'm', 'l', 'xl'] as const
+    const createdTaskIds: string[] = []
+
+    for (const size of sizes) {
+      const res = await app.handle(
+        new Request('http://localhost/v1/tasks', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            title: `Task with size ${size}`,
+            columnId,
+            position: `a${2 + sizes.indexOf(size)}`,
+            size
+          })
+        })
+      )
+      expect(res.status).toBe(200)
+      const task = await res.json()
+      expect(task.size).toBe(size)
+      createdTaskIds.push(task.id)
+    }
+
+    // Cleanup created tasks
+    for (const id of createdTaskIds) {
+      await app.handle(
+        new Request(`http://localhost/v1/tasks/${id}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        })
+      )
+    }
   })
 })

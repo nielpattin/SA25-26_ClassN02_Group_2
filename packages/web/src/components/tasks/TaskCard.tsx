@@ -24,6 +24,7 @@ export type TaskCardData = {
   labels?: TaskLabel[]
   checklistProgress?: ChecklistProgress | null
   attachmentsCount?: number
+  size?: 'xs' | 's' | 'm' | 'l' | 'xl' | null
 }
 
 export type TaskCardProps = {
@@ -83,7 +84,7 @@ export const TaskCard = memo(function TaskCard({
           </div>
         )}
         <div className="leading-tight font-bold text-black">{task.title}</div>
-        {(task.checklistProgress || task.dueDate) && (
+        {(task.checklistProgress || task.dueDate || task.size) && (
           <div className="flex items-center gap-3 text-[11px] font-bold text-black uppercase">
             {task.checklistProgress && (
               <span className="flex items-center gap-1">
@@ -99,6 +100,11 @@ export const TaskCard = memo(function TaskCard({
                   month: 'short',
                   day: 'numeric',
                 })}
+              </span>
+            )}
+            {task.size && (
+              <span className="border border-black bg-white px-1.5 py-0.5 text-black">
+                {task.size.toUpperCase()}
               </span>
             )}
           </div>

@@ -1,5 +1,21 @@
-# This is the Web Client Frontend
+# @kyte/web
 
-This package contains the client-side code for the application.
+Frontend for Kyte. React 19 + TanStack Router/Query + Vite.
 
-It manages the user interface, handles user interactions, and communicates with the server via API requests.
+## Commands
+
+| Command         | Description                  |
+| :-------------- | :--------------------------- |
+| `bun run dev`   | Start dev server (port 5173) |
+| `bun run lint`  | Run ESLint                   |
+| `bun run build` | Build for production         |
+
+## Structure
+
+```
+src/
+├── routes/       # File-based routing
+├── hooks/        # React Query hooks
+├── components/   # UI components
+└── api/          # Eden Treaty client
+```

@@ -11,6 +11,7 @@ import {
   Archive,
   Flag,
   Image,
+  Scaling,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api/client'
@@ -60,6 +61,14 @@ const PRIORITIES = [
   { id: 'none', name: 'None', color: '#95A5A6' },
 ]
 
+const SIZES = [
+  { id: 'xs', name: 'XS', label: 'Extra Small' },
+  { id: 's', name: 'S', label: 'Small' },
+  { id: 'm', name: 'M', label: 'Medium' },
+  { id: 'l', name: 'L', label: 'Large' },
+  { id: 'xl', name: 'XL', label: 'Extra Large' },
+]
+
 export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: TaskModalProps) {
   const taskId = taskIdProp ?? cardId ?? ''
   const queryClient = useQueryClient()
@@ -69,10 +78,12 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false)
   const [isPriorityOpen, setIsPriorityOpen] = useState(false)
+  const [isSizeOpen, setIsSizeOpen] = useState(false)
   const [isCoverOpen, setIsCoverOpen] = useState(false)
   const startDateTriggerRef = useRef<HTMLButtonElement>(null)
   const dueDateTriggerRef = useRef<HTMLButtonElement>(null)
   const priorityTriggerRef = useRef<HTMLButtonElement>(null)
+  const sizeTriggerRef = useRef<HTMLButtonElement>(null)
   const coverTriggerRef = useRef<HTMLButtonElement>(null)
   const [coverUrl, setCoverUrl] = useState('')
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
@@ -140,6 +151,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
         startDate: updates.startDate ? new Date(updates.startDate).toISOString() : undefined,
         dueDate: updates.dueDate ? new Date(updates.dueDate).toISOString() : undefined,
         priority: updates.priority,
+        size: updates.size,
         reminder: updates.reminder,
         coverImageUrl: updates.coverImageUrl,
       })
@@ -483,6 +495,47 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                 </Popover>
 
                 <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setIsSizeOpen(prev => !prev)}
+                  ref={sizeTriggerRef}
+                >
+                  <Scaling size={14} /> Size
+                </Button>
+                <Popover
+                  isOpen={isSizeOpen}
+                  onClose={() => setIsSizeOpen(false)}
+                  triggerRef={sizeTriggerRef}
+                  title="Size"
+                >
+                  <div className="flex flex-col gap-1">
+                    <button
+                      className={`font-body flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left text-[13px] font-bold transition-all ${card.size === null ? 'shadow-inner-brutal bg-active' : 'hover:shadow-brutal-md hover:bg-hover hover:-translate-0.5'}`}
+                      onClick={() => {
+                        updateCard.mutate({ size: null })
+                        setIsSizeOpen(false)
+                      }}
+                    >
+                      <span className="h-3 w-3 border border-black bg-gray-200" />
+                      None
+                    </button>
+                    {SIZES.map(s => (
+                      <button
+                        key={s.id}
+                        className={`font-body flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left text-[13px] font-bold transition-all ${card.size === s.id ? 'shadow-inner-brutal bg-active' : 'hover:shadow-brutal-md hover:bg-hover hover:-translate-0.5'}`}
+                        onClick={() => {
+                          updateCard.mutate({ size: s.id as Card['size'] })
+                          setIsSizeOpen(false)
+                        }}
+                      >
+                        <span className="h-3 w-3 border border-black bg-gray-400" />
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </Popover>
+
+                <Button
                   ref={coverTriggerRef}
                   variant="secondary"
                   fullWidth
@@ -549,7 +602,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
               <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
                 Details
               </h3>
-              <div className="shadow-brutal-sm hover:shadow-brutal-md grid grid-cols-2 gap-4 border border-black bg-white p-4 transition-all hover:-translate-0.5">
+              <div className="shadow-brutal-sm hover:shadow-brutal-md grid grid-cols-3 gap-4 border border-black bg-white p-4 transition-all hover:-translate-0.5">
                 <div className="flex flex-col gap-1">
                   <span className="text-text-subtle text-[9px] font-extrabold uppercase">Position</span>
                   <span className="text-[13px] font-extrabold text-black">{card.position}</span>
@@ -563,6 +616,12 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                     }}
                   >
                     {card.priority || 'none'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-text-subtle text-[9px] font-extrabold uppercase">Size</span>
+                  <span className="text-[13px] font-extrabold text-black">
+                    {SIZES.find(s => s.id === card.size)?.name || 'None'}
                   </span>
                 </div>
               </div>

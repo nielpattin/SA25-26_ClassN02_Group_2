@@ -20,6 +20,7 @@ export const taskService = {
     position?: string
     columnId: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none'
+    size?: 'xs' | 's' | 'm' | 'l' | 'xl'
     reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
     startDate?: Date | null
     dueDate?: Date | null
@@ -47,6 +48,7 @@ export const taskService = {
     position?: string
     columnId?: string
     priority?: 'urgent' | 'high' | 'medium' | 'low' | 'none' | null
+    size?: 'xs' | 's' | 'm' | 'l' | 'xl' | null
     reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
     startDate?: Date | null
     dueDate?: Date | null

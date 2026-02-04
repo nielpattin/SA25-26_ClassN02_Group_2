@@ -18,6 +18,9 @@ export const adminRoleEnum = pgEnum('admin_role', ['super_admin', 'moderator', '
 // Task priority level
 export const priorityEnum = pgEnum('priority', ['urgent', 'high', 'medium', 'low', 'none'])
 
+// Task size/effort level
+export const sizeEnum = pgEnum('size', ['xs', 's', 'm', 'l', 'xl'])
+
 // User interface theme preference
 export const themeEnum = pgEnum('theme', ['light', 'dark', 'system'])
 
@@ -200,6 +203,7 @@ export const tasks = pgTable('tasks', {
 	// Fractional index for ordering within column
 	position: text('position').notNull(),
 	priority: priorityEnum(),
+	size: sizeEnum(),
 	startDate: timestamp('start_date'),
 	dueDate: timestamp('due_date'),
 	reminder: reminderEnum().default('none').notNull(),
