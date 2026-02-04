@@ -6,6 +6,7 @@ export type Column = {
   name: string
   position: string
   boardId: string
+  version?: number
 }
 
 export type CreateColumnInput = {

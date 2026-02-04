@@ -178,6 +178,23 @@ export function useDragHandlers<
         const dist = Math.sqrt(Math.pow(e.clientX - x, 2) + Math.pow(e.clientY - y, 2))
 
         if (dist > 5) {
+          if (scrollContainerRef.current) {
+            const cols = Array.from(
+              scrollContainerRef.current.querySelectorAll('[data-role="column"]')
+            )
+            columnRectsRef.current = cols.map(col => {
+              const r = col.getBoundingClientRect()
+              const colId = (col as HTMLElement).dataset.columnId ?? ''
+              return {
+                id: colId,
+                left: r.left,
+                right: r.right,
+                top: r.top,
+                bottom: r.bottom,
+              }
+            })
+          }
+
           setLocalColumns(serverColumns)
           setDraggedColumnId(columnId)
           setDraggedWidth(width)
@@ -201,19 +218,23 @@ export function useDragHandlers<
           const colElements = Array.from(
             scrollContainerRef.current.querySelectorAll('[data-role="column"]')
           )
+          const cachedRects = columnRectsRef.current
           const otherCols = colElements
-            .map(el => ({
-              id: (el as HTMLElement).dataset.columnId ?? '',
-              rect: el.getBoundingClientRect(),
-            }))
+            .map(el => {
+              const id = (el as HTMLElement).dataset.columnId ?? ''
+              const cached = cachedRects.find(c => c.id === id)
+              const colWidth = cached ? cached.right - cached.left : 300
+              const r = el.getBoundingClientRect()
+              return { id, left: r.left, width: colWidth }
+            })
             .filter(c => c.id !== draggedColumnId)
 
           let newIndex = placeholderIndex ?? 0
           const draggedMidX = e.clientX - dragOffset.x + draggedWidth / 2
 
           for (let i = 0; i < otherCols.length; i++) {
-            const { rect } = otherCols[i]
-            const neighborMidX = rect.left + rect.width / 2
+            const { left, width } = otherCols[i]
+            const neighborMidX = left + width / 2
 
             if (draggedMidX > neighborMidX && i >= (placeholderIndex ?? 0)) {
               newIndex = i + 1
@@ -246,14 +267,7 @@ export function useDragHandlers<
         }
 
         if (scrollContainerRef.current) {
-          const colElements = Array.from(
-            scrollContainerRef.current.querySelectorAll('[data-role="column"]')
-          )
-          const colRects = colElements.map(el => {
-            const r = el.getBoundingClientRect()
-            const columnId = (el as HTMLElement).dataset.columnId ?? ''
-            return { id: columnId, left: r.left, right: r.right }
-          })
+          const colRects = columnRectsRef.current
 
           const hoveredCol = colRects.find(r => e.clientX >= r.left && e.clientX <= r.right)
           if (hoveredCol) {
@@ -267,7 +281,6 @@ export function useDragHandlers<
             )
 
             const rects = cardElements.map(el => {
-              // Use the actual card content for measurement to avoid indicator shifting
               const cardContent = el.querySelector('[data-role="card"]') || el
               const r = cardContent.getBoundingClientRect()
               return {

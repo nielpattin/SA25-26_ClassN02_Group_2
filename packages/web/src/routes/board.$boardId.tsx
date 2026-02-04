@@ -249,7 +249,7 @@ function BoardPage() {
 
       // Get current version for conflict detection
       const column = serverColumns.find(c => c.id === columnId)
-      const version = (column as Column & { version?: number })?.version
+      const version = column?.version
 
       // The mutation handles optimistic updates and error rollback
       moveColumn.mutate(
@@ -259,8 +259,7 @@ function BoardPage() {
         }
       )
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [moveColumn, setIsDragging]
+    [moveColumn, setIsDragging, serverColumns]
   )
 
   const handleCardDrop = useCallback(
@@ -292,7 +291,7 @@ function BoardPage() {
 
       // Get current version for conflict detection
       const task = allCards.find(c => c.id === droppedCardId)
-      const version = (task as TaskWithLabels & { version?: number })?.version
+      const version = task?.version
 
       // The mutation handles optimistic updates and error rollback
       moveTask.mutate(
@@ -302,8 +301,7 @@ function BoardPage() {
         }
       )
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [moveTask, setIsDragging]
+    [moveTask, setIsDragging, allCards]
   )
 
   // Check if current user is board admin

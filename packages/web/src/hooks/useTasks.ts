@@ -35,6 +35,7 @@ export type TaskWithLabels = {
   reminder?: 'none' | 'on_day' | '1_day' | '2_days' | '1_week'
   archivedAt?: string | Date | null
   size?: 'xs' | 's' | 'm' | 'l' | 'xl' | null
+  version?: number
 }
 
 // Task type from detail endpoint (labels as string IDs)

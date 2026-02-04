@@ -49,12 +49,20 @@ export function useBoardSocket(boardId: string) {
   const boardIdRef = useRef(boardId)
   const [presence, setPresence] = useState<PresenceUser[]>([])
   const lastActivityRef = useRef(0)
+  const needsInvalidateRef = useRef(false)
   const isDragging = useDragStore((state) => state.isDragging)
 
-  // Keep boardId ref up to date
   useEffect(() => {
     boardIdRef.current = boardId
   }, [boardId])
+
+  useEffect(() => {
+    if (!isDragging && needsInvalidateRef.current) {
+      queryClient.invalidateQueries({ queryKey: ['columns', boardId] })
+      queryClient.invalidateQueries({ queryKey: ['cards', 'list', boardId] })
+      needsInvalidateRef.current = false
+    }
+  }, [isDragging, boardId, queryClient])
 
   useEffect(() => {
     const handleActivity = () => {
@@ -116,7 +124,10 @@ export function useBoardSocket(boardId: string) {
             return
           }
 
-          if (isDragging) return
+          if (useDragStore.getState().isDragging) {
+            needsInvalidateRef.current = true
+            return
+          }
 
           switch (message.type) {
             case 'board:updated':
@@ -194,7 +205,7 @@ export function useBoardSocket(boardId: string) {
         wsRef.current = null
       }
     }
-  }, [boardId, queryClient, session?.user?.id, isDragging])
+  }, [boardId, queryClient, session?.user?.id])
 
   return { wsRef, presence }
 }
