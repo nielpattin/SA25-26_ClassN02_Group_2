@@ -1,6 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useQueryClient } from '@tanstack/react-query'
-import { api } from '../api/client'
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { generateKeyBetween } from 'fractional-indexing'
 import { PublishTemplateModal } from '../components/board/PublishTemplateModal'
@@ -23,9 +21,9 @@ import {
   useArchiveColumn,
   useCopyColumn,
   useMoveColumnToBoard,
-  columnKeys,
+  useMoveColumn,
 } from '../hooks/useColumns'
-import { useTasks, useCreateTask, type TaskWithLabels, taskKeys } from '../hooks/useTasks'
+import { useTasks, useCreateTask, useMoveTask, type TaskWithLabels } from '../hooks/useTasks'
 import { useRecordBoardVisit } from '../hooks/useRecentBoards'
 import { useSearchModal } from '../context/SearchContext'
 import { filterTasks } from '../hooks/filterTasks'
@@ -59,7 +57,6 @@ function BoardPage() {
   const { boardId } = Route.useParams()
   const { cardId: urlCardId } = Route.useSearch()
   const navigate = Route.useNavigate()
-  const queryClient = useQueryClient()
   const [newColumnName, setNewColumnName] = useState('')
 
   // Local UI state
@@ -164,6 +161,8 @@ function BoardPage() {
   const archiveColumn = useArchiveColumn(boardId)
   const copyColumn = useCopyColumn(boardId)
   const moveColumnToBoard = useMoveColumnToBoard(boardId)
+  const moveColumn = useMoveColumn(boardId)
+  const moveTask = useMoveTask(boardId)
   const recordVisit = useRecordBoardVisit()
   const { setBoardContext } = useSearchModal()
 
@@ -248,28 +247,15 @@ function BoardPage() {
         afterCol?.position || null
       )
 
-      // Update the dragged column's position in the finalColumns array for optimistic update
-      const updatedColumns = finalColumns.map(c => 
-        c.id === columnId ? { ...c, position: calculatedPosition } : c
+      // The mutation handles optimistic updates and error rollback
+      moveColumn.mutate(
+        { columnId, position: calculatedPosition },
+        {
+          onSettled: () => setIsDragging(false)
+        }
       )
-
-      queryClient.setQueryData(columnKeys.list(boardId), updatedColumns)
-
-      api.v1
-        .columns({ id: columnId })
-        .move.patch({ position: calculatedPosition })
-        .then(({ data }) => {
-          if (data) {
-            queryClient.setQueryData<Column[]>(columnKeys.list(boardId), old => {
-              if (!old) return old
-              return old.map(c => c.id === data.id ? { ...c, ...data } : c)
-            })
-          }
-        })
-        .catch(() => queryClient.invalidateQueries({ queryKey: columnKeys.list(boardId) }))
-        .finally(() => setIsDragging(false))
     },
-    [boardId, queryClient, setIsDragging]
+    [moveColumn, setIsDragging]
   )
 
   const handleCardDrop = useCallback(
@@ -299,59 +285,16 @@ function BoardPage() {
 
       const calculatedPosition = generateKeyBetween(beforePos, afterPos)
 
-      // Optimistic update to prevent flash of old position
-      queryClient.setQueryData<TaskWithLabels[]>(taskKeys.list(boardId), old => {
-        if (!old) return old
-
-        const card = old.find(c => c.id === droppedCardId)
-        if (!card) return old
-
-        const withoutCard = old.filter(c => c.id !== droppedCardId)
-        const updatedCard = { ...card, columnId, position: calculatedPosition }
-
-        // afterCardId = the card that will be AFTER us (we insert before it)
-        if (afterCardId) {
-          const idx = withoutCard.findIndex(c => c.id === afterCardId)
-          if (idx !== -1) {
-            const result = [...withoutCard]
-            result.splice(idx, 0, updatedCard)
-            return result
-          }
+      // The mutation handles optimistic updates and error rollback
+      moveTask.mutate(
+        { taskId: droppedCardId, columnId, position: calculatedPosition },
+        {
+          onSettled: () => setIsDragging(false)
         }
-
-        // beforeCardId = the card that will be BEFORE us (we insert after it)
-        if (beforeCardId) {
-          const idx = withoutCard.findIndex(c => c.id === beforeCardId)
-          if (idx !== -1) {
-            const result = [...withoutCard]
-            result.splice(idx + 1, 0, updatedCard)
-            return result
-          }
-        }
-
-        // Empty column or fallback - append
-        return [...withoutCard, updatedCard]
-      })
-
-      api.v1
-        .tasks({ id: droppedCardId })
-        .move.patch({
-          columnId,
-          position: calculatedPosition,
-        })
-        .then(({ data }) => {
-          if (data) {
-            // Update cache with server response to ensure version/etc are in sync
-            queryClient.setQueryData<TaskWithLabels[]>(taskKeys.list(boardId), old => {
-              if (!old) return old
-              return old.map(t => t.id === data.id ? { ...t, ...data } : t)
-            })
-          }
-        })
-        .catch(() => queryClient.invalidateQueries({ queryKey: taskKeys.list(boardId) }))
-        .finally(() => setIsDragging(false))
+      )
     },
-    [boardId, queryClient, allCards, setIsDragging]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [moveTask, setIsDragging]
   )
 
   // Check if current user is board admin
