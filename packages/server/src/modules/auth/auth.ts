@@ -83,10 +83,9 @@ export const auth = betterAuth({
       enabled: false, // Disable to prevent premature logout
     },
   },
-  trustedOrigins: [
-    'http://localhost:5173',
-  ],
+  trustedOrigins: process.env.CORS_ORIGINS?.split(',') || [webUrl],
   advanced: {
+    cookiePrefix: 'kyte',
     crossSubDomainCookies: {
       enabled: false, // Not using subdomains
     },
