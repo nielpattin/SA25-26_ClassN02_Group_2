@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia'
 import { columnService } from './columns.service'
 import { authPlugin } from '../auth'
+import { checkRateLimit } from '../../shared/middleware/rate-limit'
 import {
   CreateColumnBody,
   UpdateColumnBody,
@@ -29,8 +30,9 @@ export const columnController = new Elysia({ prefix: '/columns' })
     params: ColumnParams,
     body: UpdateColumnBody,
   })
-  .patch('/:id/move', ({ params: { id }, body, session }) => {
+  .patch('/:id/move', async ({ params: { id }, body, session }) => {
     if (!session) throw new UnauthorizedError()
+    await checkRateLimit(`move:column:${session.user.id}`, 20, 60 * 1000)
     return columnService.moveColumn(id, body.position, session.user.id, body.version)
   }, {
     params: ColumnParams,

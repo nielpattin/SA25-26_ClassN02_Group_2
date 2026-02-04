@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { taskService } from './tasks.service'
 import { authPlugin } from '../auth'
+import { checkRateLimit } from '../../shared/middleware/rate-limit'
 import { UnauthorizedError } from '../../shared/errors'
 import {
   CreateTaskBody,
@@ -60,8 +61,9 @@ export const taskController = new Elysia({ prefix: '/tasks' })
   }, {
     params: TaskParams,
   })
-  .patch('/:id/move', ({ params: { id }, body, session }) => {
+  .patch('/:id/move', async ({ params: { id }, body, session }) => {
     if (!session) throw new UnauthorizedError()
+    await checkRateLimit(`move:task:${session.user.id}`, 30, 60 * 1000)
     return taskService.moveTask(id, session.user.id, body.columnId, body.position, body.version)
   }, {
     params: TaskParams,

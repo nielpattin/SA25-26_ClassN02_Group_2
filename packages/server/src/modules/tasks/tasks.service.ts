@@ -188,7 +188,7 @@ export const taskService = {
     if (!columnId) throw new Error('No target column')
 
     // Basic validation of position string
-    if (!/^[a-zA-Z0-9]+$/.test(position)) {
+    if (!position || position.length > 100 || !/^[a-zA-Z0-9]+$/.test(position)) {
       throw new Error('Invalid position format')
     }
 

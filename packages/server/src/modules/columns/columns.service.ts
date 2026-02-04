@@ -50,7 +50,7 @@ export const columnService = {
     if (!column) throw new Error('Column not found')
 
     // Basic validation
-    if (!/^[a-zA-Z0-9]+$/.test(position)) {
+    if (!position || position.length > 100 || !/^[a-zA-Z0-9]+$/.test(position)) {
       throw new Error('Invalid position format')
     }
 
