@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useSession } from '../api/auth'
+import { useDragStore } from '../store/dragStore'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws'
 
@@ -10,10 +11,10 @@ export type PresenceUser = {
 }
 
 type WsMessage = {
-  type: 
-    | 'board:updated' 
+  type:
+    | 'board:updated'
     | 'board:restored'
-    | 'board:deleted' 
+    | 'board:deleted'
     | 'column:created'
     | 'column:updated'
     | 'column:moved'
@@ -23,7 +24,7 @@ type WsMessage = {
     | 'task:created'
     | 'task:updated'
     | 'task:moved'
-     | 'task:deleted'
+    | 'task:deleted'
     | 'task:archived'
     | 'task:restored'
     | 'dependency:created'
@@ -35,11 +36,8 @@ type WsMessage = {
   columnId?: string
 }
 
-// Global flag to pause invalidation during drag operations
-let isDragging = false
-
 export function setDragging(value: boolean) {
-  isDragging = value
+  useDragStore.getState().setDragging(value)
 }
 
 export function useBoardSocket(boardId: string) {
@@ -51,6 +49,7 @@ export function useBoardSocket(boardId: string) {
   const boardIdRef = useRef(boardId)
   const [presence, setPresence] = useState<PresenceUser[]>([])
   const lastActivityRef = useRef(0)
+  const isDragging = useDragStore((state) => state.isDragging)
 
   // Keep boardId ref up to date
   useEffect(() => {
@@ -195,7 +194,7 @@ export function useBoardSocket(boardId: string) {
         wsRef.current = null
       }
     }
-  }, [boardId, queryClient, session?.user?.id])
+  }, [boardId, queryClient, session?.user?.id, isDragging])
 
   return { wsRef, presence }
 }

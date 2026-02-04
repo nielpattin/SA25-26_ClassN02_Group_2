@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useBoards } from '../../hooks/useBoards'
-import { setDragging as setGlobalDragging } from '../../hooks/useBoardSocket'
+import { useDragStore } from '../../store/dragStore'
 import type { TaskWithLabels } from '../../hooks/useTasks'
 import { TaskCard } from '../tasks'
 import { BoardColumn } from '../columns'
@@ -80,6 +80,8 @@ export function KanbanBoard({
     return map
   }, [displayColumns, filteredCards])
 
+  const setIsDragging = useDragStore((state) => state.setDragging)
+
   const {
     handleMouseDown,
     handleMouseMove,
@@ -89,7 +91,7 @@ export function KanbanBoard({
   } = useDragHandlers<Column, TaskWithLabels>({
     serverColumns,
     allCards,
-    onDragStart: () => setGlobalDragging(true),
+    onDragStart: () => setIsDragging(true),
     onColumnDrop,
     onCardDrop,
   })

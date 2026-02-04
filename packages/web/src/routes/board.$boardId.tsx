@@ -5,7 +5,8 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { generateKeyBetween } from 'fractional-indexing'
 import { PublishTemplateModal } from '../components/board/PublishTemplateModal'
 import { useBoardFiltersStore } from '../store/boardViewStore'
-import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
+import { useBoardSocket } from '../hooks/useBoardSocket'
+import { useDragStore } from '../store/dragStore'
 import { useBoard } from '../hooks/useBoards'
 import {
   useBoardPreferences,
@@ -233,6 +234,8 @@ function BoardPage() {
   )
 
   // Drop handlers for API persistence
+  const setIsDragging = useDragStore((state) => state.setDragging)
+
   const handleColumnDrop = useCallback(
     (result: ColumnDropResult<Column>) => {
       const { columnId, finalColumns, placeholderIndex } = result
@@ -264,9 +267,9 @@ function BoardPage() {
           }
         })
         .catch(() => queryClient.invalidateQueries({ queryKey: columnKeys.list(boardId) }))
-        .finally(() => setGlobalDragging(false))
+        .finally(() => setIsDragging(false))
     },
-    [boardId, queryClient]
+    [boardId, queryClient, setIsDragging]
   )
 
   const handleCardDrop = useCallback(
@@ -346,9 +349,9 @@ function BoardPage() {
           }
         })
         .catch(() => queryClient.invalidateQueries({ queryKey: taskKeys.list(boardId) }))
-        .finally(() => setGlobalDragging(false))
+        .finally(() => setIsDragging(false))
     },
-    [boardId, queryClient, allCards]
+    [boardId, queryClient, allCards, setIsDragging]
   )
 
   // Check if current user is board admin
