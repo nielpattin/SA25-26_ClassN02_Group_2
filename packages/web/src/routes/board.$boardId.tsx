@@ -1,19 +1,17 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { ChevronRight, Archive, Download, Kanban, Calendar, ChartGantt, MoreHorizontal, Share2, History } from 'lucide-react'
+import { generateKeyBetween } from 'fractional-indexing'
 import { PublishTemplateModal } from '../components/board/PublishTemplateModal'
 import { useBoardFiltersStore } from '../store/boardViewStore'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
-import { PresenceStrip } from '../components/board/PresenceStrip'
-import { useBoard, useBoards } from '../hooks/useBoards'
+import { useBoard } from '../hooks/useBoards'
 import {
   useBoardPreferences,
   useSaveBoardPreferences,
   type ViewMode,
   type ZoomMode,
-  type BoardFilters,
 } from '../hooks/useBoardPreferences'
 import { CalendarView } from '../components/calendar/CalendarView'
 import { GanttView } from '../components/gantt/GanttView'
@@ -33,25 +31,15 @@ import { filterTasks } from '../hooks/filterTasks'
 import { useLabels } from '../hooks/useLabels'
 import { useBoardMembers, type BoardMember } from '../hooks/useAssignees'
 import { useSession } from '../api/auth'
-import { CardModal, TaskCard } from '../components/tasks'
-import { BoardColumn } from '../components/columns'
+import { CardModal } from '../components/tasks'
 import { ArchivePanel } from '../components/board/ArchivePanel'
 import { ExportBoardModal } from '../components/board/ExportBoardModal'
 import { ExportActivityModal } from '../components/board/ExportActivityModal'
+import { BoardHeader } from '../components/board/BoardHeader'
+import { KanbanBoard } from '../components/board/KanbanBoard'
 import { WorkspaceProvider } from '../context/WorkspaceContext'
-import { SearchTrigger } from '../components/search'
-import { BoardFilterBar } from '../components/filters'
-import {
-  DragProvider,
-  useDragContext,
-  useDragHandlers,
-  ColumnGhost,
-  CardGhost,
-  type ColumnDropResult,
-  type CardDropResult,
-} from '../components/dnd'
-import { Input } from '../components/ui/Input'
-import { Dropdown } from '../components/ui/Dropdown'
+import { DragProvider } from '../components/dnd'
+import type { ColumnDropResult, CardDropResult } from '../components/dnd'
 
 type Column = { id: string; name: string; position: string; boardId: string }
 
@@ -60,13 +48,13 @@ type BoardSearch = {
 }
 
 export const Route = createFileRoute('/board/$boardId')({
-  component: BoardComponent,
+  component: BoardPage,
   validateSearch: (search: Record<string, unknown>): BoardSearch => ({
     cardId: (search.cardId as string) || undefined,
   }),
 })
 
-function BoardComponent() {
+function BoardPage() {
   const { boardId } = Route.useParams()
   const { cardId: urlCardId } = Route.useSearch()
   const navigate = Route.useNavigate()
@@ -178,21 +166,20 @@ function BoardComponent() {
   const recordVisit = useRecordBoardVisit()
   const { setBoardContext } = useSearchModal()
 
-  const filteredCards = useMemo(() => filterTasks(allCards, preferences.filters, serverColumns), [allCards, preferences.filters, serverColumns])
+  const viewFilters = useMemo(() => {
+    if (preferences.view !== 'kanban') return preferences.filters
+    return { ...preferences.filters, status: 'all' as const }
+  }, [preferences.filters, preferences.view])
 
-  const handleLabelToggle = useCallback(
-    (labelId: string) => {
-      toggleLabel(labelId)
-    },
-    [toggleLabel]
+  const filteredCards = useMemo(
+    () => filterTasks(allCards, viewFilters, serverColumns),
+    [allCards, viewFilters, serverColumns]
   )
 
-  const handleAssigneeToggle = useCallback(
-    (userId: string) => {
-      toggleAssignee(userId)
-    },
-    [toggleAssignee]
-  )
+  const isKanbanFiltering =
+    viewFilters.labelIds.length > 0 ||
+    viewFilters.assigneeIds.length > 0 ||
+    viewFilters.dueDate !== null
 
   // Record board visit for recent boards feature
   useEffect(() => {
@@ -249,13 +236,33 @@ function BoardComponent() {
   const handleColumnDrop = useCallback(
     (result: ColumnDropResult<Column>) => {
       const { columnId, finalColumns, placeholderIndex } = result
-      queryClient.setQueryData(columnKeys.list(boardId), finalColumns)
+
+      // Calculate authoritative position
       const beforeCol = finalColumns[placeholderIndex - 1]
       const afterCol = finalColumns[placeholderIndex + 1]
+      const calculatedPosition = generateKeyBetween(
+        beforeCol?.position || null,
+        afterCol?.position || null
+      )
+
+      // Update the dragged column's position in the finalColumns array for optimistic update
+      const updatedColumns = finalColumns.map(c => 
+        c.id === columnId ? { ...c, position: calculatedPosition } : c
+      )
+
+      queryClient.setQueryData(columnKeys.list(boardId), updatedColumns)
+
       api.v1
         .columns({ id: columnId })
-        .move.patch({ beforeColumnId: beforeCol?.id, afterColumnId: afterCol?.id })
-        .then(() => queryClient.invalidateQueries({ queryKey: columnKeys.list(boardId) }))
+        .move.patch({ position: calculatedPosition })
+        .then(({ data }) => {
+          if (data) {
+            queryClient.setQueryData<Column[]>(columnKeys.list(boardId), old => {
+              if (!old) return old
+              return old.map(c => c.id === data.id ? { ...c, ...data } : c)
+            })
+          }
+        })
         .catch(() => queryClient.invalidateQueries({ queryKey: columnKeys.list(boardId) }))
       setGlobalDragging(false)
     },
@@ -263,23 +270,85 @@ function BoardComponent() {
   )
 
   const handleCardDrop = useCallback(
-    (result: CardDropResult<TaskWithLabels>) => {
-      const { cardId: droppedCardId, finalCards, droppedCard } = result
-      queryClient.setQueryData(taskKeys.list(boardId), finalCards)
-      const colCards = finalCards.filter(c => c.columnId === droppedCard.columnId)
-      const inColIdx = colCards.indexOf(droppedCard)
+    (result: CardDropResult) => {
+      const { cardId: droppedCardId, columnId, beforeCardId, afterCardId } = result
+
+      // Calculate position for optimistic + server authoritative update
+      const cardsInTargetColumn = allCards.filter(
+        c => (c as TaskWithLabels).columnId === columnId && c.id !== droppedCardId
+      )
+      let beforePos: string | null = null
+      let afterPos: string | null = null
+
+      if (afterCardId) {
+        const afterCard = cardsInTargetColumn.find(c => c.id === afterCardId)
+        afterPos = afterCard?.position || null
+        const idx = cardsInTargetColumn.findIndex(c => c.id === afterCardId)
+        if (idx > 0) {
+          beforePos = cardsInTargetColumn[idx - 1].position
+        }
+      } else if (beforeCardId) {
+        const beforeCard = cardsInTargetColumn.find(c => c.id === beforeCardId)
+        beforePos = beforeCard?.position || null
+      } else if (cardsInTargetColumn.length > 0) {
+        beforePos = cardsInTargetColumn[cardsInTargetColumn.length - 1].position
+      }
+
+      const calculatedPosition = generateKeyBetween(beforePos, afterPos)
+
+      // Optimistic update to prevent flash of old position
+      queryClient.setQueryData<TaskWithLabels[]>(taskKeys.list(boardId), old => {
+        if (!old) return old
+
+        const card = old.find(c => c.id === droppedCardId)
+        if (!card) return old
+
+        const withoutCard = old.filter(c => c.id !== droppedCardId)
+        const updatedCard = { ...card, columnId, position: calculatedPosition }
+
+        // afterCardId = the card that will be AFTER us (we insert before it)
+        if (afterCardId) {
+          const idx = withoutCard.findIndex(c => c.id === afterCardId)
+          if (idx !== -1) {
+            const result = [...withoutCard]
+            result.splice(idx, 0, updatedCard)
+            return result
+          }
+        }
+
+        // beforeCardId = the card that will be BEFORE us (we insert after it)
+        if (beforeCardId) {
+          const idx = withoutCard.findIndex(c => c.id === beforeCardId)
+          if (idx !== -1) {
+            const result = [...withoutCard]
+            result.splice(idx + 1, 0, updatedCard)
+            return result
+          }
+        }
+
+        // Empty column or fallback - append
+        return [...withoutCard, updatedCard]
+      })
+
       api.v1
         .tasks({ id: droppedCardId })
         .move.patch({
-          columnId: droppedCard.columnId,
-          beforeTaskId: colCards[inColIdx - 1]?.id,
-          afterTaskId: colCards[inColIdx + 1]?.id,
+          columnId,
+          position: calculatedPosition,
         })
-        .then(() => queryClient.invalidateQueries({ queryKey: taskKeys.list(boardId) }))
+        .then(({ data }) => {
+          if (data) {
+            // Update cache with server response to ensure version/etc are in sync
+            queryClient.setQueryData<TaskWithLabels[]>(taskKeys.list(boardId), old => {
+              if (!old) return old
+              return old.map(t => t.id === data.id ? { ...t, ...data } : t)
+            })
+          }
+        })
         .catch(() => queryClient.invalidateQueries({ queryKey: taskKeys.list(boardId) }))
       setGlobalDragging(false)
     },
-    [boardId, queryClient]
+    [boardId, queryClient, allCards]
   )
 
   // Check if current user is board admin
@@ -309,102 +378,27 @@ function BoardComponent() {
     <WorkspaceProvider>
       <DragProvider>
         <div className="color-text flex h-screen flex-col overflow-hidden bg-canvas p-0 font-body">
-          <header className="flex shrink-0 items-center justify-between gap-4 border-b border-black bg-canvas px-6 py-4">
-            <div className="flex items-center gap-3">
-              <Link
-                to="/boards"
-                className="text-sm font-extrabold text-black uppercase hover:bg-accent hover:px-1 hover:shadow-brutal-sm"
-              >
-                Workspace
-              </Link>
-              <ChevronRight size={14} className="text-text-muted" />
-              <h1 className="m-0 font-heading text-[18px] font-bold text-black">{board.name}</h1>
-              <div className="ml-4">
-                <PresenceStrip presence={presence} />
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <BoardFilterBar
-                pendingFilters={pendingFilters}
-                labels={labels}
-                members={members}
-                hasActiveFilters={hasActiveFilters}
-                hasPendingChanges={hasPendingChanges}
-                onLabelToggle={handleLabelToggle}
-                onAssigneeToggle={handleAssigneeToggle}
-                onDueDateChange={setDueDate}
-                onApply={handleApplyFilters}
-                onClear={handleClearFilters}
-              />
-              <div className="flex items-center gap-0 border border-black bg-white shadow-brutal-sm">
-                <button
-                  onClick={() => setView('kanban')}
-                  className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
-                    (preferences.view || 'kanban') === 'kanban' ? 'bg-accent' : 'hover:bg-accent/50'
-                  }`}
-                  title="Kanban View"
-                >
-                  <Kanban size={18} />
-                </button>
-                <div className="h-9 w-px bg-black" />
-                <button
-                  onClick={() => setView('calendar')}
-                  className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
-                    preferences.view === 'calendar' ? 'bg-accent' : 'hover:bg-accent/50'
-                  }`}
-                  title="Calendar View"
-                >
-                  <Calendar size={18} />
-                </button>
-                <div className="h-9 w-px bg-black" />
-                <button
-                  onClick={() => setView('gantt')}
-                  className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
-                    preferences.view === 'gantt' ? 'bg-accent' : 'hover:bg-accent/50'
-                  }`}
-                  title="Gantt View"
-                >
-                  <ChartGantt size={18} />
-                </button>
-              </div>
-              <button
-                onClick={() => setArchiveOpen(true)}
-                className="flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white shadow-brutal-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-none"
-                title="Open Archive"
-              >
-                <Archive size={18} />
-              </button>
-              <Dropdown
-                trigger={
-                  <button className="flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white shadow-brutal-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-none">
-                    <MoreHorizontal size={18} />
-                  </button>
-                }
-                items={[
-                  {
-                    label: 'Export Board',
-                    icon: <Download size={16} />,
-                    onClick: () => setExportOpen(true),
-                  },
-                  ...(isBoardAdmin
-                    ? [
-                        {
-                          label: 'Export Activity Log',
-                          icon: <History size={16} />,
-                          onClick: () => setActivityExportOpen(true),
-                        },
-                      ]
-                    : []),
-                  {
-                    label: 'Publish to Market',
-                    icon: <Share2 size={16} />,
-                    onClick: () => setPublishOpen(true),
-                  },
-                ]}
-              />
-              <SearchTrigger />
-            </div>
-          </header>
+          <BoardHeader
+            boardName={board.name}
+            presence={presence}
+            pendingFilters={pendingFilters}
+            labels={labels}
+            members={members}
+            hasActiveFilters={hasActiveFilters}
+            hasPendingChanges={hasPendingChanges}
+            currentView={preferences.view || 'kanban'}
+            isBoardAdmin={isBoardAdmin}
+            onLabelToggle={toggleLabel}
+            onAssigneeToggle={toggleAssignee}
+            onDueDateChange={setDueDate}
+            onApplyFilters={handleApplyFilters}
+            onClearFilters={handleClearFilters}
+            onViewChange={setView}
+            onOpenArchive={() => setArchiveOpen(true)}
+            onOpenExport={() => setExportOpen(true)}
+            onOpenActivityExport={() => setActivityExportOpen(true)}
+            onOpenPublish={() => setPublishOpen(true)}
+          />
 
           {preferences.view === 'calendar' ? (
             <CalendarView
@@ -427,12 +421,11 @@ function BoardComponent() {
               onFiltersChange={f => saveDebounced({ filters: { ...preferences.filters, ...f } })}
             />
           ) : (
-            <BoardContent
+            <KanbanBoard
               boardId={boardId}
               serverColumns={serverColumns}
               allCards={allCards}
               filteredCards={filteredCards}
-              filters={preferences.filters}
               newColumnName={newColumnName}
               setNewColumnName={setNewColumnName}
               createColumn={createColumn}
@@ -444,7 +437,7 @@ function BoardComponent() {
               onMoveColumnToBoard={handleMoveColumnToBoard}
               onColumnDrop={handleColumnDrop}
               onCardDrop={handleCardDrop}
-              isFiltering={hasActiveFilters}
+              isFiltering={isKanbanFiltering}
             />
           )}
 
@@ -483,167 +476,5 @@ function BoardComponent() {
         </div>
       </DragProvider>
     </WorkspaceProvider>
-  )
-}
-
-type BoardContentProps = {
-  boardId: string
-  serverColumns: Column[]
-  allCards: TaskWithLabels[]
-  filteredCards: TaskWithLabels[]
-  filters: BoardFilters
-  newColumnName: string
-  setNewColumnName: (name: string) => void
-  createColumn: { mutate: (input: { name: string; boardId: string }) => void }
-  onCardClick: (id: string) => void
-  onAddTask: (columnId: string, title: string) => void | Promise<void>
-  onRenameColumn: (columnId: string, newName: string) => void
-  onArchiveColumn: (columnId: string) => void
-  onCopyColumn: (columnId: string) => void
-  onMoveColumnToBoard: (columnId: string, targetBoardId: string) => void
-  onColumnDrop: (result: ColumnDropResult<Column>) => void
-  onCardDrop: (result: CardDropResult<TaskWithLabels>) => void
-  isFiltering: boolean
-}
-
-function BoardContent({
-  boardId,
-  serverColumns,
-  allCards,
-  filteredCards,
-  filters,
-  newColumnName,
-  setNewColumnName,
-  createColumn,
-  onCardClick,
-  onAddTask,
-  onRenameColumn,
-  onArchiveColumn,
-  onCopyColumn,
-  onMoveColumnToBoard,
-  onColumnDrop,
-  onCardDrop,
-  isFiltering,
-}: BoardContentProps) {
-  const { data: allBoards = [] } = useBoards()
-  const {
-    draggedColumnId,
-    draggedCardId,
-    draggedCardData,
-    localColumns,
-    localCards,
-    isScrolling,
-    isAnyDragging,
-    scrollContainerRef,
-    ghostRef,
-    cardGhostRef,
-  } = useDragContext<Column, TaskWithLabels>()
-
-  const displayColumns = draggedColumnId ? localColumns : serverColumns
-  const displayCards = useMemo(() => {
-    if (draggedCardId) {
-      const filtered = filterTasks(localCards, filters, serverColumns)
-      // Ensure dragged card is in the list even if it would be filtered out
-      if (!filtered.some(c => c.id === draggedCardId)) {
-        const draggedCard = localCards.find(c => c.id === draggedCardId)
-        if (draggedCard) filtered.push(draggedCard)
-      }
-      return filtered
-    }
-    return filteredCards
-  }, [draggedCardId, localCards, filteredCards, filters, serverColumns])
-
-  const cardsByColumn = useMemo(() => {
-    const map: Record<string, TaskWithLabels[]> = {}
-    displayColumns.forEach(col => {
-      map[col.id] = []
-    })
-    displayCards.forEach(card => {
-      if (map[card.columnId]) map[card.columnId].push(card)
-    })
-    return map
-  }, [displayColumns, displayCards])
-
-  const {
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUpOrLeave,
-    handleColumnDragStart,
-    handleCardDragStart,
-  } = useDragHandlers<Column, TaskWithLabels>({
-    serverColumns,
-    allCards,
-    displayColumns,
-    onDragStart: () => setGlobalDragging(true),
-    onColumnDrop,
-    onCardDrop,
-  })
-
-  const draggedColumn = draggedColumnId
-    ? displayColumns.find(c => c.id === draggedColumnId)
-    : null
-
-  return (
-    <>
-      <div
-        className={`flex flex-1 cursor-grab items-start gap-(--board-gap,24px) overflow-x-auto overflow-y-hidden bg-canvas px-16 py-12 ${isScrolling || draggedColumnId || draggedCardId ? 'cursor-grabbing' : ''}`}
-        ref={scrollContainerRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUpOrLeave}
-        onMouseLeave={handleMouseUpOrLeave}
-      >
-        {displayColumns.map(column => (
-          <BoardColumn
-            key={column.id}
-            column={column}
-            cards={cardsByColumn[column.id] || []}
-            onCardClick={onCardClick}
-            onDragStart={handleColumnDragStart}
-            onCardDragStart={handleCardDragStart}
-            onAddTask={onAddTask}
-            onRenameColumn={onRenameColumn}
-            onArchiveColumn={onArchiveColumn}
-            onCopyColumn={onCopyColumn}
-            onMoveColumnToBoard={onMoveColumnToBoard}
-            boards={allBoards}
-            isDragging={column.id === draggedColumnId}
-            draggedCardId={draggedCardId}
-            isAnyDragging={isAnyDragging}
-            isFiltering={isFiltering}
-          />
-        ))}
-        <div
-          className={`w-(--board-column-width,300px) min-w-(--board-column-width,300px) shrink-0 px-1 ${isAnyDragging ? 'pointer-events-none' : ''}`}
-        >
-          <Input
-            className="font-heading text-[13px] font-extrabold tracking-wider uppercase shadow-brutal-md hover:-translate-px hover:shadow-brutal-xl! focus:bg-accent focus:shadow-brutal-lg"
-            placeholder="+ Add a group"
-            value={newColumnName}
-            onChange={e => setNewColumnName(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && newColumnName) {
-                createColumn.mutate({ name: newColumnName, boardId })
-                setNewColumnName('')
-              }
-            }}
-          />
-        </div>
-      </div>
-
-      {draggedColumn && (
-        <ColumnGhost
-          ref={ghostRef}
-          name={draggedColumn.name}
-          cardCount={cardsByColumn[draggedColumn.id]?.length || 0}
-        />
-      )}
-
-      {draggedCardData && (
-        <CardGhost ref={cardGhostRef}>
-          <TaskCard task={draggedCardData} onTaskClick={() => {}} isAnyDragging={isAnyDragging} />
-        </CardGhost>
-      )}
-    </>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
+import { generateKeyBetween } from 'fractional-indexing'
 import { api } from '../../api/client'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -13,7 +14,7 @@ interface MoveModalProps {
   currentBoardId: string
   currentColumnId: string
   cardId: string
-  onMove: (columnId: string, beforeTaskId?: string, afterTaskId?: string) => void
+  onMove: (columnId: string, position: string) => void
   onCancel: () => void
 }
 
@@ -61,21 +62,20 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
   const maxPosition = tasks.length + 1
 
   const handleMove = () => {
-    let beforeTaskId: string | undefined
-    let afterTaskId: string | undefined
+    let beforePos: string | null = null
+    let afterPos: string | null = null
 
     if (selectedPosition === 1) {
-      beforeTaskId = tasks[0]?.id
-      afterTaskId = undefined
+      afterPos = tasks[0]?.position || null
     } else if (selectedPosition >= maxPosition) {
-      beforeTaskId = undefined
-      afterTaskId = tasks[tasks.length - 1]?.id
+      beforePos = tasks[tasks.length - 1]?.position || null
     } else {
-      afterTaskId = tasks[selectedPosition - 2]?.id
-      beforeTaskId = tasks[selectedPosition - 1]?.id
+      beforePos = tasks[selectedPosition - 2]?.position || null
+      afterPos = tasks[selectedPosition - 1]?.position || null
     }
 
-    onMove(selectedColumnId, beforeTaskId, afterTaskId)
+    const position = generateKeyBetween(beforePos, afterPos)
+    onMove(selectedColumnId, position)
   }
 
   return createPortal(

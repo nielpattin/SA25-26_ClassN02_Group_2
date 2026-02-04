@@ -62,7 +62,7 @@ export const taskController = new Elysia({ prefix: '/tasks' })
   })
   .patch('/:id/move', ({ params: { id }, body, session }) => {
     if (!session) throw new UnauthorizedError()
-    return taskService.moveTask(id, session.user.id, body.columnId, body.beforeTaskId, body.afterTaskId, body.version)
+    return taskService.moveTask(id, session.user.id, body.columnId, body.position, body.version)
   }, {
     params: TaskParams,
     body: MoveTaskBody,

@@ -42,25 +42,21 @@ export const columnService = {
 
   moveColumn: async (
     columnId: string,
-    beforeColumnId: string | undefined,
-    afterColumnId: string | undefined,
+    position: string,
     userId: string,
     version?: number
   ) => {
     const column = await columnRepository.findById(columnId)
     if (!column) throw new Error('Column not found')
 
-    const { before, after } = await columnRepository.getPositionBetween(
-      column.boardId,
-      beforeColumnId,
-      afterColumnId
-    )
+    // Basic validation
+    if (!/^[a-zA-Z0-9]+$/.test(position)) {
+      throw new Error('Invalid position format')
+    }
 
-    const newPosition = generatePosition(before, after)
+    const updatedColumn = await columnRepository.update(columnId, { position }, version)
 
-    const updatedColumn = await columnRepository.update(columnId, { position: newPosition }, version)
-
-    if (needsRebalancing(newPosition)) {
+    if (needsRebalancing(position)) {
       await columnRepository.rebalanceBoard(column.boardId)
     }
 

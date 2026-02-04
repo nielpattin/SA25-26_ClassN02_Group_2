@@ -1,10 +1,11 @@
-import { memo, useState, useRef, useLayoutEffect } from 'react'
+import { memo, useState, useRef, useLayoutEffect, Fragment } from 'react'
 import { Plus, MoreHorizontal, Pencil, Copy, Archive, ExternalLink } from 'lucide-react'
 import { TaskCard } from '../tasks'
 import { Dropdown } from '../ui/Dropdown'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import type { TaskWithLabels } from '../../hooks/useTasks'
+import type { DropTarget } from '../dnd/dragTypes'
 
 export type ColumnData = {
   id: string
@@ -34,6 +35,7 @@ export type BoardColumnProps = {
   draggedCardId: string | null
   isAnyDragging: boolean
   isFiltering?: boolean
+  dropTarget: DropTarget | null
 }
 
 export const BoardColumn = memo(function BoardColumn({
@@ -52,6 +54,7 @@ export const BoardColumn = memo(function BoardColumn({
   draggedCardId,
   isAnyDragging,
   isFiltering = false,
+  dropTarget,
 }: BoardColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -164,17 +167,34 @@ export const BoardColumn = memo(function BoardColumn({
           </div>
         </h4>
         <div className="flex min-h-5 flex-1 flex-col gap-4 overflow-y-auto px-1 pt-1 pb-3">
-          {cards.map(card => (
-            <TaskCard
-              key={card.id}
-              task={card}
-              onTaskClick={onCardClick}
-              onTaskDragStart={onCardDragStart}
-              isDragging={card.id === draggedCardId}
-              isAnyDragging={isAnyDragging}
-            />
-          ))}
-          {cards.length === 0 && (
+          {dropTarget?.columnId === column.id && dropTarget.insertBeforeId === null && cards.length === 0 && (
+            <div className="h-24 shrink-0 rounded-none border-2 border-dashed border-black/40 bg-black/5" />
+          )}
+          {cards.map(card => {
+            const showIndicatorBefore =
+              dropTarget?.columnId === column.id && dropTarget.insertBeforeId === card.id
+            const shouldHide = card.id === draggedCardId
+
+            return (
+              <Fragment key={card.id}>
+                {showIndicatorBefore && (
+                  <div className="h-24 shrink-0 rounded-none border-2 border-dashed border-black/40 bg-black/5" />
+                )}
+                {!shouldHide && (
+                  <TaskCard
+                    task={card}
+                    onTaskClick={onCardClick}
+                    onTaskDragStart={onCardDragStart}
+                    isAnyDragging={isAnyDragging}
+                  />
+                )}
+              </Fragment>
+            )
+          })}
+          {dropTarget?.columnId === column.id && dropTarget.insertBeforeId === null && cards.length > 0 && (
+            <div className="h-24 shrink-0 rounded-none border-2 border-dashed border-black/40 bg-black/5" />
+          )}
+          {cards.length === 0 && (!dropTarget || dropTarget.columnId !== column.id) && (
             <div className="border border-dashed border-black bg-black/5 p-4 text-center text-[12px] font-bold text-text-subtle uppercase">
               {isFiltering ? 'No tasks match filters' : 'No items'}
             </div>

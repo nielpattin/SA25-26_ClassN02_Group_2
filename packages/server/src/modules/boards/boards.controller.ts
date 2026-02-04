@@ -1,7 +1,6 @@
 import { Elysia } from 'elysia'
 import { boardService } from './boards.service'
 import { authPlugin } from '../auth'
-import { UnauthorizedError } from '../../shared/errors'
 import {
   CreateBoardBody,
   UpdateBoardBody,
@@ -13,6 +12,7 @@ import {
   ExportBoardQuery,
 } from './boards.model'
 import { UpdateBoardPreferenceBody } from './preferences.model'
+import { UnauthorizedError } from '../../shared/errors'
 
 export const boardController = new Elysia({ prefix: '/boards' })
   .use(authPlugin)

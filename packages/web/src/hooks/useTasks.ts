@@ -72,8 +72,7 @@ export type UpdateTaskInput = {
 
 export type MoveTaskInput = {
   columnId: string
-  beforeTaskId?: string
-  afterTaskId?: string
+  position: string
 }
 
 // Query key factory
@@ -95,8 +94,8 @@ export function useTasks(boardId: string) {
       const { data, error } = await api.v1.tasks.board({ boardId }).enriched.get()
       if (error) throw error
       return ((data || []) as TaskWithLabels[]).sort((a, b) => {
-        if (a.position !== b.position) return a.position < b.position ? -1 : 1
         if (a.columnId !== b.columnId) return a.columnId.localeCompare(b.columnId)
+        if (a.position !== b.position) return a.position < b.position ? -1 : 1
         return a.id.localeCompare(b.id)
       })
     },
@@ -196,16 +195,16 @@ export function useMoveTask(boardId: string) {
       const { error } = await api.v1.tasks({ id: taskId }).move.patch(moveInput)
       if (error) throw error
     },
-    onMutate: async ({ taskId, columnId }) => {
+    onMutate: async ({ taskId, columnId, position }) => {
       await queryClient.cancelQueries({ queryKey: taskKeys.list(boardId) })
       
-      const previousTasks = queryClient.getQueryData<Task[]>(taskKeys.list(boardId))
+      const previousTasks = queryClient.getQueryData<TaskWithLabels[]>(taskKeys.list(boardId))
       
       if (previousTasks) {
-        queryClient.setQueryData<Task[]>(taskKeys.list(boardId), prev => {
+        queryClient.setQueryData<TaskWithLabels[]>(taskKeys.list(boardId), prev => {
           if (!prev) return prev
           return prev.map(task => 
-            task.id === taskId ? { ...task, columnId } : task
+            task.id === taskId ? { ...task, columnId, position } : task
           )
         })
       }

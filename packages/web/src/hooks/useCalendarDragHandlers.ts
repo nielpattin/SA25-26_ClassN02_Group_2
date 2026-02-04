@@ -15,8 +15,8 @@ export function useCalendarDragHandlers(onDrop: (result: CalendarDropResult) => 
     setDragOffset,
     setDraggedHeight,
     cardGhostRef,
-    lastMousePos: lastMousePosRef,
-    pendingCardDrag: pendingCardDragRef,
+    lastMousePosRef,
+    pendingCardDragRef,
   } = useDragContext()
 
   useLayoutEffect(() => {

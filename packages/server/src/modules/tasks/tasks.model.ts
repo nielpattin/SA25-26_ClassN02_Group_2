@@ -82,7 +82,6 @@ export const AddAssigneeBody = t.Object({
 
 export const MoveTaskBody = t.Object({
   columnId: t.Optional(TaskSchema.columnId),
-  beforeTaskId: t.Optional(t.String({ format: 'uuid' })),
-  afterTaskId: t.Optional(t.String({ format: 'uuid' })),
+  position: t.String(), // Client-calculated fractional index
   version: t.Optional(t.Number()),
 })

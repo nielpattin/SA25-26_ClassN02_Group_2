@@ -1,7 +1,6 @@
 import { Elysia } from 'elysia'
 import { columnService } from './columns.service'
 import { authPlugin } from '../auth'
-import { UnauthorizedError } from '../../shared/errors'
 import {
   CreateColumnBody,
   UpdateColumnBody,
@@ -10,6 +9,7 @@ import {
   ColumnParams,
   ColumnBoardParams,
 } from './columns.model'
+import { UnauthorizedError } from '../../shared/errors'
 
 export const columnController = new Elysia({ prefix: '/columns' })
   .use(authPlugin)
@@ -31,7 +31,7 @@ export const columnController = new Elysia({ prefix: '/columns' })
   })
   .patch('/:id/move', ({ params: { id }, body, session }) => {
     if (!session) throw new UnauthorizedError()
-    return columnService.moveColumn(id, body.beforeColumnId, body.afterColumnId, session.user.id, body.version)
+    return columnService.moveColumn(id, body.position, session.user.id, body.version)
   }, {
     params: ColumnParams,
     body: MoveColumnBody,

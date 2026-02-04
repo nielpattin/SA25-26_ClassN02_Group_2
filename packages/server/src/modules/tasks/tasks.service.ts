@@ -176,9 +176,8 @@ export const taskService = {
   moveTask: async (
     taskId: string,
     userId: string,
-    targetColumnId?: string,
-    beforeTaskId?: string,
-    afterTaskId?: string,
+    targetColumnId: string | undefined,
+    position: string,
     version?: number
   ) => {
     const task = await taskRepository.findById(taskId)
@@ -188,8 +187,10 @@ export const taskService = {
     const columnId = targetColumnId ?? task.columnId
     if (!columnId) throw new Error('No target column')
 
-    const { before, after } = await taskRepository.getPositionBetween(columnId, beforeTaskId, afterTaskId)
-    const newPosition = generatePosition(before, after)
+    // Basic validation of position string
+    if (!/^[a-zA-Z0-9]+$/.test(position)) {
+      throw new Error('Invalid position format')
+    }
 
     const [oldBoardId, newBoardId] = await Promise.all([
       oldColumnId ? taskRepository.getBoardIdFromColumn(oldColumnId) : null,
@@ -197,11 +198,11 @@ export const taskService = {
     ])
 
     const updatedTask = await taskRepository.update(taskId, {
-      position: newPosition,
+      position,
       columnId,
     }, version)
 
-    if (needsRebalancing(newPosition)) {
+    if (needsRebalancing(position)) {
       await taskRepository.rebalanceColumn(columnId)
     }
 

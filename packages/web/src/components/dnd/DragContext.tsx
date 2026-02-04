@@ -7,6 +7,7 @@ import {
   type CardRect,
   type ColumnRect,
   type PendingDrag,
+  type DropTarget,
 } from './dragTypes'
 
 export type DragProviderProps = {
@@ -22,7 +23,9 @@ export function DragProvider({ children }: DragProviderProps) {
   // Card drag state
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null)
   const [draggedCardData, setDraggedCardData] = useState<DraggableItem | null>(null)
-  const [localCards, setLocalCards] = useState<DraggableItem[]>([])
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
+  const [droppedCardId, setDroppedCardId] = useState<string | null>(null)
+  const [dragSourceColumnId, setDragSourceColumnId] = useState<string | null>(null)
 
   // Shared drag state
   const [dragOffset, setDragOffset] = useState<DragOffset>({ x: 0, y: 0 })
@@ -38,13 +41,13 @@ export function DragProvider({ children }: DragProviderProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const ghostRef = useRef<HTMLDivElement>(null)
   const cardGhostRef = useRef<HTMLDivElement>(null)
-  const lastMousePos = useRef({ x: 0, y: 0 })
-  const dragDirection = useRef({ x: 0, y: 0 })
-  const cardRects = useRef<CardRect[]>([])
-  const columnRects = useRef<ColumnRect[]>([])
-  const isDraggingCard = useRef(false)
-  const pendingCardDrag = useRef<PendingDrag<DraggableItem>>(null)
-  const pendingColumnDrag = useRef<{
+  const lastMousePosRef = useRef({ x: 0, y: 0 })
+  const dragDirectionRef = useRef({ x: 0, y: 0 })
+  const cardRectsRef = useRef<CardRect[]>([])
+  const columnRectsRef = useRef<ColumnRect[]>([])
+  const isDraggingCardRef = useRef(false)
+  const pendingCardDragRef = useRef<PendingDrag<DraggableItem>>(null)
+  const pendingColumnDragRef = useRef<{
     columnId: string
     x: number
     y: number
@@ -66,8 +69,12 @@ export function DragProvider({ children }: DragProviderProps) {
     setDraggedCardId,
     draggedCardData,
     setDraggedCardData,
-    localCards,
-    setLocalCards,
+    dropTarget,
+    setDropTarget,
+    droppedCardId,
+    setDroppedCardId,
+    dragSourceColumnId,
+    setDragSourceColumnId,
     dragOffset,
     setDragOffset,
     draggedWidth,
@@ -83,13 +90,13 @@ export function DragProvider({ children }: DragProviderProps) {
     scrollContainerRef,
     ghostRef,
     cardGhostRef,
-    lastMousePos,
-    dragDirection,
-    cardRects,
-    columnRects,
-    isDraggingCard,
-    pendingCardDrag,
-    pendingColumnDrag,
+    lastMousePosRef,
+    dragDirectionRef,
+    cardRectsRef,
+    columnRectsRef,
+    isDraggingCardRef,
+    pendingCardDragRef,
+    pendingColumnDragRef,
     isAnyDragging,
   }
 

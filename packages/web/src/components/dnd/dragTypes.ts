@@ -11,6 +11,11 @@ export type DragOffset = {
   y: number
 }
 
+export type DropTarget = {
+  columnId: string
+  insertBeforeId: string | null // null means insert at end
+}
+
 export type PendingDrag<T extends DraggableItem> =
   | {
       item: T
@@ -51,8 +56,12 @@ export type DragState<TColumn extends DraggableItem, TCard extends DraggableItem
   setDraggedCardId: (id: string | null) => void
   draggedCardData: TCard | null
   setDraggedCardData: (card: TCard | null) => void
-  localCards: TCard[]
-  setLocalCards: React.Dispatch<React.SetStateAction<TCard[]>>
+  dropTarget: DropTarget | null
+  setDropTarget: (target: DropTarget | null) => void
+  droppedCardId: string | null
+  setDroppedCardId: (id: string | null) => void
+  dragSourceColumnId: string | null
+  setDragSourceColumnId: (id: string | null) => void
 
   // Shared drag state
   dragOffset: DragOffset
@@ -74,13 +83,13 @@ export type DragState<TColumn extends DraggableItem, TCard extends DraggableItem
   scrollContainerRef: RefObject<HTMLDivElement | null>
   ghostRef: RefObject<HTMLDivElement | null>
   cardGhostRef: RefObject<HTMLDivElement | null>
-  lastMousePos: RefObject<{ x: number; y: number }>
-  dragDirection: RefObject<{ x: number; y: number }>
-  cardRects: RefObject<CardRect[]>
-  columnRects: RefObject<ColumnRect[]>
-  isDraggingCard: RefObject<boolean>
-  pendingCardDrag: RefObject<PendingDrag<TCard>>
-  pendingColumnDrag: RefObject<{
+  lastMousePosRef: RefObject<{ x: number; y: number }>
+  dragDirectionRef: RefObject<{ x: number; y: number }>
+  cardRectsRef: RefObject<CardRect[]>
+  columnRectsRef: RefObject<ColumnRect[]>
+  isDraggingCardRef: RefObject<boolean>
+  pendingCardDragRef: RefObject<PendingDrag<TCard>>
+  pendingColumnDragRef: RefObject<{
     columnId: string
     x: number
     y: number

@@ -2,8 +2,69 @@ import { eventBus } from '../events/bus'
 import { wsManager } from './manager'
 
 export function initWebSocketBridge() {
-  eventBus.onDomain('task.created', ({ task, boardId }) => {
-    wsManager.broadcast(`board:${boardId}`, { type: 'task:created', columnId: task.columnId })
+  eventBus.onDomain('task.created', ({ task, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:created', columnId: task.columnId, data: { userId } })
+  })
+  
+  eventBus.onDomain('task.updated', ({ task, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:updated', data: { id: task.id, userId } })
+  })
+
+  eventBus.onDomain('task.moved', ({ task, userId, oldBoardId, newBoardId, isCrossBoard, oldColumnId }) => {
+    if (isCrossBoard) {
+      wsManager.broadcast(`board:${oldBoardId}`, { 
+        type: 'task:deleted', 
+        data: { ...task, userId }, 
+        columnId: oldColumnId 
+      })
+      wsManager.broadcast(`board:${newBoardId}`, { 
+        type: 'task:created', 
+        data: { ...task, userId }, 
+        columnId: task.columnId 
+      })
+    } else {
+      wsManager.broadcast(`board:${newBoardId}`, { 
+        type: 'task:moved', 
+        data: { ...task, userId }, 
+        columnId: task.columnId 
+      })
+    }
+  })
+
+  eventBus.onDomain('task.archived', ({ task, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:archived', data: { ...task, userId } })
+  })
+  
+  eventBus.onDomain('task.restored', ({ task, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:restored', data: { ...task, userId } })
+  })
+
+  eventBus.onDomain('task.deleted', ({ task, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'task:deleted', columnId: task.columnId ?? '', data: { userId } })
+  })
+
+  eventBus.onDomain('column.created', ({ column, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'column:created', data: { ...column, userId } })
+  })
+  
+  eventBus.onDomain('column.updated', ({ column, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'column:updated', data: { ...column, userId } })
+  })
+
+  eventBus.onDomain('column.moved', ({ column, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'column:moved', data: { ...column, userId } })
+  })
+
+  eventBus.onDomain('column.archived', ({ column, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'column:archived', data: { ...column, userId } })
+  })
+
+  eventBus.onDomain('column.restored', ({ column, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'column:restored', data: { ...column, userId } })
+  })
+
+  eventBus.onDomain('column.deleted', ({ columnId, boardId, userId }) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'column:deleted', data: { id: columnId, userId } })
   })
   
   eventBus.onDomain('task.updated', ({ task, boardId }) => {

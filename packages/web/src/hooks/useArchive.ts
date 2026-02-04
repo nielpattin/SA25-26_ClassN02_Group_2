@@ -55,7 +55,7 @@ export function useArchivedBoards(workspaceId: string | undefined) {
 /**
  * Hook to fetch archived items (columns and tasks) for a board
  */
-export function useBoardArchive(boardId: string) {
+export function useBoardArchive(boardId: string, enabled = true) {
   return useQuery({
     queryKey: archiveKeys.boardItems(boardId),
     queryFn: async () => {
@@ -63,7 +63,7 @@ export function useBoardArchive(boardId: string) {
       if (error) throw error
       return data as BoardArchive
     },
-    enabled: !!boardId,
+    enabled: !!boardId && enabled,
   })
 }
 

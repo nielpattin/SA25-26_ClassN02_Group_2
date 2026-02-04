@@ -20,8 +20,7 @@ export const UpdateColumnBody = t.Object({
 })
 
 export const MoveColumnBody = t.Object({
-  beforeColumnId: t.Optional(t.String({ format: 'uuid' })),
-  afterColumnId: t.Optional(t.String({ format: 'uuid' })),
+  position: t.String(), // Client-calculated fractional index
   version: t.Optional(t.Number()),
 })
 

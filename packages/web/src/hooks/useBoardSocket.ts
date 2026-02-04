@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useSession } from '../api/auth'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws'
 
@@ -43,6 +44,7 @@ export function setDragging(value: boolean) {
 
 export function useBoardSocket(boardId: string) {
   const queryClient = useQueryClient()
+  const { data: session } = useSession()
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isCleaningUpRef = useRef(false)
@@ -107,6 +109,14 @@ export function useBoardSocket(boardId: string) {
             return
           }
 
+          // Optimization: Skip refetching if the event was triggered by the current user
+          // as we already have optimistic updates and local state updates.
+          const data = message.data as Record<string, unknown> | undefined
+          const initiatorId = data?.userId as string | undefined
+          if (initiatorId && initiatorId === session?.user?.id) {
+            return
+          }
+
           if (isDragging) return
 
           switch (message.type) {
@@ -114,37 +124,40 @@ export function useBoardSocket(boardId: string) {
             case 'board:restored':
             case 'board:deleted':
               queryClient.invalidateQueries({ queryKey: ['board', boardIdRef.current] })
-              queryClient.invalidateQueries({ queryKey: ['archive'] })
+              queryClient.invalidateQueries({ queryKey: ['archive', 'items', boardIdRef.current] })
               break
             case 'column:created':
             case 'column:updated':
             case 'column:moved':
+              queryClient.invalidateQueries({ queryKey: ['columns', boardIdRef.current] })
+              break
             case 'column:archived':
             case 'column:restored':
             case 'column:deleted':
               queryClient.invalidateQueries({ queryKey: ['columns', boardIdRef.current] })
-              queryClient.invalidateQueries({ queryKey: ['archive'] })
+              queryClient.invalidateQueries({ queryKey: ['archive', 'items', boardIdRef.current] })
               break
             case 'task:updated':
               queryClient.invalidateQueries({ queryKey: ['cards', 'list', boardIdRef.current] })
-              if (message.data && typeof message.data === 'object' && 'id' in message.data) {
-                queryClient.invalidateQueries({ queryKey: ['cards', 'detail', message.data.id] })
+              if (data && typeof data === 'object' && 'id' in data) {
+                queryClient.invalidateQueries({ queryKey: ['cards', 'detail', data.id as string] })
               }
               break
             case 'task:created':
             case 'task:moved':
+              queryClient.invalidateQueries({ queryKey: ['cards', 'list', boardIdRef.current] })
+              break
             case 'task:deleted':
             case 'task:archived':
-             case 'task:restored':
+            case 'task:restored':
               queryClient.invalidateQueries({ queryKey: ['cards', 'list', boardIdRef.current] })
-              queryClient.invalidateQueries({ queryKey: ['archive'] })
+              queryClient.invalidateQueries({ queryKey: ['archive', 'items', boardIdRef.current] })
               break
             case 'dependency:created':
             case 'dependency:deleted':
               queryClient.invalidateQueries({ queryKey: ['dependencies', 'list', boardIdRef.current] })
               break
           }
-
         } catch {
           // ignore parse errors
         }
@@ -182,7 +195,7 @@ export function useBoardSocket(boardId: string) {
         wsRef.current = null
       }
     }
-  }, [boardId, queryClient])
+  }, [boardId, queryClient, session?.user?.id])
 
   return { wsRef, presence }
 }

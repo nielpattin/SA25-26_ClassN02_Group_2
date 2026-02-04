@@ -20,7 +20,7 @@ interface ArchivePanelProps {
 }
 
 export function ArchivePanel({ isOpen, onClose, boardId }: ArchivePanelProps) {
-  const { data: archive, isLoading } = useBoardArchive(boardId)
+  const { data: archive, isLoading } = useBoardArchive(boardId, isOpen)
   const { data: session } = useSession()
   const { data: members = [] } = useBoardMembers(boardId)
   const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string, type: 'column' | 'task' } | null>(null)

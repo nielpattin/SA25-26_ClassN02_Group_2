@@ -1,5 +1,5 @@
-import { useCallback, useLayoutEffect } from 'react'
-import { useDragContext, type DraggableItem } from './dragTypes'
+import { useCallback, useLayoutEffect, useRef } from 'react'
+import { useDragContext, type DraggableItem, type DropTarget } from './dragTypes'
 
 export type ColumnDropResult<TColumn extends DraggableItem> = {
   columnId: string
@@ -7,20 +7,20 @@ export type ColumnDropResult<TColumn extends DraggableItem> = {
   placeholderIndex: number
 }
 
-export type CardDropResult<TCard extends DraggableItem> = {
+export type CardDropResult = {
   cardId: string
-  finalCards: TCard[]
-  droppedCard: TCard
+  columnId: string
+  beforeCardId: string | undefined
+  afterCardId: string | undefined
 }
 
 export type UseDragHandlersOptions<TColumn extends DraggableItem, TCard extends DraggableItem> = {
   serverColumns: TColumn[]
   allCards: TCard[]
-  displayColumns: TColumn[]
   onDragStart?: () => void
   onDragEnd?: () => void
   onColumnDrop?: (result: ColumnDropResult<TColumn>) => void
-  onCardDrop?: (result: CardDropResult<TCard>) => void
+  onCardDrop?: (result: CardDropResult) => void
 }
 
 export type DragHandlers = {
@@ -37,7 +37,6 @@ export function useDragHandlers<
 >({
   serverColumns,
   allCards,
-  displayColumns,
   onDragStart,
   onDragEnd,
   onColumnDrop,
@@ -53,14 +52,16 @@ export function useDragHandlers<
     draggedCardId,
     setDraggedCardId,
     setDraggedCardData,
-    localCards,
-    setLocalCards,
+    dropTarget,
+    setDropTarget,
+    setDroppedCardId,
+    setDragSourceColumnId,
     dragOffset,
     setDragOffset,
-    draggedWidth,
     setDraggedWidth,
-    draggedHeight,
     setDraggedHeight,
+    draggedWidth,
+    draggedHeight,
     isScrolling,
     setIsScrolling,
     startX,
@@ -70,23 +71,26 @@ export function useDragHandlers<
     scrollContainerRef,
     ghostRef,
     cardGhostRef,
-    lastMousePos,
-    dragDirection,
-    columnRects,
-    isDraggingCard,
-    pendingCardDrag,
-    pendingColumnDrag,
+    lastMousePosRef,
+    dragDirectionRef,
+    columnRectsRef,
+    isDraggingCardRef,
+    pendingCardDragRef,
+    pendingColumnDragRef,
   } = useDragContext<TColumn, TCard>()
+
+  // Track last drop target to avoid unnecessary state updates
+  const lastDropTarget = useRef<DropTarget | null>(null)
 
   // Update ghost position on drag state change
   useLayoutEffect(() => {
     if (draggedColumnId && ghostRef.current) {
-      ghostRef.current.style.transform = `translate3d(${lastMousePos.current.x - dragOffset.x}px, ${lastMousePos.current.y - dragOffset.y}px, 0) rotate(2deg)`
+      ghostRef.current.style.transform = `translate3d(${lastMousePosRef.current.x - dragOffset.x}px, ${lastMousePosRef.current.y - dragOffset.y}px, 0) rotate(2deg)`
     }
     if (draggedCardId && cardGhostRef.current) {
-      cardGhostRef.current.style.transform = `translate3d(${lastMousePos.current.x - dragOffset.x}px, ${lastMousePos.current.y - dragOffset.y}px, 0)`
+      cardGhostRef.current.style.transform = `translate3d(${lastMousePosRef.current.x - dragOffset.x}px, ${lastMousePosRef.current.y - dragOffset.y}px, 0)`
     }
-  }, [draggedColumnId, draggedCardId, dragOffset, ghostRef, cardGhostRef, lastMousePos])
+  }, [draggedColumnId, draggedCardId, dragOffset, ghostRef, cardGhostRef, lastMousePosRef])
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -112,16 +116,16 @@ export function useDragHandlers<
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      const dx = e.clientX - lastMousePos.current.x
-      const dy = e.clientY - lastMousePos.current.y
-      if (dx !== 0) dragDirection.current.x = dx > 0 ? 1 : -1
-      if (dy !== 0) dragDirection.current.y = dy > 0 ? 1 : -1
+      const dx = e.clientX - lastMousePosRef.current.x
+      const dy = e.clientY - lastMousePosRef.current.y
+      if (dx !== 0) dragDirectionRef.current.x = dx > 0 ? 1 : -1
+      if (dy !== 0) dragDirectionRef.current.y = dy > 0 ? 1 : -1
 
-      lastMousePos.current = { x: e.clientX, y: e.clientY }
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY }
 
-      // Handle pending card drag
-      if (pendingCardDrag.current) {
-        const { x, y, item: card, rect, width, height } = pendingCardDrag.current
+      // Handle pending card drag - start drag after threshold
+      if (pendingCardDragRef.current) {
+        const { x, y, item: card, rect, width, height } = pendingCardDragRef.current
         const dist = Math.sqrt(Math.pow(e.clientX - x, 2) + Math.pow(e.clientY - y, 2))
 
         if (dist > 5) {
@@ -129,7 +133,7 @@ export function useDragHandlers<
             const cols = Array.from(
               scrollContainerRef.current.querySelectorAll('[data-role="column"]')
             )
-            columnRects.current = cols.map(col => {
+            columnRectsRef.current = cols.map(col => {
               const r = col.getBoundingClientRect()
               const columnId = (col as HTMLElement).dataset.columnId ?? ''
               return {
@@ -142,42 +146,48 @@ export function useDragHandlers<
             })
           }
 
-          setLocalCards(allCards as TCard[])
           setDraggedCardId(card.id)
-          setDraggedCardData(card as TCard)
+          setDraggedCardData(card)
           setDraggedWidth(width)
           setDraggedHeight(height)
+          setDragOffset({ x: x - rect.left, y: y - rect.top })
+          
+          // Initialize drop target to current position and track source column
+          const cardWithCol = card as TCard & { columnId: string }
+          
+          // Better initialization: find the card after us to stay in place
+          const colCards = allCards.filter(c => (c as TCard & { columnId: string }).columnId === cardWithCol.columnId)
+          const myIdx = colCards.findIndex(c => c.id === card.id)
+          const initialInsertBeforeId = myIdx !== -1 && myIdx < colCards.length - 1 
+            ? colCards[myIdx + 1].id 
+            : null
 
-          setDragOffset({
-            x: x - rect.left,
-            y: y - rect.top,
-          })
+          setDropTarget({ columnId: cardWithCol.columnId, insertBeforeId: initialInsertBeforeId })
+          setDragSourceColumnId(cardWithCol.columnId)
+          lastDropTarget.current = { columnId: cardWithCol.columnId, insertBeforeId: initialInsertBeforeId }
+          
           onDragStart?.()
-          isDraggingCard.current = true
-          pendingCardDrag.current = null
+          isDraggingCardRef.current = true
+          pendingCardDragRef.current = null
         }
       }
 
       // Handle pending column drag
-      if (pendingColumnDrag.current) {
-        const { x, y, columnId, rect, width, height } = pendingColumnDrag.current
+      if (pendingColumnDragRef.current) {
+        const { x, y, columnId, rect, width, height } = pendingColumnDragRef.current
         const dist = Math.sqrt(Math.pow(e.clientX - x, 2) + Math.pow(e.clientY - y, 2))
 
         if (dist > 5) {
-          setLocalColumns(serverColumns as TColumn[])
+          setLocalColumns(serverColumns)
           setDraggedColumnId(columnId)
           setDraggedWidth(width)
           setDraggedHeight(height)
-
-          setDragOffset({
-            x: x - rect.left,
-            y: y - rect.top,
-          })
+          setDragOffset({ x: x - rect.left, y: y - rect.top })
           onDragStart?.()
 
           const index = serverColumns.findIndex(c => c.id === columnId)
           setPlaceholderIndex(index)
-          pendingColumnDrag.current = null
+          pendingColumnDragRef.current = null
         }
       }
 
@@ -229,7 +239,7 @@ export function useDragHandlers<
         return
       }
 
-      // Handle active card drag
+      // Handle active card drag - just update drop target, don't manipulate arrays
       if (draggedCardId) {
         if (cardGhostRef.current) {
           cardGhostRef.current.style.transform = `translate3d(${e.clientX - dragOffset.x}px, ${e.clientY - dragOffset.y}px, 0)`
@@ -248,90 +258,46 @@ export function useDragHandlers<
           const hoveredCol = colRects.find(r => e.clientX >= r.left && e.clientX <= r.right)
           if (hoveredCol) {
             const targetColId = hoveredCol.id
+            
+            // Find cards in target column (excluding the dragged card)
             const cardElements = Array.from(
               scrollContainerRef.current.querySelectorAll(
-                `[data-role="card-wrapper"][data-column-id="${targetColId}"]:not([data-state="placeholder"])`
+                `[data-role="card-wrapper"][data-column-id="${targetColId}"]:not([data-card-id="${draggedCardId}"])`
               )
             )
 
             const rects = cardElements.map(el => {
-              const r = el.getBoundingClientRect()
+              // Use the actual card content for measurement to avoid indicator shifting
+              const cardContent = el.querySelector('[data-role="card"]') || el
+              const r = cardContent.getBoundingClientRect()
               return {
                 id: (el as HTMLElement).dataset.cardId ?? '',
                 top: r.top,
                 bottom: r.bottom,
-                height: r.height,
+                midY: r.top + r.height / 2,
               }
             })
 
-            const isMovingDown = dragDirection.current.y > 0
-            let targetNeighborId: string | null = null
-            let relativePos: 'before' | 'after' = 'before'
-
             const draggedMidY = e.clientY - dragOffset.y + draggedHeight / 2
 
-            for (let i = 0; i < rects.length; i++) {
-              const r = rects[i]
-              const neighborMidY = r.top + r.height / 2
-
-              if (draggedMidY > neighborMidY) {
-                targetNeighborId = r.id
-                relativePos = 'after'
-              } else {
-                targetNeighborId = r.id
-                relativePos = 'before'
+            // Find where to insert
+            let insertBeforeId: string | null = null
+            for (const r of rects) {
+              if (draggedMidY < r.midY) {
+                insertBeforeId = r.id
                 break
               }
             }
 
-            setLocalCards(prev => {
-              const card = prev.find(c => c.id === draggedCardId)
-              if (!card) return prev
-
-              const updated = prev.filter(c => c.id !== draggedCardId)
-              const updatedCard = { ...card, columnId: targetColId }
-
-              let finalIdx = -1
-              if (!targetNeighborId) {
-                const cardsInTarget = updated.filter(
-                  c => (c as TCard & { columnId: string }).columnId === targetColId
-                )
-                if (cardsInTarget.length === 0) {
-                  const colIdx = displayColumns.findIndex(c => c.id === targetColId)
-                  for (let i = colIdx + 1; i < displayColumns.length; i++) {
-                    const firstInNext = updated.find(
-                      c => (c as TCard & { columnId: string }).columnId === displayColumns[i].id
-                    )
-                    if (firstInNext) {
-                      finalIdx = updated.indexOf(firstInNext)
-                      break
-                    }
-                  }
-                  if (finalIdx === -1) finalIdx = updated.length
-                } else {
-                  if (!isMovingDown) {
-                    finalIdx = updated.indexOf(cardsInTarget[0])
-                  } else {
-                    finalIdx = updated.indexOf(cardsInTarget[cardsInTarget.length - 1]) + 1
-                  }
-                }
-              } else {
-                const neighborIdx = updated.findIndex(c => c.id === targetNeighborId)
-                finalIdx = relativePos === 'before' ? neighborIdx : neighborIdx + 1
-              }
-
-              const currentIdx = prev.findIndex(c => c.id === draggedCardId)
-              if (
-                currentIdx === finalIdx &&
-                (prev[currentIdx] as TCard & { columnId: string }).columnId === targetColId
-              ) {
-                return prev
-              }
-
-              const result = [...updated]
-              result.splice(finalIdx, 0, updatedCard)
-              return result
-            })
+            // Only update if changed
+            const newTarget: DropTarget = { columnId: targetColId, insertBeforeId }
+            if (
+              lastDropTarget.current?.columnId !== newTarget.columnId ||
+              lastDropTarget.current?.insertBeforeId !== newTarget.insertBeforeId
+            ) {
+              lastDropTarget.current = newTarget
+              setDropTarget(newTarget)
+            }
           }
         }
         return
@@ -353,7 +319,6 @@ export function useDragHandlers<
       startX,
       scrollLeft,
       allCards,
-      displayColumns,
       serverColumns,
       draggedWidth,
       draggedHeight,
@@ -361,30 +326,31 @@ export function useDragHandlers<
       scrollContainerRef,
       ghostRef,
       cardGhostRef,
-      lastMousePos,
-      dragDirection,
-      columnRects,
-      isDraggingCard,
-      pendingCardDrag,
-      pendingColumnDrag,
-      setLocalCards,
+      lastMousePosRef,
+      dragDirectionRef,
+      columnRectsRef,
+      isDraggingCardRef,
+      pendingCardDragRef,
+      pendingColumnDragRef,
       setDraggedCardId,
       setDraggedCardData,
       setDraggedWidth,
       setDraggedHeight,
       setDragOffset,
+      setDropTarget,
       setLocalColumns,
       setDraggedColumnId,
       setPlaceholderIndex,
+      setDragSourceColumnId,
     ]
   )
 
   const handleMouseUpOrLeave = useCallback(() => {
-    pendingCardDrag.current = null
-    pendingColumnDrag.current = null
+    pendingCardDragRef.current = null
+    pendingColumnDragRef.current = null
 
     if (draggedColumnId && placeholderIndex !== null) {
-      const finalColumns = [...localColumns] as TColumn[]
+      const finalColumns = [...localColumns]
       onColumnDrop?.({
         columnId: draggedColumnId,
         finalColumns,
@@ -395,40 +361,82 @@ export function useDragHandlers<
       onDragEnd?.()
     }
 
-    if (draggedCardId) {
-      const finalCards = [...localCards] as TCard[]
-      const cardIdx = finalCards.findIndex(c => c.id === draggedCardId)
-      if (cardIdx !== -1) {
-        const droppedCard = finalCards[cardIdx]
-        onCardDrop?.({
-          cardId: draggedCardId,
-          finalCards,
-          droppedCard,
-        })
+    if (draggedCardId && dropTarget) {
+      // Find before/after card IDs for the API call
+      const cardsInColumn = allCards.filter(
+        c => (c as TCard & { columnId: string }).columnId === dropTarget.columnId &&
+             c.id !== draggedCardId
+      )
+      
+      let beforeCardId: string | undefined
+      let afterCardId: string | undefined
+      
+      if (dropTarget.insertBeforeId) {
+        // Inserting before a specific card
+        const insertIdx = cardsInColumn.findIndex(c => c.id === dropTarget.insertBeforeId)
+        afterCardId = dropTarget.insertBeforeId
+        beforeCardId = insertIdx > 0 ? cardsInColumn[insertIdx - 1].id : undefined
+      } else {
+        // Inserting at end
+        beforeCardId = cardsInColumn.length > 0 ? cardsInColumn[cardsInColumn.length - 1].id : undefined
+        afterCardId = undefined
       }
-      setDraggedCardId(null)
+
+      onCardDrop?.({
+        cardId: draggedCardId,
+        columnId: dropTarget.columnId,
+        beforeCardId,
+        afterCardId,
+      })
+
+      // Clear ghost and drop target immediately so they disappear
       setDraggedCardData(null)
+      setDropTarget(null)
+      lastDropTarget.current = null
       onDragEnd?.()
-      isDraggingCard.current = false
+      isDraggingCardRef.current = false
+
+      // Clear all card drag state after delay to let React update DOM
+      setTimeout(() => {
+        setDraggedCardId(null)
+        setDroppedCardId(null)
+        setDragSourceColumnId(null)
+      }, 0)
+    }
+
+    // Clear card drag state even if no drop target
+    if (draggedCardId && !dropTarget) {
+      setDraggedCardData(null)
+      setTimeout(() => {
+        setDraggedCardId(null)
+        setDropTarget(null)
+        setDragSourceColumnId(null)
+        lastDropTarget.current = null
+        isDraggingCardRef.current = false
+      }, 0)
     }
 
     setIsScrolling(false)
   }, [
     draggedColumnId,
     draggedCardId,
+    dropTarget,
     placeholderIndex,
     localColumns,
-    localCards,
+    allCards,
     onDragEnd,
     onColumnDrop,
     onCardDrop,
-    pendingCardDrag,
-    pendingColumnDrag,
-    isDraggingCard,
+    pendingCardDragRef,
+    pendingColumnDragRef,
+    isDraggingCardRef,
     setDraggedColumnId,
     setPlaceholderIndex,
     setDraggedCardId,
     setDraggedCardData,
+    setDropTarget,
+    setDroppedCardId,
+    setDragSourceColumnId,
     setIsScrolling,
   ])
 
@@ -441,7 +449,7 @@ export function useDragHandlers<
 
       const rect = header.getBoundingClientRect()
 
-      pendingColumnDrag.current = {
+      pendingColumnDragRef.current = {
         columnId,
         x: e.clientX,
         y: e.clientY,
@@ -450,7 +458,7 @@ export function useDragHandlers<
         height: rect.height,
       }
     },
-    [pendingColumnDrag]
+    [pendingColumnDragRef]
   )
 
   const handleCardDragStart = useCallback(
@@ -460,7 +468,7 @@ export function useDragHandlers<
       const target = e.currentTarget as HTMLElement
       const rect = target.getBoundingClientRect()
 
-      pendingCardDrag.current = {
+      pendingCardDragRef.current = {
         item: card as TCard,
         x: e.clientX,
         y: e.clientY,
@@ -469,7 +477,7 @@ export function useDragHandlers<
         height: rect.height,
       }
     },
-    [pendingCardDrag]
+    [pendingCardDragRef]
   )
 
   return {
