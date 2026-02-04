@@ -112,7 +112,7 @@ function CommentItem({ comment, members, cardId, sessionUserId }: CommentItemPro
         fallback={comment.userName || 'U'}
         size="md"
       />
-      <div className="flex flex-1 flex-col gap-2 border border-black bg-white p-4 shadow-brutal-sm transition-all hover:-translate-0.5 hover:shadow-brutal-md">
+      <div className="flex flex-1 flex-col gap-2 border border-black bg-white p-4 shadow-brutal-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span className="text-[13px] font-extrabold tracking-wider text-black uppercase">{comment.userName}</span>

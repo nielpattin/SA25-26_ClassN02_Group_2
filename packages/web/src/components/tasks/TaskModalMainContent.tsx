@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Type, Paperclip, MessageSquare, Tag } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Textarea } from '../ui/Textarea'
@@ -45,8 +45,14 @@ export function TaskModalMainContent({
   uploadError,
   onClearError,
 }: TaskModalMainContentProps) {
-  const [description, setDescription] = useState('')
-  const [isEditingDescription, setIsEditingDescription] = useState(false)
+  const [description, setDescription] = useState(card.description || '')
+  const [isDescriptionFocused, setIsDescriptionFocused] = useState(false)
+
+  useEffect(() => {
+    setDescription(card.description || '')
+  }, [card.description])
+
+  const hasDescriptionChanges = description !== (card.description || '')
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto border-r border-black p-8">
@@ -66,38 +72,27 @@ export function TaskModalMainContent({
         <h3 className="m-0 flex items-center gap-1.5 font-heading text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
           <Type size={14} /> Description
         </h3>
-        {isEditingDescription ? (
-          <div className="flex flex-col gap-3">
-            <Textarea
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              autoFocus
-            />
-            <div className="flex gap-3">
+        <div className="flex flex-col gap-4">
+          <Textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            onFocus={() => setIsDescriptionFocused(true)}
+            onBlur={() => setIsDescriptionFocused(false)}
+            placeholder="Add a more detailed description..."
+            className="min-h-25"
+          />
+          {(isDescriptionFocused || hasDescriptionChanges) && (
+            <div className="flex justify-end">
               <Button
-                onClick={() => {
-                  onUpdateDescription(description)
-                  setIsEditingDescription(false)
-                }}
+                disabled={!hasDescriptionChanges}
+                onClick={() => onUpdateDescription(description)}
+                className="px-6!"
               >
                 Save
               </Button>
-              <Button variant="secondary" onClick={() => setIsEditingDescription(false)}>
-                Cancel
-              </Button>
             </div>
-          </div>
-        ) : (
-          <div
-            className="min-h-25 cursor-pointer border border-black bg-surface-overlay p-4 text-[14px] leading-relaxed wrap-break-word text-[#333333] shadow-brutal-sm transition-all hover:-translate-0.5 hover:bg-active hover:shadow-brutal-md"
-            onClick={() => {
-              setDescription(card.description || '')
-              setIsEditingDescription(true)
-            }}
-          >
-            {card.description || 'Add a more detailed description...'}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <TaskChecklist taskId={taskId} boardId={boardId} />
