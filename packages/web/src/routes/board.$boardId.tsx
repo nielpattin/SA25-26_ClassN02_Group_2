@@ -264,7 +264,7 @@ function BoardPage() {
           }
         })
         .catch(() => queryClient.invalidateQueries({ queryKey: columnKeys.list(boardId) }))
-      setGlobalDragging(false)
+        .finally(() => setGlobalDragging(false))
     },
     [boardId, queryClient]
   )
@@ -346,7 +346,7 @@ function BoardPage() {
           }
         })
         .catch(() => queryClient.invalidateQueries({ queryKey: taskKeys.list(boardId) }))
-      setGlobalDragging(false)
+        .finally(() => setGlobalDragging(false))
     },
     [boardId, queryClient, allCards]
   )
