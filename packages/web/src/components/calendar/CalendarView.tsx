@@ -6,7 +6,8 @@ import { WeekView } from './WeekView'
 import { DayView } from './DayView'
 import { type TaskWithLabels, useUpdateTask } from '../../hooks/useTasks'
 import { useCalendarDragHandlers } from '../../hooks/useCalendarDragHandlers'
-import { useDragContext } from '../dnd'
+import { useDragRefs } from '../dnd'
+import { useDragStore } from '../../store/dragStore'
 
 type CalendarViewProps = {
   boardId: string
@@ -21,7 +22,8 @@ type CalendarViewProps = {
 export function CalendarView({ boardId, tasks, columns, onTaskClick, onAddTask, viewMode, onViewModeChange }: CalendarViewProps) {
   const { currentDate, next, prev, goToToday, setViewMode } = useCalendarNavigation(viewMode)
   const updateTask = useUpdateTask(boardId)
-  const { draggedCardId, scrollContainerRef } = useDragContext()
+  const draggedCardId = useDragStore((s) => s.draggedCardId)
+  const { scrollContainerRef } = useDragRefs()
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode)

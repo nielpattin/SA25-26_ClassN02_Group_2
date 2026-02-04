@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect } from 'react'
-import { useDragContext, type DraggableItem } from '../components/dnd/dragTypes'
+import { useDragRefs, type DraggableItem } from '../components/dnd/dragTypes'
+import { useDragStore } from '../store/dragStore'
 
 export type CalendarDropResult = {
   cardId: string
@@ -7,23 +8,20 @@ export type CalendarDropResult = {
 }
 
 export function useCalendarDragHandlers(onDrop: (result: CalendarDropResult) => void) {
-  const {
-    draggedCardId,
-    setDraggedCardId,
-    setDraggedCardData,
-    dragOffset,
-    setDragOffset,
-    setDraggedHeight,
-    cardGhostRef,
-    lastMousePosRef,
-    pendingCardDragRef,
-  } = useDragContext()
+  const draggedCardId = useDragStore((s) => s.draggedCardId)
+  const setDraggedCardId = useDragStore((s) => s.setDraggedCardId)
+  const setDraggedCardData = useDragStore((s) => s.setDraggedCardData)
+  const setDragOffset = useDragStore((s) => s.setDragOffset)
+  const setDraggedHeight = useDragStore((s) => s.setDraggedHeight)
+
+  const { cardGhostRef, lastMousePosRef, pendingCardDragRef } = useDragRefs()
 
   useLayoutEffect(() => {
+    const dragOffset = useDragStore.getState().dragOffset
     if (draggedCardId && cardGhostRef.current) {
       cardGhostRef.current.style.transform = `translate3d(${lastMousePosRef.current.x - dragOffset.x}px, ${lastMousePosRef.current.y - dragOffset.y}px, 0)`
     }
-  }, [draggedCardId, dragOffset, cardGhostRef, lastMousePosRef])
+  }, [draggedCardId, cardGhostRef, lastMousePosRef])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     lastMousePosRef.current = { x: e.clientX, y: e.clientY }
@@ -44,20 +42,22 @@ export function useCalendarDragHandlers(onDrop: (result: CalendarDropResult) => 
       }
     }
 
-    if (draggedCardId && cardGhostRef.current) {
-      cardGhostRef.current.style.transform = `translate3d(${e.clientX - dragOffset.x}px, ${e.clientY - dragOffset.y}px, 0)`
+    const state = useDragStore.getState()
+    if (state.draggedCardId && cardGhostRef.current) {
+      cardGhostRef.current.style.transform = `translate3d(${e.clientX - state.dragOffset.x}px, ${e.clientY - state.dragOffset.y}px, 0)`
     }
-  }, [draggedCardId, dragOffset, pendingCardDragRef, setDraggedCardId, setDraggedCardData, setDraggedHeight, setDragOffset, cardGhostRef, lastMousePosRef])
+  }, [pendingCardDragRef, setDraggedCardId, setDraggedCardData, setDraggedHeight, setDragOffset, cardGhostRef, lastMousePosRef])
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
-    if (draggedCardId) {
+    const state = useDragStore.getState()
+    if (state.draggedCardId) {
       const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement
       const dayCell = target?.closest('[data-role="day-cell"]') as HTMLElement
       
       if (dayCell) {
         const newDate = dayCell.dataset.date
         if (newDate) {
-          onDrop({ cardId: draggedCardId, newDate })
+          onDrop({ cardId: state.draggedCardId, newDate })
         }
       }
       
@@ -65,7 +65,7 @@ export function useCalendarDragHandlers(onDrop: (result: CalendarDropResult) => 
       setDraggedCardData(null)
     }
     pendingCardDragRef.current = null
-  }, [draggedCardId, onDrop, setDraggedCardId, setDraggedCardData, pendingCardDragRef])
+  }, [onDrop, setDraggedCardId, setDraggedCardData, pendingCardDragRef])
 
   const handleCardDragStart = useCallback((card: DraggableItem, e: React.MouseEvent) => {
     if (e.button !== 0) return

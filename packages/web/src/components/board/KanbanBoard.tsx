@@ -5,7 +5,7 @@ import type { TaskWithLabels } from '../../hooks/useTasks'
 import { TaskCard } from '../tasks'
 import { BoardColumn } from '../columns'
 import {
-  useDragContext,
+  useDragRefs,
   useDragHandlers,
   ColumnGhost,
   CardGhost,
@@ -54,20 +54,22 @@ export function KanbanBoard({
   isFiltering,
 }: KanbanBoardProps) {
   const { data: allBoards = [] } = useBoards()
-  const {
-    draggedColumnId,
-    draggedCardId,
-    draggedCardData,
-    localColumns,
-    dropTarget,
-    isScrolling,
-    isAnyDragging,
-    scrollContainerRef,
-    ghostRef,
-    cardGhostRef,
-  } = useDragContext<Column, TaskWithLabels>()
 
-  const displayColumns = draggedColumnId ? localColumns : serverColumns
+  const draggedColumnId = useDragStore((s) => s.draggedColumnId)
+  const draggedCardId = useDragStore((s) => s.draggedCardId)
+  const draggedCardData = useDragStore((s) => s.draggedCardData)
+  const localColumns = useDragStore((s) => s.localColumns)
+  const dropTarget = useDragStore((s) => s.dropTarget)
+  const isScrolling = useDragStore((s) => s.isScrolling)
+  const isDragging = useDragStore((s) => s.isDragging)
+
+  const { scrollContainerRef, ghostRef, cardGhostRef } = useDragRefs()
+
+  const isAnyDragging = isDragging || draggedCardId !== null || draggedColumnId !== null
+
+  const displayColumns: Column[] = draggedColumnId
+    ? (localColumns as Column[])
+    : serverColumns
 
   const cardsByColumn = useMemo(() => {
     const map: Record<string, TaskWithLabels[]> = {}
@@ -159,7 +161,7 @@ export function KanbanBoard({
 
       {draggedCardData && (
         <CardGhost ref={cardGhostRef}>
-          <TaskCard task={draggedCardData} onTaskClick={() => {}} isAnyDragging={isAnyDragging} />
+          <TaskCard task={draggedCardData as TaskWithLabels} onTaskClick={() => {}} isAnyDragging={isAnyDragging} />
         </CardGhost>
       )}
     </>

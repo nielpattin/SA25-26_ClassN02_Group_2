@@ -1,13 +1,11 @@
-import { useState, useRef, type ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import {
-  DragContext,
-  type DraggableItem,
-  type DragOffset,
-  type DragState,
+  DragRefsContext,
+  type DragRefs,
   type CardRect,
   type ColumnRect,
   type PendingDrag,
-  type DropTarget,
+  type PendingColumnDrag,
 } from './dragTypes'
 
 export type DragProviderProps = {
@@ -15,29 +13,6 @@ export type DragProviderProps = {
 }
 
 export function DragProvider({ children }: DragProviderProps) {
-  // Column drag state
-  const [draggedColumnId, setDraggedColumnId] = useState<string | null>(null)
-  const [localColumns, setLocalColumns] = useState<DraggableItem[]>([])
-  const [placeholderIndex, setPlaceholderIndex] = useState<number | null>(null)
-
-  // Card drag state
-  const [draggedCardId, setDraggedCardId] = useState<string | null>(null)
-  const [draggedCardData, setDraggedCardData] = useState<DraggableItem | null>(null)
-  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
-  const [droppedCardId, setDroppedCardId] = useState<string | null>(null)
-  const [dragSourceColumnId, setDragSourceColumnId] = useState<string | null>(null)
-
-  // Shared drag state
-  const [dragOffset, setDragOffset] = useState<DragOffset>({ x: 0, y: 0 })
-  const [draggedWidth, setDraggedWidth] = useState(0)
-  const [draggedHeight, setDraggedHeight] = useState(0)
-
-  // Scroll state
-  const [isScrolling, setIsScrolling] = useState(false)
-  const [startX, setStartX] = useState(0)
-  const [scrollLeft, setScrollLeft] = useState(0)
-
-  // Refs
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const ghostRef = useRef<HTMLDivElement>(null)
   const cardGhostRef = useRef<HTMLDivElement>(null)
@@ -46,47 +21,11 @@ export function DragProvider({ children }: DragProviderProps) {
   const cardRectsRef = useRef<CardRect[]>([])
   const columnRectsRef = useRef<ColumnRect[]>([])
   const isDraggingCardRef = useRef(false)
-  const pendingCardDragRef = useRef<PendingDrag<DraggableItem>>(null)
-  const pendingColumnDragRef = useRef<{
-    columnId: string
-    x: number
-    y: number
-    rect: DOMRect
-    width: number
-    height: number
-  } | null>(null)
+  const pendingCardDragRef = useRef<PendingDrag<{ id: string; [key: string]: unknown }>>(null)
+  const pendingColumnDragRef = useRef<PendingColumnDrag>(null)
+  const lastDropTargetRef = useRef<{ columnId: string; insertBeforeId: string | null } | null>(null)
 
-  const isAnyDragging = Boolean(draggedCardId) || Boolean(draggedColumnId)
-
-  const value: DragState<DraggableItem, DraggableItem> = {
-    draggedColumnId,
-    setDraggedColumnId,
-    localColumns,
-    setLocalColumns,
-    placeholderIndex,
-    setPlaceholderIndex,
-    draggedCardId,
-    setDraggedCardId,
-    draggedCardData,
-    setDraggedCardData,
-    dropTarget,
-    setDropTarget,
-    droppedCardId,
-    setDroppedCardId,
-    dragSourceColumnId,
-    setDragSourceColumnId,
-    dragOffset,
-    setDragOffset,
-    draggedWidth,
-    setDraggedWidth,
-    draggedHeight,
-    setDraggedHeight,
-    isScrolling,
-    setIsScrolling,
-    startX,
-    setStartX,
-    scrollLeft,
-    setScrollLeft,
+  const refs: DragRefs = {
     scrollContainerRef,
     ghostRef,
     cardGhostRef,
@@ -97,10 +36,14 @@ export function DragProvider({ children }: DragProviderProps) {
     isDraggingCardRef,
     pendingCardDragRef,
     pendingColumnDragRef,
-    isAnyDragging,
+    lastDropTargetRef,
   }
 
-  return <DragContext.Provider value={value}>{children}</DragContext.Provider>
+  return (
+    <DragRefsContext.Provider value={refs}>
+      {children}
+    </DragRefsContext.Provider>
+  )
 }
 
 DragProvider.displayName = 'DragProvider'
