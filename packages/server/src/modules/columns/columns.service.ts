@@ -5,6 +5,8 @@ import { workspaceRepository } from '../workspaces/workspaces.repository'
 import { eventBus } from '../../events/bus'
 import { generatePosition, needsRebalancing } from '../../shared/position'
 import { ForbiddenError } from '../../shared/errors'
+import { db } from '../../db'
+import { columns, tasks } from '../../db/schema'
 
 export const columnService = {
   getColumnsByBoardId: (boardId: string) => columnRepository.findByBoardId(boardId),
@@ -121,24 +123,30 @@ export const columnService = {
     const lastPosition = await columnRepository.getLastPositionInBoard(originalColumn.boardId)
     const position = generatePosition(lastPosition, null)
 
-    const newColumn = await columnRepository.create({
-      name: `${originalColumn.name} (Copy)`,
-      position,
-      boardId: originalColumn.boardId,
-    })
-
     const originalTasks = await taskRepository.findByColumnId(id)
-    for (const task of originalTasks) {
-      await taskRepository.create({
-        title: task.title,
-        description: task.description || undefined,
-        position: task.position,
-        columnId: newColumn.id,
-        priority: task.priority || undefined,
-        dueDate: task.dueDate,
-        coverImageUrl: task.coverImageUrl || undefined,
-      })
-    }
+
+    // Use transaction to ensure column + tasks are created atomically
+    const newColumn = await db.transaction(async (tx) => {
+      const [createdColumn] = await tx.insert(columns).values({
+        name: `${originalColumn.name} (Copy)`,
+        position,
+        boardId: originalColumn.boardId,
+      }).returning()
+
+      for (const task of originalTasks) {
+        await tx.insert(tasks).values({
+          title: task.title,
+          description: task.description,
+          position: task.position,
+          columnId: createdColumn.id,
+          priority: task.priority,
+          dueDate: task.dueDate,
+          coverImageUrl: task.coverImageUrl,
+        })
+      }
+
+      return createdColumn
+    })
 
     eventBus.emitDomain('column.created', { column: newColumn, boardId: newColumn.boardId, userId })
     return newColumn
