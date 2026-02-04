@@ -6,15 +6,18 @@ import { dueSoonTemplate, overdueTemplate } from '../modules/email/templates'
 import { db } from '../db'
 import { taskAssignees, users } from '../db/schema'
 import { eq } from 'drizzle-orm'
+import { logger } from '../shared/logger'
+
+const log = logger.child({ job: 'reminder' })
 
 export const runReminderJob = async () => {
-  console.log('[ReminderJob] Starting execution...')
+  log.debug('Starting execution')
   try {
     await processDueSoonReminders()
     await processOverdueReminders()
-    console.log('[ReminderJob] Finished execution.')
+    log.debug('Finished execution')
   } catch (error) {
-    console.error('[ReminderJob] Error:', error)
+    log.error('Job failed', { error: error instanceof Error ? error.message : String(error) })
   }
 }
 
@@ -74,7 +77,7 @@ async function processDueSoonReminders() {
       await taskRepository.update(task.id, { reminderSentAt: new Date() })
     }
   }
-  if (notifiedCount > 0) console.log(`[ReminderJob] Notified ${notifiedCount} assignees about upcoming tasks.`)
+  if (notifiedCount > 0) log.info('Notified assignees about upcoming tasks', { count: notifiedCount })
 }
 
 async function processOverdueReminders() {
@@ -131,7 +134,7 @@ async function processOverdueReminders() {
       await taskRepository.update(task.id, { overdueSentAt: new Date() })
     }
   }
-  if (notifiedCount > 0) console.log(`[ReminderJob] Notified ${notifiedCount} assignees about overdue tasks.`)
+  if (notifiedCount > 0) log.info('Notified assignees about overdue tasks', { count: notifiedCount })
 }
 
 async function getAssignees(taskId: string) {

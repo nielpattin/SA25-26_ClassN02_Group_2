@@ -2,6 +2,8 @@ import { Elysia, t } from 'elysia'
 import { cors } from '@elysiajs/cors'
 import { authPlugin } from './modules/auth'
 import { idempotencyPlugin } from './shared/middleware/idempotency'
+import { requestLogger } from './shared/middleware/request-logger'
+import { logger } from './shared/logger'
 import { boardController } from './modules/boards'
 import { columnController } from './modules/columns'
 import { taskController } from './modules/tasks'
@@ -34,6 +36,7 @@ initActivitySubscriber()
 initNotificationSubscriber()
 
 export const app = new Elysia()
+  .use(requestLogger)
   .onError(({ code, error, set }) => {
     if (error instanceof AppError) {
       set.status = error.status
@@ -187,13 +190,11 @@ export const app = new Elysia()
 
 wsManager.setServer(app.server!)
 
-console.log('Kyte API running on http://localhost:3000')
+logger.info('Kyte API running', { port: 3000, url: 'http://localhost:3000' })
 
-// Start reminder job
 if (process.env.NODE_ENV !== 'test') {
-  console.log('Initializing reminder job (15m interval)...')
+  logger.info('Initializing reminder job', { interval: '15m' })
   setInterval(runReminderJob, 15 * 60 * 1000)
-  // Run once on startup after a small delay
   setTimeout(runReminderJob, 10000)
 }
 

@@ -1,7 +1,9 @@
 import { Resend } from 'resend'
 import { emailConfig } from './email.config'
+import { logger } from '../../shared/logger'
 
 const resend = new Resend(emailConfig.apiKey)
+const log = logger.child({ service: 'email' })
 
 export const emailService = {
   async sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
@@ -14,13 +16,14 @@ export const emailService = {
       })
 
       if (error) {
-        console.error('Failed to send email:', error)
+        log.error('Failed to send email', { to, subject, error: error.message })
         return { success: false, error }
       }
 
+      log.debug('Email sent', { to, subject })
       return { success: true, data }
     } catch (error) {
-      console.error('Error in emailService.sendEmail:', error)
+      log.error('Email service error', { to, subject, error: error instanceof Error ? error.message : String(error) })
       return { success: false, error }
     }
   }

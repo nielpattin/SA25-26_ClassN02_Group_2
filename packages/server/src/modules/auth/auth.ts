@@ -5,6 +5,7 @@ import * as schema from '../../db/schema'
 import { eq } from 'drizzle-orm'
 import { emailService, verifyEmailTemplate } from '../email'
 import { checkRateLimit } from '../../shared/middleware/rate-limit'
+import { logger } from '../../shared/logger'
 
 const webUrl = process.env.WEB_URL || 'http://localhost:5173'
 const isE2E = process.env.E2E_TEST === 'true'
@@ -109,7 +110,7 @@ export const auth = betterAuth({
             role: 'owner',
           })
 
-          console.log(`Created personal workspace for user ${user.id}`)
+          logger.info('Created personal workspace for user', { userId: user.id })
         },
       },
     },
