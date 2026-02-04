@@ -10,7 +10,14 @@ function extractMentions(content: string): string[] {
 }
 
 export const commentService = {
-  getByTaskId: (taskId: string) => commentRepository.findByTaskId(taskId),
+  getByTaskId: async (taskId: string, limit = 20, cursor?: string) => {
+    const items = await commentRepository.findByTaskId(taskId, limit + 1, cursor)
+    const hasMore = items.length > limit
+    const data = hasMore ? items.slice(0, limit) : items
+    const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].createdAt.toISOString() : null
+
+    return { items: data, nextCursor, hasMore }
+  },
 
   getById: (id: string) => commentRepository.findById(id),
 

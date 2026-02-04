@@ -49,7 +49,13 @@ export const activityRepository = {
       .limit(limit)
   },
 
-  findByTaskId: async (taskId: string, limit = 50) => {
+  findByTaskId: async (taskId: string, limit = 50, cursor?: string) => {
+    const conditions = [eq(activities.taskId, taskId)]
+
+    if (cursor) {
+      conditions.push(lt(activities.createdAt, new Date(cursor)))
+    }
+
     return db.select({
       id: activities.id,
       boardId: activities.boardId,
@@ -65,7 +71,7 @@ export const activityRepository = {
     })
       .from(activities)
       .leftJoin(users, eq(activities.userId, users.id))
-      .where(eq(activities.taskId, taskId))
+      .where(and(...conditions))
       .orderBy(desc(activities.createdAt))
       .limit(limit)
   },

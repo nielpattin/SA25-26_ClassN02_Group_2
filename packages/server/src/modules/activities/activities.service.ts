@@ -18,7 +18,14 @@ const escapeCsv = (val: unknown): string => {
 export const activityService = {
   getByBoardId: (boardId: string, limit?: number) => activityRepository.findByBoardId(boardId, limit),
 
-  getByTaskId: (taskId: string, limit?: number) => activityRepository.findByTaskId(taskId, limit),
+  getByTaskId: async (taskId: string, limit = 10, cursor?: string) => {
+    const items = await activityRepository.findByTaskId(taskId, limit + 1, cursor)
+    const hasMore = items.length > limit
+    const data = hasMore ? items.slice(0, limit) : items
+    const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].createdAt.toISOString() : null
+
+    return { items: data, nextCursor, hasMore }
+  },
 
   log: async (data: CreateActivityInputType) => {
     try {

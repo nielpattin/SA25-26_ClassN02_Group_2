@@ -1,10 +1,16 @@
 import { db } from '../../db'
 import { comments, commentMentions, users } from '../../db/schema'
-import { eq, and, isNull, asc } from 'drizzle-orm'
+import { eq, and, isNull, asc, gt } from 'drizzle-orm'
 import type { CreateCommentInput, UpdateCommentInput } from './comments.model'
 
 export const commentRepository = {
-  findByTaskId: async (taskId: string) => {
+  findByTaskId: async (taskId: string, limit = 20, cursor?: string) => {
+    const conditions = [eq(comments.taskId, taskId), isNull(comments.deletedAt)]
+
+    if (cursor) {
+      conditions.push(gt(comments.createdAt, new Date(cursor)))
+    }
+
     return db.select({
       id: comments.id,
       taskId: comments.taskId,
@@ -17,8 +23,9 @@ export const commentRepository = {
     })
       .from(comments)
       .leftJoin(users, eq(comments.userId, users.id))
-      .where(and(eq(comments.taskId, taskId), isNull(comments.deletedAt)))
+      .where(and(...conditions))
       .orderBy(asc(comments.createdAt))
+      .limit(limit)
   },
 
   findById: async (id: string) => {

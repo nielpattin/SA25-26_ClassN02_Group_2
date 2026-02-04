@@ -1,4 +1,4 @@
-import { Elysia } from 'elysia'
+import { Elysia, t } from 'elysia'
 import { commentService } from './comments.service'
 import { authPlugin } from '../auth'
 import { UnauthorizedError, NotFoundError, ForbiddenError } from '../../shared/errors'
@@ -6,10 +6,15 @@ import { CreateCommentBody, UpdateCommentBody, CommentParams, TaskCommentsParams
 
 export const commentController = new Elysia({ prefix: '/comments' })
   .use(authPlugin)
-  .get('/task/:taskId', async ({ params }) => {
-    return commentService.getByTaskId(params.taskId)
+  .get('/task/:taskId', async ({ params, query }) => {
+    const limit = query.limit ? parseInt(query.limit) : 20
+    return commentService.getByTaskId(params.taskId, limit, query.cursor)
   }, {
     params: TaskCommentsParams,
+    query: t.Object({
+      limit: t.Optional(t.String()),
+      cursor: t.Optional(t.String()),
+    }),
   })
 
   .get('/:id', async ({ params }) => {

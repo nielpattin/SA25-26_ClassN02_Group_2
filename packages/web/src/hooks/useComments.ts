@@ -1,20 +1,31 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Comment } from '../components/CardModalTypes'
+
+interface CommentPage {
+  items: Comment[]
+  nextCursor: string | null
+  hasMore: boolean
+}
 
 export const commentKeys = {
   all: ['comments'] as const,
   task: (taskId: string) => [...commentKeys.all, taskId] as const,
 }
 
-export function useComments(taskId: string) {
-  return useQuery({
+export function useComments(taskId: string, limit = 20) {
+  return useInfiniteQuery({
     queryKey: commentKeys.task(taskId),
-    queryFn: async () => {
-      const { data, error } = await api.v1.comments.task({ taskId }).get()
+    queryFn: async ({ pageParam }) => {
+      const query: Record<string, string> = { limit: String(limit) }
+      if (pageParam) query.cursor = pageParam
+
+      const { data, error } = await api.v1.comments.task({ taskId }).get({ query })
       if (error) throw error
-      return (data || []) as unknown as Comment[]
+      return data as unknown as CommentPage
     },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     enabled: !!taskId,
   })
 }

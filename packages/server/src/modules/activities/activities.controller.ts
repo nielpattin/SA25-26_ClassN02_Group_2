@@ -15,11 +15,14 @@ export const activityController = new Elysia({ prefix: '/activities' })
   })
 
   .get('/task/:taskId', async ({ params, query }) => {
-    const limit = query.limit ? parseInt(query.limit) : 50
-    return activityService.getByTaskId(params.taskId, limit)
+    const limit = query.limit ? parseInt(query.limit) : 10
+    return activityService.getByTaskId(params.taskId, limit, query.cursor)
   }, {
     params: TaskActivitiesParams,
-    query: t.Object({ limit: t.Optional(t.String()) }),
+    query: t.Object({
+      limit: t.Optional(t.String()),
+      cursor: t.Optional(t.String()),
+    }),
   })
 
   // Board activity export endpoint

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Comment, BoardMember } from '../CardModalTypes'
+import type { Comment, BoardMember } from '../CardModalTypes'
 import { Button } from '../ui/Button'
 import { Avatar } from '../ui/Avatar'
 import { formatDistanceToNow } from 'date-fns'
@@ -22,10 +22,17 @@ interface CommentSectionProps {
   sessionUserId?: string
 }
 
-export function CommentSection({ cardId, comments: initialComments, members, sessionUserId }: CommentSectionProps) {
+export function CommentSection({ cardId, members, sessionUserId }: CommentSectionProps) {
   const [content, setContent] = useState('')
-  const { data: comments = initialComments || [] } = useComments(cardId)
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useComments(cardId)
   const createComment = useCreateComment(cardId)
+
+  const comments = data?.pages.flatMap(page => page.items) ?? []
 
   return (
     <div className="flex flex-col gap-8">
@@ -38,8 +45,8 @@ export function CommentSection({ cardId, comments: initialComments, members, ses
           className="min-h-25"
         />
         <div className="flex justify-end">
-          <Button 
-            disabled={!content.trim()} 
+          <Button
+            disabled={!content.trim()}
             onClick={() => {
               createComment.mutate(content, {
                 onSuccess: () => setContent('')
@@ -54,7 +61,7 @@ export function CommentSection({ cardId, comments: initialComments, members, ses
 
       <div className="flex flex-col gap-6">
         {comments.map((comment) => (
-          <CommentItem 
+          <CommentItem
             key={comment.id}
             comment={comment}
             members={members}
@@ -62,6 +69,18 @@ export function CommentSection({ cardId, comments: initialComments, members, ses
             sessionUserId={sessionUserId}
           />
         ))}
+
+        {hasNextPage && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="w-fit self-start"
+          >
+            {isFetchingNextPage ? 'Loading...' : 'Load more comments'}
+          </Button>
+        )}
       </div>
     </div>
   )
@@ -88,10 +107,10 @@ function CommentItem({ comment, members, cardId, sessionUserId }: CommentItemPro
 
   return (
     <div className="group flex gap-4">
-      <Avatar 
-        src={comment.userImage} 
-        fallback={comment.userName || 'U'} 
-        size="md" 
+      <Avatar
+        src={comment.userImage}
+        fallback={comment.userName || 'U'}
+        size="md"
       />
       <div className="flex flex-1 flex-col gap-2 border border-black bg-white p-4 shadow-brutal-sm transition-all hover:-translate-0.5 hover:shadow-brutal-md">
         <div className="flex items-center justify-between">
@@ -148,7 +167,7 @@ function CommentItem({ comment, members, cardId, sessionUserId }: CommentItemPro
             </div>
           )}
         </div>
-        
+
         {isEditing ? (
           <div className="mt-1">
             <MentionInput
