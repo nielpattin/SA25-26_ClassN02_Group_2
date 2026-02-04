@@ -1,25 +1,11 @@
 import { Elysia, t } from 'elysia'
 import { auth } from './auth'
 import { checkRateLimit } from '../../shared/middleware/rate-limit'
+import { UnauthorizedError } from '../../shared/errors'
 
 export type Session = typeof auth.$Infer.Session
+export type AuthenticatedSession = NonNullable<Session>
 
-/**
- * Auth plugin for Elysia
- * - Mounts Better Auth handler at /api/auth/*
- * - Provides session in context via derive
- *
- * Usage in protected routes:
- * ```ts
- * .get('/protected', ({ session, set }) => {
- *   if (!session) {
- *     set.status = 401
- *     return { error: 'Unauthorized' }
- *   }
- *   return { user: session.user }
- * })
- * ```
- */
 export const authPlugin = new Elysia({ name: 'auth' })
   .post(
     '/api/auth/forget-password',
@@ -75,6 +61,16 @@ export const authPlugin = new Elysia({ name: 'auth' })
       headers: request.headers,
     })
     return { session }
+  })
+  .macro({
+    requireAuth: {
+      resolve({ session }) {
+        if (!session) {
+          throw new UnauthorizedError()
+        }
+        return { session: session as AuthenticatedSession }
+      },
+    },
   })
 
 export { auth }
