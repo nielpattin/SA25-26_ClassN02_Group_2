@@ -56,7 +56,12 @@ export const taskService = {
     version?: number
   }, userId: string) => {
     const oldTask = await taskRepository.findById(id)
-    const { version, ...updateData } = data as any
+    const { version, ...baseUpdateData } = data
+
+    const updateData: typeof baseUpdateData & {
+      reminderSentAt?: Date | null
+      overdueSentAt?: Date | null
+    } = { ...baseUpdateData }
 
     if (data.dueDate !== undefined) {
       const oldTime = oldTask?.dueDate?.getTime()
@@ -75,7 +80,7 @@ export const taskService = {
     if (task.columnId) {
       const boardId = await taskRepository.getBoardIdFromColumn(task.columnId)
       if (boardId) {
-        const changes: any = {}
+        const changes: Record<string, { before: unknown; after: unknown }> = {}
         if (data.title && data.title !== oldTask?.title) changes.title = { before: oldTask?.title, after: data.title }
         if (data.description !== undefined && data.description !== oldTask?.description) changes.description = { before: oldTask?.description, after: data.description }
         if (data.priority && data.priority !== oldTask?.priority) changes.priority = { before: oldTask?.priority, after: data.priority }
