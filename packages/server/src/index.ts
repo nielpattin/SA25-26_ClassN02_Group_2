@@ -1,5 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { cors } from '@elysiajs/cors'
+import { swagger } from '@elysiajs/swagger'
 import { authPlugin } from './modules/auth'
 import { idempotencyPlugin } from './shared/middleware/idempotency'
 import { requestLogger } from './shared/middleware/request-logger'
@@ -37,6 +38,30 @@ initNotificationSubscriber()
 
 export const app = new Elysia()
   .use(requestLogger)
+  .use(swagger({
+    path: '/docs',
+    documentation: {
+      info: {
+        title: 'Kyte API',
+        version: '1.0.0',
+        description: 'Kanban board application API',
+      },
+      tags: [
+        { name: 'boards', description: 'Board management' },
+        { name: 'columns', description: 'Column/list management' },
+        { name: 'tasks', description: 'Task/card management' },
+        { name: 'comments', description: 'Task comments' },
+        { name: 'labels', description: 'Label management' },
+        { name: 'checklists', description: 'Checklist management' },
+        { name: 'attachments', description: 'File attachments' },
+        { name: 'activities', description: 'Activity log' },
+        { name: 'users', description: 'User management' },
+        { name: 'workspaces', description: 'Workspace management' },
+        { name: 'notifications', description: 'User notifications' },
+      ],
+    },
+    exclude: ['/api/auth', '/ws'],
+  }))
   .onError(({ code, error, set }) => {
     if (error instanceof AppError) {
       set.status = error.status
