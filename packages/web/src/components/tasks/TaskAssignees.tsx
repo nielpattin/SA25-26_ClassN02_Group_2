@@ -25,7 +25,7 @@ export function TaskAssignees({ taskId, boardId, currentAssignees }: TaskAssigne
         </h3>
         <button
           ref={assignedTriggerRef}
-          className="flex h-7 w-7 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-0.5 hover:bg-accent hover:shadow-brutal-sm"
+          className="flex h-7 w-7 cursor-pointer items-center justify-center border border-black bg-white hover:bg-accent"
           onClick={() => setIsMembersOpen(!isMembersOpen)}
         >
           <Plus size={14} strokeWidth={3} />

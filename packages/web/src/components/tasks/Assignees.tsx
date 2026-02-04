@@ -20,7 +20,7 @@ export function AssigneeSection({ currentAssignees = [], boardMembers = [], onTo
         {assignedMembers.map(member => (
           <div 
             key={member.userId}
-            className="group flex items-center gap-3 border-2 border-black bg-white p-2 font-body text-[13px] font-extrabold uppercase shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal-md"
+            className="group flex items-center gap-3 border-2 border-black bg-white p-2 font-body text-[13px] font-extrabold uppercase shadow-brutal-sm"
           >
             <Avatar src={member.userImage || undefined} fallback={member.userName || 'Unknown'} size="sm" />
             <span className="flex-1 truncate text-black">{member.userName || 'Unknown'}</span>
@@ -45,7 +45,7 @@ export function AssigneeSection({ currentAssignees = [], boardMembers = [], onTo
           return (
             <button
               key={member.userId}
-              className={`flex cursor-pointer items-center gap-3 border border-black bg-white p-2.5 text-left font-body text-[13px] font-extrabold uppercase transition-all ${isAssigned ? 'shadow-inner-brutal bg-active' : 'hover:-translate-0.5 hover:bg-accent hover:shadow-brutal-md'}`}
+              className={`flex cursor-pointer items-center gap-3 border border-black bg-white p-2.5 text-left font-body text-[13px] font-extrabold uppercase transition-all ${isAssigned ? 'shadow-inner-brutal bg-active' : 'hover:bg-accent'}`}
               onClick={() => onToggle(member.userId)}
             >
               <Avatar src={member.userImage || undefined} fallback={member.userName || 'Unknown'} size="sm" />

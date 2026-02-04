@@ -9,9 +9,9 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className = '', variant = 'primary', size = 'md', fullWidth, ...props }, ref) => {
     const variants = {
-      primary: 'bg-black text-white hover:bg-accent hover:text-black hover:shadow-brutal-md hover:-translate-0.5 shadow-brutal-sm',
-      secondary: 'bg-white text-black hover:bg-hover hover:shadow-brutal-md hover:-translate-0.5 shadow-brutal-sm',
-      danger: 'bg-error text-white hover:bg-error-border hover:shadow-brutal-md hover:-translate-0.5 shadow-brutal-sm',
+      primary: 'bg-black text-white hover:bg-accent hover:text-black shadow-brutal-sm',
+      secondary: 'bg-white text-black hover:bg-hover shadow-brutal-sm',
+      danger: 'bg-error text-white hover:bg-error-border shadow-brutal-sm',
       ghost: 'bg-transparent border-transparent text-black hover:bg-hover',
     }
 
@@ -22,7 +22,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     const classes = [
-      'inline-flex items-center justify-center gap-2 rounded-none border border-black font-extrabold uppercase transition-all outline-none whitespace-nowrap cursor-pointer disabled:bg-disabled disabled:text-disabled-text disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none active:translate-0 active:shadow-none active:bg-active',
+      'inline-flex items-center justify-center gap-2 rounded-none border border-black font-extrabold uppercase transition-all outline-none whitespace-nowrap cursor-pointer disabled:bg-disabled disabled:text-disabled-text disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none',
       variants[variant],
       sizes[size],
       fullWidth ? 'w-full' : '',

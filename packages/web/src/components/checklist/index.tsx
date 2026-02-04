@@ -91,7 +91,7 @@ export function Checklist({ checklist, cardId, boardId }: ChecklistProps) {
             <span className="text-[11px] leading-none font-extrabold text-black/40 uppercase">{Math.round(progress)}%</span>
             <button
               onClick={() => deleteChecklist.mutate(checklist.id)}
-              className="flex h-8 w-8 cursor-pointer items-center justify-center border border-black bg-white text-black opacity-0 transition-all group-hover:opacity-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-text-danger hover:text-white hover:shadow-brutal-sm"
+              className="flex h-8 w-8 cursor-pointer items-center justify-center border border-black bg-white text-black opacity-0 transition-opacity group-hover:opacity-100 hover:bg-text-danger hover:text-white"
             >
               <X size={14} />
             </button>
@@ -102,7 +102,7 @@ export function Checklist({ checklist, cardId, boardId }: ChecklistProps) {
 
       <div className="flex flex-col gap-1">
         {items.map((item: ChecklistItem) => (
-          <div key={item.id} className="group flex flex-col gap-2 border border-black bg-white p-2 shadow-brutal-sm transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-md">
+          <div key={item.id} className="group flex flex-col gap-2 border border-black bg-white p-2 shadow-brutal-sm">
             <div className="flex items-center gap-4">
               <div className={`flex flex-1 items-center gap-4 ${item.isCompleted && editingItemId !== item.id ? 'opacity-60' : ''}`}>
                 <Checkbox
@@ -138,7 +138,7 @@ export function Checklist({ checklist, cardId, boardId }: ChecklistProps) {
               </div>
               <button
                 onClick={() => deleteItem.mutate(item.id)}
-                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center border border-black bg-white text-black opacity-0 transition-all group-hover:opacity-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-text-danger hover:text-white hover:shadow-brutal-sm"
+                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center border border-black bg-white text-black opacity-0 transition-opacity group-hover:opacity-100 hover:bg-text-danger hover:text-white"
               >
                 <X size={14} />
               </button>

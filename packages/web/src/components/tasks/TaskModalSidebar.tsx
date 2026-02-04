@@ -64,7 +64,7 @@ export function TaskModalSidebar({
         <div className="flex flex-col gap-2">
           <button
             ref={startDateTriggerRef}
-            className="flex cursor-pointer items-center justify-between border border-black bg-white p-3 text-left shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal-md active:translate-y-0 active:shadow-none"
+            className="flex cursor-pointer items-center justify-between border border-black bg-white p-3 text-left shadow-brutal-sm"
             onClick={() => setIsStartDatePickerOpen(prev => !prev)}
           >
             <span className="text-[11px] font-bold text-text-subtle uppercase">Start</span>
@@ -79,7 +79,7 @@ export function TaskModalSidebar({
 
           <button
             ref={dueDateTriggerRef}
-            className="flex cursor-pointer items-center justify-between border border-black bg-white p-3 text-left shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal-md active:translate-y-0 active:shadow-none"
+            className="flex cursor-pointer items-center justify-between border border-black bg-white p-3 text-left shadow-brutal-sm"
             onClick={() => setIsDatePickerOpen(prev => !prev)}
           >
             <span className="text-[11px] font-bold text-text-subtle uppercase">Due</span>
@@ -169,7 +169,7 @@ export function TaskModalSidebar({
               {PRIORITIES.map(p => (
                 <button
                   key={p.id}
-                  className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.priority === p.id ? 'shadow-inner-brutal bg-active' : 'hover:-translate-0.5 hover:bg-hover hover:shadow-brutal-md'}`}
+                  className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.priority === p.id ? 'shadow-inner-brutal bg-active' : 'hover:bg-hover'}`}
                   onClick={() => {
                     onUpdateCard({ priority: p.id as Card['priority'] })
                     setIsPriorityOpen(false)
@@ -201,7 +201,7 @@ export function TaskModalSidebar({
           >
             <div className="flex flex-col gap-1">
               <button
-                className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.size === null ? 'shadow-inner-brutal bg-active' : 'hover:-translate-0.5 hover:bg-hover hover:shadow-brutal-md'}`}
+                className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.size === null ? 'shadow-inner-brutal bg-active' : 'hover:bg-hover'}`}
                 onClick={() => {
                   onUpdateCard({ size: null })
                   setIsSizeOpen(false)
@@ -213,7 +213,7 @@ export function TaskModalSidebar({
               {SIZES.map(s => (
                 <button
                   key={s.id}
-                  className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.size === s.id ? 'shadow-inner-brutal bg-active' : 'hover:-translate-0.5 hover:bg-hover hover:shadow-brutal-md'}`}
+                  className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.size === s.id ? 'shadow-inner-brutal bg-active' : 'hover:bg-hover'}`}
                   onClick={() => {
                     onUpdateCard({ size: s.id as Card['size'] })
                     setIsSizeOpen(false)
@@ -297,7 +297,7 @@ export function TaskModalSidebar({
         <h3 className="m-0 flex items-center gap-1.5 font-heading text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
           Details
         </h3>
-        <div className="grid grid-cols-3 gap-4 border border-black bg-white p-4 shadow-brutal-sm transition-all hover:-translate-0.5 hover:shadow-brutal-md">
+        <div className="grid grid-cols-3 gap-4 border border-black bg-white p-4 shadow-brutal-sm">
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-extrabold text-text-subtle uppercase">Position</span>
             <span className="text-[13px] font-extrabold text-black">{card.position}</span>
