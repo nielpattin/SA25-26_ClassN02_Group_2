@@ -13,7 +13,7 @@ export function Avatar({ src, fallback, size = 'md', className = '' }: AvatarPro
   }
 
   return (
-    <div className={`bg-accent flex shrink-0 items-center justify-center overflow-hidden rounded-none border border-black font-extrabold text-black ${sizes[size]} ${className}`}>
+    <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-none border border-black bg-accent font-extrabold text-black ${sizes[size]} ${className}`}>
       {src ? (
         <img src={src} alt={fallback} className="h-full w-full object-cover" />
       ) : (

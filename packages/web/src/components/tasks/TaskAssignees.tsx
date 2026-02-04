@@ -20,12 +20,12 @@ export function TaskAssignees({ taskId, boardId, currentAssignees }: TaskAssigne
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+        <h3 className="m-0 flex items-center gap-1.5 font-heading text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
           Assigned
         </h3>
         <button
           ref={assignedTriggerRef}
-          className="hover:bg-accent hover:shadow-brutal-sm flex h-7 w-7 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-0.5"
+          className="flex h-7 w-7 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-0.5 hover:bg-accent hover:shadow-brutal-sm"
           onClick={() => setIsMembersOpen(!isMembersOpen)}
         >
           <Plus size={14} strokeWidth={3} />

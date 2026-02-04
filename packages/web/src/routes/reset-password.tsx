@@ -24,8 +24,8 @@ function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="bg-canvas flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="bg-surface shadow-brutal-xl relative w-full max-w-100 border border-black p-10 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-canvas p-4">
+        <div className="relative w-full max-w-100 border border-black bg-surface p-10 text-center shadow-brutal-xl">
           <h2 className="m-0 mb-6 text-2xl font-extrabold text-black uppercase">Invalid Link</h2>
           <p className="mb-8 font-bold text-black uppercase opacity-70">
             This password reset link is invalid or has expired.
@@ -76,14 +76,14 @@ function ResetPassword() {
 
   if (success) {
     return (
-      <div className="bg-canvas flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="bg-surface shadow-brutal-xl relative w-full max-w-100 border border-black p-10 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-canvas p-4">
+        <div className="relative w-full max-w-100 border border-black bg-surface p-10 text-center shadow-brutal-xl">
           <h2 className="m-0 mb-6 text-2xl font-extrabold text-black uppercase">Success!</h2>
-          <p className="text-success-border mb-8 font-bold uppercase">
+          <p className="mb-8 font-bold text-success-border uppercase">
             Your password has been reset successfully. Redirecting you to login...
           </p>
           <div className="h-1 overflow-hidden bg-black">
-             <div className="bg-accent h-full animate-pulse" style={{ width: '100%' }}></div>
+             <div className="h-full animate-pulse bg-accent" style={{ width: '100%' }}></div>
           </div>
         </div>
       </div>
@@ -91,8 +91,8 @@ function ResetPassword() {
   }
 
   return (
-    <div className="bg-canvas flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="bg-surface shadow-brutal-xl relative w-full max-w-100 border border-black p-10">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-canvas p-4">
+      <div className="relative w-full max-w-100 border border-black bg-surface p-10 shadow-brutal-xl">
         <h2 className="m-0 mb-6 text-center text-2xl font-extrabold tracking-widest text-black uppercase">Reset Password</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input
@@ -112,7 +112,7 @@ function ResetPassword() {
             minLength={8}
           />
           
-          {error && <div className="bg-danger-bg rounded-none border border-black p-2 text-sm font-bold text-black uppercase">{error}</div>}
+          {error && <div className="rounded-none border border-black bg-danger-bg p-2 text-sm font-bold text-black uppercase">{error}</div>}
           
           <Button
             type="submit"

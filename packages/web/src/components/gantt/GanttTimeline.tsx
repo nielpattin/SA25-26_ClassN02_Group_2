@@ -78,6 +78,7 @@ export function GanttTimeline({
     requestAnimationFrame(() => {
       syncingScrollRef.current = false
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollLeft, scrollTop])
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -210,10 +211,10 @@ export function GanttTimeline({
           <div className="relative flex h-5 items-center border-b border-black">
             {todayIndex !== -1 && (
               <div
-                className="pointer-events-none absolute top-1/2 z-30 -translate-y-1/2 -translate-x-1/2"
+                className="pointer-events-none absolute top-1/2 z-30 -translate-x-1/2 -translate-y-1/2"
                 style={{ left: todayIndex * columnWidth + columnWidth / 2 }}
               >
-                <span className="bg-red-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                <span className="bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase">
                   Today
                 </span>
               </div>
@@ -229,13 +230,13 @@ export function GanttTimeline({
                 <div
                   key={i}
                   style={{ width: month.days.length * columnWidth }}
-                  className={`flex h-10 items-center border-r overflow-hidden ${
+                  className={`flex h-10 items-center overflow-hidden border-r ${
                     showLabel
                       ? 'border-black px-3 text-xs font-bold tracking-wider text-black uppercase'
                       : 'border-transparent px-0'
                   }`}
                 >
-                  <div className="flex flex-1 items-center min-w-0">
+                  <div className="flex min-w-0 flex-1 items-center">
                     {showLabel && (
                       <span className="block max-w-full truncate">
                         {getMonthLabel(month.start, month.days.length)}

@@ -50,7 +50,7 @@ export function CreateWorkspaceModal({ isOpen, onClose }: CreateWorkspaceModalPr
         {/* Header */}
         <div className="flex items-center justify-between border-b border-black bg-black px-6 py-4 text-white">
           <h2 className="font-heading text-lg font-bold tracking-wider uppercase">Create New Workspace</h2>
-          <button onClick={onClose} className="hover:text-accent transition-colors">
+          <button onClick={onClose} className="transition-colors hover:text-accent">
             <X size={20} />
           </button>
         </div>
@@ -66,7 +66,7 @@ export function CreateWorkspaceModal({ isOpen, onClose }: CreateWorkspaceModalPr
               value={name}
               onChange={handleNameChange}
               placeholder="e.g. Acme Corp"
-              className="font-heading focus:shadow-brutal-sm w-full border border-black bg-white px-4 py-3 text-sm font-bold transition-all outline-none placeholder:font-medium placeholder:text-gray-400 focus:-translate-y-0.5"
+              className="w-full border border-black bg-white px-4 py-3 font-heading text-sm font-bold transition-all outline-none placeholder:font-medium placeholder:text-gray-400 focus:-translate-y-0.5 focus:shadow-brutal-sm"
               autoFocus
             />
           </div>
@@ -81,7 +81,7 @@ export function CreateWorkspaceModal({ isOpen, onClose }: CreateWorkspaceModalPr
                 type="text"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                className="font-heading ml-1 w-full bg-transparent font-bold outline-none"
+                className="ml-1 w-full bg-transparent font-heading font-bold outline-none"
               />
             </div>
             <p className="mt-2 text-[10px] font-medium text-gray-500 uppercase">
@@ -99,7 +99,7 @@ export function CreateWorkspaceModal({ isOpen, onClose }: CreateWorkspaceModalPr
             <button
               onClick={() => name && slug && createWorkspace.mutate()}
               disabled={createWorkspace.isPending || !name || !slug}
-              className="hover:bg-accent hover:shadow-brutal-sm border border-black bg-black px-6 py-3 text-xs font-bold tracking-wider text-white uppercase transition-all hover:-translate-y-0.5 hover:text-black disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+              className="border border-black bg-black px-6 py-3 text-xs font-bold tracking-wider text-white uppercase transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
             >
               {createWorkspace.isPending ? 'Creating...' : 'Create Workspace'}
             </button>

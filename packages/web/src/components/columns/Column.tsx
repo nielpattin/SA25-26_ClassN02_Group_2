@@ -92,7 +92,7 @@ export const Column = memo(function Column({
 
   return (
     <div
-      className={`relative flex max-h-full w-(--board-column-width,300px) min-w-(--board-column-width,300px) flex-col rounded-none border p-4 ${isDragging ? 'translate-0! border-dashed border-black/20 bg-black/5 opacity-100 shadow-none!' : 'bg-surface shadow-brutal-lg -translate-x-px -translate-y-px border-black'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
+      className={`relative flex max-h-full w-(--board-column-width,300px) min-w-(--board-column-width,300px) flex-col rounded-none border p-4 ${isDragging ? 'translate-0! border-dashed border-black/20 bg-black/5 opacity-100 shadow-none!' : '-translate-x-px -translate-y-px border-black bg-surface shadow-brutal-lg'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
       data-column-id={column.id}
       data-role="column"
     >
@@ -109,7 +109,7 @@ export const Column = memo(function Column({
         <div className="flex min-h-5 flex-1 flex-col gap-4 overflow-y-auto px-1 pt-1 pb-3">
           {children}
           {cardCount === 0 && (
-            <div className="text-text-subtle border border-dashed border-black bg-black/5 p-4 text-center text-[12px] font-bold uppercase">
+            <div className="border border-dashed border-black bg-black/5 p-4 text-center text-[12px] font-bold text-text-subtle uppercase">
               No items
             </div>
           )}
@@ -118,7 +118,7 @@ export const Column = memo(function Column({
           {isAddingTask ? (
             <Input
               ref={inputRef}
-              className="shadow-brutal-md font-heading text-[13px] font-extrabold tracking-wider uppercase"
+              className="font-heading text-[13px] font-extrabold tracking-wider uppercase shadow-brutal-md"
               placeholder="What needs to be done?"
               value={newTaskTitle}
               onChange={e => setNewTaskTitle(e.target.value)}

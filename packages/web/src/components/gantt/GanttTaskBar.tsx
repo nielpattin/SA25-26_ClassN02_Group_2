@@ -43,7 +43,7 @@ export function GanttTaskBar({
         top: 8, // Center in 48px row
       }}
     >
-      <div className="shadow-brutal-sm relative flex h-full w-full items-center gap-2 border border-black bg-white px-2">
+      <div className="relative flex h-full w-full items-center gap-2 border border-black bg-white px-2 shadow-brutal-sm">
         {/* Status Badge */}
         <div 
           className="size-2 shrink-0 rounded-full border border-black" 

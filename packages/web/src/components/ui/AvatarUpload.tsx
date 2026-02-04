@@ -128,8 +128,8 @@ export function AvatarUpload({ userId, currentImage, userName }: AvatarUploadPro
             src={currentImage}
             fallback={userName}
             size="lg"
-            className={`shadow-brutal-md group-hover:shadow-brutal-lg size-24! text-2xl! transition-all ${
-              isDragging ? 'bg-accent border-2 border-black' : ''
+            className={`size-24! text-2xl! shadow-brutal-md transition-all group-hover:shadow-brutal-lg ${
+              isDragging ? 'border-2 border-black bg-accent' : ''
             } ${isUploading ? 'opacity-50' : ''}`}
           />
           
@@ -180,13 +180,13 @@ export function AvatarUpload({ userId, currentImage, userName }: AvatarUploadPro
       </div>
 
       {uploadError && (
-        <div className="shadow-brutal-sm flex items-center justify-between border border-[#E74C3C] bg-[#E74C3C]/10 p-2.5">
+        <div className="flex items-center justify-between border border-[#E74C3C] bg-[#E74C3C]/10 p-2.5 shadow-brutal-sm">
           <span className="text-[11px] font-bold tracking-wide text-[#E74C3C] uppercase">
             {uploadError.message}
           </span>
           <button 
             onClick={() => setUploadError(null)} 
-            className="hover:text-error-border cursor-pointer text-[#E74C3C]"
+            className="cursor-pointer text-[#E74C3C] hover:text-error-border"
           >
             <X size={14} />
           </button>

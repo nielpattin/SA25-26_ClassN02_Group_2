@@ -43,7 +43,7 @@ export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-black bg-black px-6 py-4 text-white">
           <h2 className="font-heading text-lg font-bold tracking-wider uppercase">Invite to Workspace</h2>
-          <button onClick={onClose} className="hover:text-accent transition-colors">
+          <button onClick={onClose} className="transition-colors hover:text-accent">
             <X size={20} />
           </button>
         </div>
@@ -63,7 +63,7 @@ export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="colleague@example.com"
-                className="font-heading focus:shadow-brutal-sm w-full border border-black bg-white py-3 pr-4 pl-10 text-sm font-bold transition-all outline-none placeholder:font-medium placeholder:text-gray-400 focus:-translate-y-0.5"
+                className="w-full border border-black bg-white py-3 pr-4 pl-10 font-heading text-sm font-bold transition-all outline-none placeholder:font-medium placeholder:text-gray-400 focus:-translate-y-0.5 focus:shadow-brutal-sm"
                 autoFocus
               />
             </div>
@@ -106,7 +106,7 @@ export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
             <button
               onClick={() => email && invite.mutate()}
               disabled={invite.isPending || !email}
-              className="hover:bg-accent hover:shadow-brutal-sm border border-black bg-black px-6 py-3 text-xs font-bold tracking-wider text-white uppercase transition-all hover:-translate-y-0.5 hover:text-black disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+              className="border border-black bg-black px-6 py-3 text-xs font-bold tracking-wider text-white uppercase transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
             >
               {invite.isPending ? 'Inviting...' : 'Send Invite'}
             </button>

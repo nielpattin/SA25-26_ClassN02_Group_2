@@ -287,11 +287,11 @@ function BoardComponent() {
     if (!session?.user?.id || !members) return false
     const currentUserMember = members.find((m: BoardMember) => m.userId === session.user.id)
     return currentUserMember?.role === 'admin' || board?.ownerId === session.user.id
-  }, [session?.user?.id, members, board?.ownerId])
+  }, [session, members, board?.ownerId])
 
   if (boardLoading || columnsLoading || tasksLoading || !prefsLoaded) {
     return (
-      <div className="font-heading bg-canvas flex h-screen items-center justify-center font-extrabold text-black uppercase">
+      <div className="flex h-screen items-center justify-center bg-canvas font-heading font-extrabold text-black uppercase">
         Loading workspace...
       </div>
     )
@@ -299,7 +299,7 @@ function BoardComponent() {
 
   if (!board) {
     return (
-      <div className="font-heading bg-canvas flex h-screen items-center justify-center font-extrabold text-black uppercase">
+      <div className="flex h-screen items-center justify-center bg-canvas font-heading font-extrabold text-black uppercase">
         Error: Page not found
       </div>
     )
@@ -308,17 +308,17 @@ function BoardComponent() {
   return (
     <WorkspaceProvider>
       <DragProvider>
-        <div className="bg-canvas font-body color-text flex h-screen flex-col overflow-hidden p-0">
-          <header className="bg-canvas flex shrink-0 items-center justify-between gap-4 border-b border-black px-6 py-4">
+        <div className="color-text flex h-screen flex-col overflow-hidden bg-canvas p-0 font-body">
+          <header className="flex shrink-0 items-center justify-between gap-4 border-b border-black bg-canvas px-6 py-4">
             <div className="flex items-center gap-3">
               <Link
                 to="/boards"
-                className="hover:bg-accent hover:shadow-brutal-sm text-sm font-extrabold text-black uppercase hover:px-1"
+                className="text-sm font-extrabold text-black uppercase hover:bg-accent hover:px-1 hover:shadow-brutal-sm"
               >
                 Workspace
               </Link>
               <ChevronRight size={14} className="text-text-muted" />
-              <h1 className="font-heading m-0 text-[18px] font-bold text-black">{board.name}</h1>
+              <h1 className="m-0 font-heading text-[18px] font-bold text-black">{board.name}</h1>
               <div className="ml-4">
                 <PresenceStrip presence={presence} />
               </div>
@@ -336,7 +336,7 @@ function BoardComponent() {
                 onApply={handleApplyFilters}
                 onClear={handleClearFilters}
               />
-              <div className="shadow-brutal-sm flex items-center gap-0 border border-black bg-white">
+              <div className="flex items-center gap-0 border border-black bg-white shadow-brutal-sm">
                 <button
                   onClick={() => setView('kanban')}
                   className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
@@ -369,14 +369,14 @@ function BoardComponent() {
               </div>
               <button
                 onClick={() => setArchiveOpen(true)}
-                className="hover:bg-accent shadow-brutal-sm flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-none"
+                className="flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white shadow-brutal-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-none"
                 title="Open Archive"
               >
                 <Archive size={18} />
               </button>
               <Dropdown
                 trigger={
-                  <button className="hover:bg-accent shadow-brutal-sm flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-none">
+                  <button className="flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white shadow-brutal-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-none">
                     <MoreHorizontal size={18} />
                   </button>
                 }
@@ -586,7 +586,7 @@ function BoardContent({
   return (
     <>
       <div
-        className={`bg-canvas flex flex-1 cursor-grab items-start gap-(--board-gap,24px) overflow-x-auto overflow-y-hidden px-16 py-12 ${isScrolling || draggedColumnId || draggedCardId ? 'cursor-grabbing' : ''}`}
+        className={`flex flex-1 cursor-grab items-start gap-(--board-gap,24px) overflow-x-auto overflow-y-hidden bg-canvas px-16 py-12 ${isScrolling || draggedColumnId || draggedCardId ? 'cursor-grabbing' : ''}`}
         ref={scrollContainerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -617,7 +617,7 @@ function BoardContent({
           className={`w-(--board-column-width,300px) min-w-(--board-column-width,300px) shrink-0 px-1 ${isAnyDragging ? 'pointer-events-none' : ''}`}
         >
           <Input
-            className="shadow-brutal-md font-heading hover:shadow-brutal-xl! focus:bg-accent focus:shadow-brutal-lg text-[13px] font-extrabold tracking-wider uppercase hover:-translate-px"
+            className="font-heading text-[13px] font-extrabold tracking-wider uppercase shadow-brutal-md hover:-translate-px hover:shadow-brutal-xl! focus:bg-accent focus:shadow-brutal-lg"
             placeholder="+ Add a group"
             value={newColumnName}
             onChange={e => setNewColumnName(e.target.value)}

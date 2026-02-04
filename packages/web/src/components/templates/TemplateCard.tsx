@@ -13,7 +13,7 @@ export const TemplateCard = memo(({ template }: TemplateCardProps) => {
     <Link
       to="/templates/marketplace/$id"
       params={{ id: template.id }}
-      className="group bg-surface shadow-brutal-md hover:bg-accent hover:shadow-brutal-xl flex min-h-60 flex-col border border-black transition-all hover:-translate-x-1 hover:-translate-y-1"
+      className="group flex min-h-60 flex-col border border-black bg-surface shadow-brutal-md transition-all hover:-translate-x-1 hover:-translate-y-1 hover:bg-accent hover:shadow-brutal-xl"
     >
       <div className="flex flex-1 flex-col p-6">
         <div className="mb-4 flex items-start justify-between">
@@ -26,7 +26,7 @@ export const TemplateCard = memo(({ template }: TemplateCardProps) => {
           </div>
         </div>
         
-        <h3 className="font-heading mb-2 text-xl font-extrabold text-black uppercase group-hover:underline">
+        <h3 className="mb-2 font-heading text-xl font-extrabold text-black uppercase group-hover:underline">
           {template.name}
         </h3>
         
@@ -35,7 +35,7 @@ export const TemplateCard = memo(({ template }: TemplateCardProps) => {
         </p>
       </div>
 
-      <div className="mt-auto border-t border-black bg-black/5 p-4 flex items-center justify-between">
+      <div className="mt-auto flex items-center justify-between border-t border-black bg-black/5 p-4">
         <div className="flex items-center gap-2">
           {template.author?.image ? (
             <Avatar src={template.author.image} fallback={template.author.name || ''} size="sm" className="border border-black" />

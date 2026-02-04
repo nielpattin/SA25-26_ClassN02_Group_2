@@ -120,7 +120,7 @@ export function MentionPicker({
   return createPortal(
     <div
       ref={pickerRef}
-      className="shadow-brutal-md z-20000 flex max-h-64 min-w-56 flex-col overflow-hidden rounded-none border border-black bg-white"
+      className="z-20000 flex max-h-64 min-w-56 flex-col overflow-hidden rounded-none border border-black bg-white shadow-brutal-md"
       style={{
         position: 'absolute',
         top: `${position.top}px`,
@@ -140,9 +140,9 @@ export function MentionPicker({
               data-selected={index === selectedIndex}
               onClick={() => onSelect(member)}
               onMouseEnter={() => setSelectedIndex(index)}
-              className={`font-body flex items-center gap-3 border border-transparent px-3 py-2 text-left text-[12px] font-bold transition-all ${
+              className={`flex items-center gap-3 border border-transparent px-3 py-2 text-left font-body text-[12px] font-bold transition-all ${
                 index === selectedIndex
-                  ? 'bg-accent shadow-brutal-sm -translate-x-0.5 -translate-y-0.5 border-black'
+                  ? '-translate-x-0.5 -translate-y-0.5 border-black bg-accent shadow-brutal-sm'
                   : 'bg-white hover:bg-gray-50'
               }`}
             >

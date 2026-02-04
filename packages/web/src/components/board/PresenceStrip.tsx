@@ -14,7 +14,7 @@ export function PresenceStrip({ presence }: PresenceStripProps) {
       {displayUsers.map((user) => (
         <div
           key={user.id}
-          className="shadow-brutal-sm flex h-8 w-8 items-center justify-center border border-black bg-white ring-2 ring-white"
+          className="flex h-8 w-8 items-center justify-center border border-black bg-white shadow-brutal-sm ring-2 ring-white"
           title={user.name}
         >
           <div className="flex h-full w-full items-center justify-center text-[11px] font-bold">
@@ -24,7 +24,7 @@ export function PresenceStrip({ presence }: PresenceStripProps) {
       ))}
       {overflow > 0 && (
         <div
-          className="shadow-brutal-sm bg-accent flex h-8 w-8 items-center justify-center border border-black text-[11px] font-bold ring-2 ring-white"
+          className="flex h-8 w-8 items-center justify-center border border-black bg-accent text-[11px] font-bold shadow-brutal-sm ring-2 ring-white"
           title={`${overflow} more active`}
         >
           +{overflow}

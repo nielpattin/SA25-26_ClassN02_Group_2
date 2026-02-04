@@ -27,7 +27,7 @@ function AdminReviewComponent() {
           Back to Marketplace
         </Link>
 
-        <h1 className="font-heading m-0 text-4xl font-black tracking-tighter text-black uppercase lg:text-6xl">
+        <h1 className="m-0 font-heading text-4xl font-black tracking-tighter text-black uppercase lg:text-6xl">
           Review Submissions
         </h1>
         <p className="mt-4 text-lg font-bold text-gray-500 uppercase">
@@ -43,7 +43,7 @@ function AdminReviewComponent() {
             {submissions.map((template) => (
               <div 
                 key={template.id}
-                className="shadow-brutal-md flex flex-col border-2 border-black bg-white lg:flex-row"
+                className="flex flex-col border-2 border-black bg-white shadow-brutal-md lg:flex-row"
               >
                 <div className="flex-1 p-8">
                   <div className="mb-4 flex flex-wrap gap-2">

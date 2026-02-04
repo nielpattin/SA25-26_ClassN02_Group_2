@@ -72,7 +72,7 @@ export function ActiveSessions({ userId }: ActiveSessionsProps) {
         {sessions?.map((session) => (
           <div 
             key={session.id}
-            className={`shadow-brutal-sm flex items-center justify-between border border-black p-4 transition-all ${session.isCurrent ? 'bg-accent/10' : 'bg-white'}`}
+            className={`flex items-center justify-between border border-black p-4 shadow-brutal-sm transition-all ${session.isCurrent ? 'bg-accent/10' : 'bg-white'}`}
           >
             <div className="flex items-center gap-4">
               <div className="shadow-brutal-xs flex size-10 items-center justify-center border border-black bg-white">
@@ -82,7 +82,7 @@ export function ActiveSessions({ userId }: ActiveSessionsProps) {
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-bold text-black">{session.browser} on {session.device}</span>
                   {session.isCurrent && (
-                    <span className="bg-accent border border-black px-1.5 py-0.5 text-[8px] font-black tracking-widest text-black uppercase">
+                    <span className="border border-black bg-accent px-1.5 py-0.5 text-[8px] font-black tracking-widest text-black uppercase">
                       Current
                     </span>
                   )}
@@ -143,7 +143,7 @@ export function ActiveSessions({ userId }: ActiveSessionsProps) {
           onConfirm={() => revokeAllSessions.mutate()}
           onCancel={() => setShowRevokeAll(false)}
         >
-          <div className="bg-error/10 border-error border-l-4 p-4">
+          <div className="border-l-4 border-error bg-error/10 p-4">
             <div className="flex gap-3">
               <ShieldAlert className="text-error" size={18} />
               <p className="text-[12px] font-bold text-black uppercase">This action cannot be undone.</p>

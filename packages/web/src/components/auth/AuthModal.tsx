@@ -118,9 +118,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/80" onClick={handleBackdropClick}>
-      <div className="bg-surface shadow-brutal-xl animate-in fade-in zoom-in relative w-full max-w-100 rounded-none border border-black p-10 duration-200">
+      <div className="animate-in fade-in zoom-in relative w-full max-w-100 rounded-none border border-black bg-surface p-10 shadow-brutal-xl duration-200">
         <button
-          className="hover:bg-text-danger hover:shadow-brutal-sm absolute top-4 right-4 flex size-8 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-0.5 hover:text-white active:translate-0 active:shadow-none"
+          className="absolute top-4 right-4 flex size-8 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-0.5 hover:bg-text-danger hover:text-white hover:shadow-brutal-sm active:translate-0 active:shadow-none"
           onClick={onClose}
         >
           <X size={16} />
@@ -166,7 +166,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </button>
           )}
 
-          {error && <div className="bg-danger-bg rounded-none border border-black p-2 text-sm font-bold text-black">{error}</div>}
+          {error && <div className="rounded-none border border-black bg-danger-bg p-2 text-sm font-bold text-black">{error}</div>}
           {showResend && (
             <button
               type="button"
@@ -177,7 +177,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               Resend verification email
             </button>
           )}
-          {successMessage && <div className="bg-success-bg rounded-none border border-black p-2 text-sm font-bold text-black">{successMessage}</div>}
+          {successMessage && <div className="rounded-none border border-black bg-success-bg p-2 text-sm font-bold text-black">{successMessage}</div>}
           
           <Button
             type="submit"
@@ -198,7 +198,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <button
                 type="button"
                 onClick={handleGithubSignIn}
-                className="shadow-brutal-sm hover:shadow-brutal flex w-full cursor-pointer items-center justify-center gap-2 border border-black bg-white p-3 font-bold uppercase transition-all hover:-translate-0.5 active:translate-0 active:shadow-none"
+                className="hover:shadow-brutal flex w-full cursor-pointer items-center justify-center gap-2 border border-black bg-white p-3 font-bold uppercase shadow-brutal-sm transition-all hover:-translate-0.5 active:translate-0 active:shadow-none"
               >
                 <Github size={18} />
                 Continue with GitHub

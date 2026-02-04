@@ -60,9 +60,9 @@ export function MonthView({ currentDate, tasks, columns, onTaskClick, onTaskDrag
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   return (
-    <div className="shadow-brutal-lg flex h-full flex-col border border-black bg-white">
+    <div className="flex h-full flex-col border border-black bg-white shadow-brutal-lg">
       {/* Weekday headers */}
-      <div className="bg-accent/10 grid grid-cols-7 border-b border-black">
+      <div className="grid grid-cols-7 border-b border-black bg-accent/10">
         {weekDays.map(day => (
           <div key={day} className="py-2 text-center text-xs font-black text-black uppercase">
             {day}
@@ -90,7 +90,7 @@ export function MonthView({ currentDate, tasks, columns, onTaskClick, onTaskDrag
               }}
               className={`relative flex flex-col gap-1 overflow-hidden border-r border-b border-black p-1 transition-colors ${
                 isCurrentMonth ? 'bg-white' : 'bg-canvas text-black/30'
-              } ${isCurrentToday ? 'ring-accent ring-2 ring-inset' : ''} ${creatingDate && isSameDay(creatingDate, day) ? 'bg-accent/5' : ''}`}
+              } ${isCurrentToday ? 'ring-2 ring-accent ring-inset' : ''} ${creatingDate && isSameDay(creatingDate, day) ? 'bg-accent/5' : ''}`}
             >
               <div className={`text-right text-xs font-bold ${isCurrentToday ? 'text-accent-foreground' : ''}`}>
                 {format(day, 'd')}
@@ -105,7 +105,7 @@ export function MonthView({ currentDate, tasks, columns, onTaskClick, onTaskDrag
                       e.stopPropagation()
                       setExpandedDate(day)
                     }}
-                    className="hover:bg-accent mt-auto cursor-pointer text-left text-[10px] font-black uppercase underline transition-colors"
+                    className="mt-auto cursor-pointer text-left text-[10px] font-black uppercase underline transition-colors hover:bg-accent"
                   >
                     + {dayTasks.length - 3} more
                   </button>
@@ -115,7 +115,7 @@ export function MonthView({ currentDate, tasks, columns, onTaskClick, onTaskDrag
                     <input
                       ref={inputRef}
                       type="text"
-                      className="shadow-brutal-sm w-full border border-black bg-white p-1 text-[10px] font-bold outline-none"
+                      className="w-full border border-black bg-white p-1 text-[10px] font-bold shadow-brutal-sm outline-none"
                       placeholder="Task title..."
                       value={quickCreateTitle}
                       onChange={e => setQuickCreateTitle(e.target.value)}
@@ -150,10 +150,10 @@ export function MonthView({ currentDate, tasks, columns, onTaskClick, onTaskDrag
           onClick={() => setExpandedDate(null)}
         >
           <div 
-            className="shadow-brutal-lg flex max-h-[80vh] w-full max-w-md flex-col border-2 border-black bg-white"
+            className="flex max-h-[80vh] w-full max-w-md flex-col border-2 border-black bg-white shadow-brutal-lg"
             onClick={e => e.stopPropagation()}
           >
-            <div className="bg-accent flex items-center justify-between border-b-2 border-black p-4">
+            <div className="flex items-center justify-between border-b-2 border-black bg-accent p-4">
               <h3 className="font-heading text-lg font-black uppercase">
                 {format(expandedDate, 'MMMM d, yyyy')}
               </h3>

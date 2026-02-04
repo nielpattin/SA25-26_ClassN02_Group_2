@@ -54,9 +54,9 @@ export function AvatarPickerModal({ isOpen, onClose, userName, githubAvatarUrl }
 
   return (
     <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/80" onClick={handleBackdropClick}>
-      <div className="bg-surface shadow-brutal-xl animate-in fade-in zoom-in relative w-full max-w-120 rounded-none border border-black p-10 duration-200">
+      <div className="animate-in fade-in zoom-in relative w-full max-w-120 rounded-none border border-black bg-surface p-10 shadow-brutal-xl duration-200">
         <button
-          className="hover:bg-text-danger hover:shadow-brutal-sm absolute top-4 right-4 flex size-8 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-0.5 hover:text-white active:translate-0 active:shadow-none"
+          className="absolute top-4 right-4 flex size-8 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-0.5 hover:bg-text-danger hover:text-white hover:shadow-brutal-sm active:translate-0 active:shadow-none"
           onClick={onClose}
         >
           <X size={16} />
@@ -75,7 +75,7 @@ export function AvatarPickerModal({ isOpen, onClose, userName, githubAvatarUrl }
               src={selectedAvatar} 
               fallback={userName} 
               size="lg" 
-              className="shadow-brutal-lg size-24! text-2xl!" 
+              className="size-24! text-2xl! shadow-brutal-lg" 
             />
             {selectedAvatar === githubAvatarUrl && githubAvatarUrl && (
               <div className="absolute -right-2 -bottom-2 flex size-6 items-center justify-center border border-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
@@ -103,7 +103,7 @@ export function AvatarPickerModal({ isOpen, onClose, userName, githubAvatarUrl }
             
             <button
               onClick={() => setSelectedAvatar(null)}
-              className={`bg-accent relative flex size-12 cursor-pointer items-center justify-center border border-black text-xs font-black transition-all hover:-translate-y-0.5 ${
+              className={`relative flex size-12 cursor-pointer items-center justify-center border border-black bg-accent text-xs font-black transition-all hover:-translate-y-0.5 ${
                 selectedAvatar === null ? 'ring-4 ring-black ring-offset-2' : ''
               }`}
             >

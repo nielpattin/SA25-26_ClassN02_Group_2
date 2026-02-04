@@ -76,7 +76,7 @@ function MarketplaceComponent() {
       <div className="p-12 lg:px-16">
         <header className="mb-12 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <div>
-            <h1 className="font-heading m-0 text-[40px] font-black tracking-tighter text-black uppercase lg:text-[64px]">
+            <h1 className="m-0 font-heading text-[40px] font-black tracking-tighter text-black uppercase lg:text-[64px]">
               Template Market
             </h1>
             <p className="mt-4 max-w-2xl text-lg font-bold text-gray-500 uppercase">
@@ -86,7 +86,7 @@ function MarketplaceComponent() {
           {isAdmin && (
             <Link
               to="/templates/marketplace/admin"
-              className="hover:bg-accent hover:shadow-brutal-md flex items-center justify-center gap-2 border-2 border-black bg-white px-6 py-3 text-xs font-black text-black uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5"
+              className="flex items-center justify-center gap-2 border-2 border-black bg-white px-6 py-3 text-xs font-black text-black uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:shadow-brutal-md"
             >
               <ShieldCheck size={16} />
               Review Submissions
@@ -110,7 +110,7 @@ function MarketplaceComponent() {
         {isLoading ? (
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="shadow-brutal-md h-60 animate-pulse border border-black bg-black/5" />
+              <div key={i} className="h-60 animate-pulse border border-black bg-black/5 shadow-brutal-md" />
             ))}
           </div>
         ) : templates && templates.length > 0 ? (
@@ -125,7 +125,7 @@ function MarketplaceComponent() {
               <button
                 disabled={(page || 1) <= 1}
                 onClick={() => updateSearch({ page: (page || 1) - 1 })}
-                className="hover:bg-accent hover:shadow-brutal-md disabled:opacity-30 flex items-center justify-center rounded-none border border-black bg-white px-6 py-3 text-sm font-black text-black uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5"
+                className="flex items-center justify-center rounded-none border border-black bg-white px-6 py-3 text-sm font-black text-black uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:shadow-brutal-md disabled:opacity-30"
               >
                 Previous
               </button>
@@ -135,7 +135,7 @@ function MarketplaceComponent() {
               <button
                 disabled={templates.length < LIMIT}
                 onClick={() => updateSearch({ page: (page || 1) + 1 })}
-                className="hover:bg-accent hover:shadow-brutal-md disabled:opacity-30 flex items-center justify-center rounded-none border border-black bg-white px-6 py-3 text-sm font-black text-black uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5"
+                className="flex items-center justify-center rounded-none border border-black bg-white px-6 py-3 text-sm font-black text-black uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:shadow-brutal-md disabled:opacity-30"
               >
                 Next
               </button>

@@ -187,7 +187,7 @@ function ProfileForm({ user, config }: ProfileFormProps) {
   return (
     <div className="p-12 lg:px-16">
       <header className="mb-10">
-        <h1 className="font-heading m-0 text-[32px] font-bold tracking-tight text-black uppercase">
+        <h1 className="m-0 font-heading text-[32px] font-bold tracking-tight text-black uppercase">
           Account Settings
         </h1>
         <p className="mt-2 text-sm font-medium text-gray-500 uppercase">
@@ -205,7 +205,7 @@ function ProfileForm({ user, config }: ProfileFormProps) {
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold tracking-widest text-black uppercase">Email Address</label>
-              <div className="font-body border border-black bg-black/5 px-3 py-2.5 text-[13px] font-semibold text-black/50">
+              <div className="border border-black bg-black/5 px-3 py-2.5 font-body text-[13px] font-semibold text-black/50">
                 {user.email}
               </div>
               <p className="text-[9px] font-medium text-gray-400 uppercase">Email cannot be changed at this time</p>
@@ -236,7 +236,7 @@ function ProfileForm({ user, config }: ProfileFormProps) {
               <button
                 onClick={() => updateProfile.mutate()}
                 disabled={updateProfile.isPending || name === user.name}
-                className="hover:bg-accent hover:shadow-brutal-sm flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save size={16} />
                 {updateProfile.isPending ? 'Saving...' : 'Save Profile'}
@@ -315,7 +315,7 @@ function ProfileForm({ user, config }: ProfileFormProps) {
             <button
               onClick={() => updatePreferences.mutate()}
               disabled={updatePreferences.isPending}
-              className="hover:bg-accent hover:shadow-brutal-sm flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Save size={16} />
               {updatePreferences.isPending ? 'Saving...' : 'Save Preferences'}
@@ -389,7 +389,7 @@ function ProfileForm({ user, config }: ProfileFormProps) {
               <button
                 type="submit"
                 disabled={securityStatus === 'saving' || (hasPassword && !currentPassword) || !newPassword}
-                className="hover:bg-accent hover:shadow-brutal-sm flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Key size={16} />
                 {securityStatus === 'saving' ? 'Saving...' : hasPassword ? 'Change Password' : 'Set Password'}

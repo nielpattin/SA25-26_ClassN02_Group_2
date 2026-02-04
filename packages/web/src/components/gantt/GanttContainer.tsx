@@ -134,7 +134,7 @@ export function GanttContainer({ tasks, boardId, onTaskClick, todayTrigger, zoom
   }, [isSidebarCollapsed])
 
   return (
-    <div className="relative flex flex-1 min-h-0 overflow-hidden bg-white">
+    <div className="relative flex min-h-0 flex-1 overflow-hidden bg-white">
       <GanttTaskList 
         tasks={sortedTasks} 
         onScroll={handleListScroll} 
@@ -142,7 +142,7 @@ export function GanttContainer({ tasks, boardId, onTaskClick, todayTrigger, zoom
         isCollapsed={isSidebarCollapsed}
         onTaskClick={onTaskClick}
       />
-      <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <GanttTimeline 
           tasks={sortedTasks} 
           dependencies={dependencies}
@@ -162,7 +162,7 @@ export function GanttContainer({ tasks, boardId, onTaskClick, todayTrigger, zoom
       {/* Toggle Sidebar Button */}
       <button
         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        className="shadow-brutal-sm absolute bottom-4 left-4 z-30 flex size-8 items-center justify-center border border-black bg-white transition-all hover:-translate-px hover:shadow-none"
+        className="absolute bottom-4 left-4 z-30 flex size-8 items-center justify-center border border-black bg-white shadow-brutal-sm transition-all hover:-translate-px hover:shadow-none"
       >
         {isSidebarCollapsed ? '→' : '←'}
       </button>

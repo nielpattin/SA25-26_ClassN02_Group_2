@@ -95,12 +95,13 @@ export function ExportActivityModal({ boardId, boardName, isOpen, onClose }: Exp
       window.URL.revokeObjectURL(url)
       
       onClose()
-    } catch (err: any) {
+    } catch (err) {
       console.error('Export failed:', err)
-      if (err?.status === 403) {
+      const error = err as { status?: number; message?: string }
+      if (error?.status === 403) {
         setError('You do not have permission to export activities. Only board admins can export.')
-      } else if (err?.message) {
-        setError(err.message)
+      } else if (error?.message) {
+        setError(error.message)
       } else {
         setError('Failed to export activities. Please try again.')
       }
@@ -118,22 +119,22 @@ export function ExportActivityModal({ boardId, boardName, isOpen, onClose }: Exp
         onClick={onClose}
       />
       
-      <div className="bg-canvas shadow-brutal-xl relative w-full max-w-md border-2 border-black p-8 transition-all">
+      <div className="relative w-full max-w-md border-2 border-black bg-canvas p-8 shadow-brutal-xl transition-all">
         <button 
           onClick={onClose}
-          className="hover:bg-accent hover:shadow-brutal-sm absolute top-4 right-4 flex h-8 w-8 items-center justify-center border border-black bg-white transition-all active:translate-0"
+          className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center border border-black bg-white transition-all hover:bg-accent hover:shadow-brutal-sm active:translate-0"
         >
           <X size={18} />
         </button>
 
-        <h2 className="font-heading mb-6 text-2xl font-black tracking-tight text-black uppercase">
+        <h2 className="mb-6 font-heading text-2xl font-black tracking-tight text-black uppercase">
           Export Activity Log
         </h2>
 
         <div className="space-y-6">
           {/* Date Range Selection */}
           <div>
-            <label className="font-heading mb-3 block text-sm font-extrabold text-black uppercase">
+            <label className="mb-3 block font-heading text-sm font-extrabold text-black uppercase">
               Date Range
             </label>
             
@@ -143,7 +144,7 @@ export function ExportActivityModal({ boardId, boardName, isOpen, onClose }: Exp
                 <button
                   key={preset.days}
                   onClick={() => handlePresetClick(preset.days)}
-                  className="font-heading hover:bg-accent border border-black bg-white px-3 py-2 text-xs font-bold uppercase transition-all hover:-translate-px hover:shadow-[2px_2px_0_0_rgba(0,0,0,1)]"
+                  className="border border-black bg-white px-3 py-2 font-heading text-xs font-bold uppercase transition-all hover:-translate-px hover:bg-accent hover:shadow-[2px_2px_0_0_rgba(0,0,0,1)]"
                 >
                   {preset.label}
                 </button>
@@ -157,7 +158,7 @@ export function ExportActivityModal({ boardId, boardName, isOpen, onClose }: Exp
                   From
                 </label>
                 <div className="relative">
-                  <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
+                  <Calendar size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-black/40" />
                   <input
                     type="date"
                     value={dateFrom}
@@ -174,7 +175,7 @@ export function ExportActivityModal({ boardId, boardName, isOpen, onClose }: Exp
                   To
                 </label>
                 <div className="relative">
-                  <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
+                  <Calendar size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-black/40" />
                   <input
                     type="date"
                     value={dateTo}
@@ -191,7 +192,7 @@ export function ExportActivityModal({ boardId, boardName, isOpen, onClose }: Exp
 
           {/* Format Selection */}
           <div>
-            <label className="font-heading mb-3 block text-sm font-extrabold text-black uppercase">
+            <label className="mb-3 block font-heading text-sm font-extrabold text-black uppercase">
               Export Format
             </label>
             <div className="grid grid-cols-2 gap-4">
@@ -199,8 +200,8 @@ export function ExportActivityModal({ boardId, boardName, isOpen, onClose }: Exp
                 onClick={() => setFormat('json')}
                 className={`flex flex-col items-center gap-3 border-2 p-6 transition-all ${
                   format === 'json' 
-                    ? 'bg-accent shadow-brutal-md -translate-x-1 -translate-y-1 border-black' 
-                    : 'hover:shadow-brutal-sm border-black/10 bg-white hover:border-black'
+                    ? '-translate-x-1 -translate-y-1 border-black bg-accent shadow-brutal-md' 
+                    : 'border-black/10 bg-white hover:border-black hover:shadow-brutal-sm'
                 }`}
               >
                 <FileJson size={32} className={format === 'json' ? 'text-black' : 'text-black/40'} />
@@ -214,8 +215,8 @@ export function ExportActivityModal({ boardId, boardName, isOpen, onClose }: Exp
                 onClick={() => setFormat('csv')}
                 className={`flex flex-col items-center gap-3 border-2 p-6 transition-all ${
                   format === 'csv' 
-                    ? 'bg-accent shadow-brutal-md -translate-x-1 -translate-y-1 border-black' 
-                    : 'hover:shadow-brutal-sm border-black/10 bg-white hover:border-black'
+                    ? '-translate-x-1 -translate-y-1 border-black bg-accent shadow-brutal-md' 
+                    : 'border-black/10 bg-white hover:border-black hover:shadow-brutal-sm'
                 }`}
               >
                 <FileSpreadsheet size={32} className={format === 'csv' ? 'text-black' : 'text-black/40'} />

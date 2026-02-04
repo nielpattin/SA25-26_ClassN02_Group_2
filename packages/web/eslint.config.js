@@ -33,7 +33,9 @@ export default defineConfig([
         entryPoint: path.resolve(__dirname, 'src/index.css'),
       }],
       'better-tailwind/no-duplicate-classes': 'error',
-      'better-tailwind/enforce-consistent-class-order': 'warn',
+      'better-tailwind/enforce-consistent-class-order': ['warn', {
+        entryPoint: path.resolve(__dirname, 'src/index.css'),
+      }],
       'better-tailwind/no-unnecessary-whitespace': 'warn',
       'better-tailwind/enforce-canonical-classes': ['warn', {
         entryPoint: path.resolve(__dirname, 'src/index.css'),

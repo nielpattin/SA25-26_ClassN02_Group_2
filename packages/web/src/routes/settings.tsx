@@ -80,7 +80,7 @@ function SettingsPage() {
 	return (
 		<div className="p-12 lg:px-16">
 			<header className="mb-10">
-				<h1 className="font-heading m-0 text-[32px] font-bold tracking-tight text-black uppercase">
+				<h1 className="m-0 font-heading text-[32px] font-bold tracking-tight text-black uppercase">
 					Workspace Settings
 				</h1>
 				<p className="mt-2 text-sm font-medium text-gray-500 uppercase">
@@ -105,12 +105,12 @@ function SettingsPage() {
 								type="text"
 								value={name}
 								onChange={(e) => setName(e.target.value)}
-								className="font-heading focus:shadow-brutal-sm flex-1 border border-black bg-white px-4 py-3 text-sm font-bold transition-all outline-none placeholder:font-medium placeholder:text-gray-400 focus:-translate-y-0.5"
+								className="flex-1 border border-black bg-white px-4 py-3 font-heading text-sm font-bold transition-all outline-none placeholder:font-medium placeholder:text-gray-400 focus:-translate-y-0.5 focus:shadow-brutal-sm"
 							/>
 							<button
 								onClick={() => updateWorkspace.mutate()}
 								disabled={updateWorkspace.isPending || name === currentWorkspace?.name}
-								className="hover:bg-accent hover:shadow-brutal-sm flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:text-black disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+								className="flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
 							>
 								<Save size={16} />
 								{updateWorkspace.isPending ? 'Saving...' : 'Save'}

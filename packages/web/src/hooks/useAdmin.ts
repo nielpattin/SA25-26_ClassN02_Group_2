@@ -2,13 +2,32 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AdminRole } from '@kyte/server/src/modules/admin/admin.model'
 
+export type AuditFilters = {
+  action?: string
+  adminId?: string
+  targetId?: string
+  startDate?: string
+  endDate?: string
+  limit?: number
+  offset?: number
+}
+
+export type AdminUser = {
+  id: string
+  name: string
+  email: string
+  image?: string | null
+  adminRole: AdminRole | null
+  updatedAt?: string | null
+}
+
 export const adminKeys = {
   all: ['admin'] as const,
   dashboard: () => [...adminKeys.all, 'dashboard'] as const,
   users: (limit?: number, offset?: number) => [...adminKeys.all, 'users', { limit, offset }] as const,
   userSearch: (query: string, limit?: number, offset?: number) =>
     [...adminKeys.all, 'userSearch', query, { limit, offset }] as const,
-  audit: (filters: any) => [...adminKeys.all, 'audit', filters] as const,
+  audit: (filters: AuditFilters) => [...adminKeys.all, 'audit', filters] as const,
 }
 
 export function useDashboardMetrics() {
@@ -49,7 +68,7 @@ export function usePromoteUser() {
     },
     onMutate: async ({ id, role }) => {
       await queryClient.cancelQueries({ queryKey: adminKeys.users() })
-      const previousUsers = queryClient.getQueryData<any[]>(adminKeys.users())
+      const previousUsers = queryClient.getQueryData<AdminUser[]>(adminKeys.users())
       if (previousUsers) {
         queryClient.setQueryData(
           adminKeys.users(),
@@ -80,7 +99,7 @@ export function useDemoteUser() {
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: adminKeys.users() })
-      const previousUsers = queryClient.getQueryData<any[]>(adminKeys.users())
+      const previousUsers = queryClient.getQueryData<AdminUser[]>(adminKeys.users())
       if (previousUsers) {
         queryClient.setQueryData(
           adminKeys.users(),
@@ -100,7 +119,7 @@ export function useDemoteUser() {
   })
 }
 
-export function useAuditLogs(filters: any = {}) {
+export function useAuditLogs(filters: AuditFilters = {}) {
   return useQuery({
     queryKey: adminKeys.audit(filters),
     queryFn: async () => {

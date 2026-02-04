@@ -16,9 +16,9 @@ export const BoardCard = memo(({ board, onDelete, isDeleting }: BoardCardProps) 
     <Link
       to="/board/$boardId"
       params={{ boardId: board.id.toString() }}
-      className="group bg-surface shadow-brutal-md hover:bg-accent hover:shadow-brutal-xl flex min-h-40 flex-col justify-between border border-black p-8 transition-all hover:-translate-x-1 hover:-translate-y-1"
+      className="group flex min-h-40 flex-col justify-between border border-black bg-surface p-8 shadow-brutal-md transition-all hover:-translate-x-1 hover:-translate-y-1 hover:bg-accent hover:shadow-brutal-xl"
     >
-      <h3 className="font-heading m-0 text-lg font-extrabold text-black uppercase">{board.name}</h3>
+      <h3 className="m-0 font-heading text-lg font-extrabold text-black uppercase">{board.name}</h3>
       <div className="flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
         <button
           onClick={(e) => {

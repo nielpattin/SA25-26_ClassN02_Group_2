@@ -204,7 +204,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
 
   if (isLoading || !card)
     return (
-      <div className="font-heading bg-canvas flex h-screen items-center justify-center font-extrabold text-black uppercase">
+      <div className="flex h-screen items-center justify-center bg-canvas font-heading font-extrabold text-black uppercase">
         Loading...
       </div>
     )
@@ -220,11 +220,11 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
       onClick={onClose}
     >
       <div
-        className="shadow-brutal-xl relative flex max-h-[90vh] w-[95%] max-w-250 flex-col overflow-hidden border border-black bg-white"
+        className="relative flex max-h-[90vh] w-[95%] max-w-250 flex-col overflow-hidden border border-black bg-white shadow-brutal-xl"
         onClick={e => e.stopPropagation()}
       >
         {card.coverImageUrl && (
-          <div className="bg-active relative h-50 w-full shrink-0 overflow-hidden border-b border-black">
+          <div className="relative h-50 w-full shrink-0 overflow-hidden border-b border-black bg-active">
             <img src={card.coverImageUrl} alt="Cover" className="h-full w-full object-cover" />
             <button
               className="absolute top-3 right-3 flex cursor-pointer items-center justify-center border border-white bg-black p-2 text-white hover:bg-[#E74C3C]"
@@ -239,20 +239,20 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
           <Input
             value={card.title}
             onChange={e => updateCard.mutate({ title: e.target.value })}
-            className="font-heading h-full border-none bg-transparent p-0 text-[20px] font-extrabold uppercase"
+            className="h-full border-none bg-transparent p-0 font-heading text-[20px] font-extrabold uppercase"
             brutal={false}
           />
           <div className="flex items-center gap-2 pr-4">
             <Dropdown
               trigger={
-                <button className="hover:bg-accent hover:shadow-brutal-sm flex h-10 w-10 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-0.5 active:translate-0 active:shadow-none">
+                <button className="flex h-10 w-10 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-0.5 hover:bg-accent hover:shadow-brutal-sm active:translate-0 active:shadow-none">
                   <MoreHorizontal size={18} />
                 </button>
               }
               items={menuItems}
             />
             <button
-              className="hover:bg-text-danger hover:shadow-brutal-sm flex h-10 w-10 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-0.5 hover:text-white active:translate-0 active:shadow-none"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-0.5 hover:bg-text-danger hover:text-white hover:shadow-brutal-sm active:translate-0 active:shadow-none"
               onClick={onClose}
             >
               <X size={18} />
@@ -263,8 +263,8 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
         <div className="flex min-h-0 flex-1 flex-row overflow-hidden bg-white">
           <div className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto border-r border-black p-8">
             {/* Labels Section */}
-            <div className="shadow-brutal-md mb-4 shrink-0 overflow-hidden border-2 border-black bg-white">
-              <div className="bg-accent flex items-center gap-2 border-b-2 border-black p-1 px-3">
+            <div className="mb-4 shrink-0 overflow-hidden border-2 border-black bg-white shadow-brutal-md">
+              <div className="flex items-center gap-2 border-b-2 border-black bg-accent p-1 px-3">
                 <Tag size={12} strokeWidth={2.5} />
                 <span className="font-heading text-[10px] font-extrabold tracking-widest text-black uppercase">
                   Labels
@@ -277,7 +277,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
 
             {/* Description */}
             <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+              <h3 className="m-0 flex items-center gap-1.5 font-heading text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
                 <Type size={14} /> Description
               </h3>
               {isEditingDescription ? (
@@ -303,7 +303,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                 </div>
               ) : (
                 <div
-                  className="shadow-brutal-sm hover:shadow-brutal-md bg-surface-overlay hover:bg-active min-h-25 cursor-pointer border border-black p-4 text-[14px] leading-relaxed wrap-break-word text-[#333333] transition-all hover:-translate-0.5"
+                  className="min-h-25 cursor-pointer border border-black bg-surface-overlay p-4 text-[14px] leading-relaxed wrap-break-word text-[#333333] shadow-brutal-sm transition-all hover:-translate-0.5 hover:bg-active hover:shadow-brutal-md"
                   onClick={() => setIsEditingDescription(true)}
                 >
                   {card.description || 'Add a more detailed description...'}
@@ -316,7 +316,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
 
             {/* Attachments */}
             <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+              <h3 className="m-0 flex items-center gap-1.5 font-heading text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
                 <Paperclip size={14} /> Attachments
               </h3>
               <AttachmentSection
@@ -346,7 +346,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
 
             {/* Comments */}
             <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+              <h3 className="m-0 flex items-center gap-1.5 font-heading text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
                 <MessageSquare size={14} /> Comments
               </h3>
               <CommentSection
@@ -360,20 +360,20 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
             <TaskActivity taskId={taskId} />
           </div>
 
-          <div className="bg-hover flex w-[320px] min-w-0 shrink-0 flex-col gap-6 overflow-y-auto p-8">
+          <div className="flex w-[320px] min-w-0 shrink-0 flex-col gap-6 overflow-y-auto bg-hover p-8">
             {/* Dates Section */}
             <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+              <h3 className="m-0 flex items-center gap-1.5 font-heading text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
                 <Calendar size={14} /> Dates
               </h3>
               <div className="flex flex-col gap-2">
                 {/* Start Date */}
                 <button
                   ref={startDateTriggerRef}
-                  className="shadow-brutal-sm hover:shadow-brutal-md flex cursor-pointer items-center justify-between border border-black bg-white p-3 text-left transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                  className="flex cursor-pointer items-center justify-between border border-black bg-white p-3 text-left shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal-md active:translate-y-0 active:shadow-none"
                   onClick={() => setIsStartDatePickerOpen(prev => !prev)}
                 >
-                  <span className="text-text-subtle text-[11px] font-bold uppercase">Start</span>
+                  <span className="text-[11px] font-bold text-text-subtle uppercase">Start</span>
                   <span className="font-body text-[13px] font-bold text-black">
                     {card.startDate ? (
                       format(new Date(card.startDate), 'MMM d, yyyy')
@@ -386,10 +386,10 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                 {/* Due Date */}
                 <button
                   ref={dueDateTriggerRef}
-                  className="shadow-brutal-sm hover:shadow-brutal-md flex cursor-pointer items-center justify-between border border-black bg-white p-3 text-left transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                  className="flex cursor-pointer items-center justify-between border border-black bg-white p-3 text-left shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal-md active:translate-y-0 active:shadow-none"
                   onClick={() => setIsDatePickerOpen(prev => !prev)}
                 >
-                  <span className="text-text-subtle text-[11px] font-bold uppercase">Due</span>
+                  <span className="text-[11px] font-bold text-text-subtle uppercase">Due</span>
                   <div className="flex items-center gap-2">
                     <span className="font-body text-[13px] font-bold text-black">
                       {card.dueDate ? (
@@ -399,7 +399,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                       )}
                     </span>
                     {card.dueDate && new Date(card.dueDate) < new Date() && (
-                      <span className="shadow-brutal-sm border border-black bg-[#E74C3C] px-1.5 py-0.5 text-[9px] font-extrabold text-white uppercase">
+                      <span className="border border-black bg-[#E74C3C] px-1.5 py-0.5 text-[9px] font-extrabold text-white uppercase shadow-brutal-sm">
                         Overdue
                       </span>
                     )}
@@ -407,8 +407,8 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                 </button>
 
                 {/* Reminder */}
-                <div className="shadow-brutal-sm flex items-center justify-between border border-black bg-white p-3">
-                  <span className="text-text-subtle text-[11px] font-bold uppercase">Reminder</span>
+                <div className="flex items-center justify-between border border-black bg-white p-3 shadow-brutal-sm">
+                  <span className="text-[11px] font-bold text-text-subtle uppercase">Reminder</span>
                   <ReminderSelect
                     value={card.reminder}
                     onChange={reminder => updateCard.mutate({ reminder })}
@@ -454,7 +454,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
             </Popover>
 
             <div className="flex flex-col gap-3">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+              <h3 className="m-0 flex items-center gap-1.5 font-heading text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
                 Add to card
               </h3>
               <div className="flex flex-col gap-2">
@@ -478,7 +478,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                     {PRIORITIES.map(p => (
                       <button
                         key={p.id}
-                        className={`font-body flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left text-[13px] font-bold transition-all ${card.priority === p.id ? 'shadow-inner-brutal bg-active' : 'hover:shadow-brutal-md hover:bg-hover hover:-translate-0.5'}`}
+                        className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.priority === p.id ? 'shadow-inner-brutal bg-active' : 'hover:-translate-0.5 hover:bg-hover hover:shadow-brutal-md'}`}
                         onClick={() => {
                           updateCard.mutate({ priority: p.id as Card['priority'] })
                           setIsPriorityOpen(false)
@@ -510,7 +510,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                 >
                   <div className="flex flex-col gap-1">
                     <button
-                      className={`font-body flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left text-[13px] font-bold transition-all ${card.size === null ? 'shadow-inner-brutal bg-active' : 'hover:shadow-brutal-md hover:bg-hover hover:-translate-0.5'}`}
+                      className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.size === null ? 'shadow-inner-brutal bg-active' : 'hover:-translate-0.5 hover:bg-hover hover:shadow-brutal-md'}`}
                       onClick={() => {
                         updateCard.mutate({ size: null })
                         setIsSizeOpen(false)
@@ -522,7 +522,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                     {SIZES.map(s => (
                       <button
                         key={s.id}
-                        className={`font-body flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left text-[13px] font-bold transition-all ${card.size === s.id ? 'shadow-inner-brutal bg-active' : 'hover:shadow-brutal-md hover:bg-hover hover:-translate-0.5'}`}
+                        className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.size === s.id ? 'shadow-inner-brutal bg-active' : 'hover:-translate-0.5 hover:bg-hover hover:shadow-brutal-md'}`}
                         onClick={() => {
                           updateCard.mutate({ size: s.id as Card['size'] })
                           setIsSizeOpen(false)
@@ -599,16 +599,16 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
             />
 
             <div className="flex flex-col gap-4">
-              <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+              <h3 className="m-0 flex items-center gap-1.5 font-heading text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
                 Details
               </h3>
-              <div className="shadow-brutal-sm hover:shadow-brutal-md grid grid-cols-3 gap-4 border border-black bg-white p-4 transition-all hover:-translate-0.5">
+              <div className="grid grid-cols-3 gap-4 border border-black bg-white p-4 shadow-brutal-sm transition-all hover:-translate-0.5 hover:shadow-brutal-md">
                 <div className="flex flex-col gap-1">
-                  <span className="text-text-subtle text-[9px] font-extrabold uppercase">Position</span>
+                  <span className="text-[9px] font-extrabold text-text-subtle uppercase">Position</span>
                   <span className="text-[13px] font-extrabold text-black">{card.position}</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-text-subtle text-[9px] font-extrabold uppercase">Priority</span>
+                  <span className="text-[9px] font-extrabold text-text-subtle uppercase">Priority</span>
                   <span
                     className="text-[13px] font-extrabold text-black"
                     style={{
@@ -619,7 +619,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-text-subtle text-[9px] font-extrabold uppercase">Size</span>
+                  <span className="text-[9px] font-extrabold text-text-subtle uppercase">Size</span>
                   <span className="text-[13px] font-extrabold text-black">
                     {SIZES.find(s => s.id === card.size)?.name || 'None'}
                   </span>

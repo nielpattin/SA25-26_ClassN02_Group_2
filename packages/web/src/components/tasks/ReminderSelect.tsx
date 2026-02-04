@@ -47,10 +47,10 @@ export function ReminderSelect({ value, onChange, disabled, compact }: ReminderS
             {REMINDER_OPTIONS.map(opt => (
               <button
                 key={opt.id}
-                className={`font-body flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left text-[13px] font-bold transition-all ${
+                className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${
                   value === opt.id
                     ? 'shadow-inner-brutal bg-active'
-                    : 'hover:shadow-brutal-md hover:-translate-0.5 hover:bg-[#F5F5F5]'
+                    : 'hover:-translate-0.5 hover:bg-[#F5F5F5] hover:shadow-brutal-md'
                 }`}
                 onClick={() => {
                   onChange(opt.id)
@@ -71,10 +71,10 @@ export function ReminderSelect({ value, onChange, disabled, compact }: ReminderS
       <div
         ref={triggerRef}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`shadow-brutal-sm flex h-12 shrink-0 items-center justify-center border-2 border-black bg-white px-4 transition-all ${
+        className={`flex h-12 shrink-0 items-center justify-center border-2 border-black bg-white px-4 shadow-brutal-sm transition-all ${
           disabled
             ? 'cursor-not-allowed bg-[#F0F0F0] opacity-50'
-            : 'hover:shadow-brutal-md cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:shadow-none'
+            : 'cursor-pointer hover:-translate-y-0.5 hover:shadow-brutal-md active:translate-y-0 active:shadow-none'
         }`}
         title={disabled ? 'Set a due date first to enable reminders' : undefined}
       >
@@ -101,10 +101,10 @@ export function ReminderSelect({ value, onChange, disabled, compact }: ReminderS
           {REMINDER_OPTIONS.map(opt => (
             <button
               key={opt.id}
-              className={`font-body flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left text-[13px] font-bold transition-all ${
+              className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${
                 value === opt.id
                   ? 'shadow-inner-brutal bg-active'
-                  : 'hover:shadow-brutal-md hover:-translate-0.5 hover:bg-[#F5F5F5]'
+                  : 'hover:-translate-0.5 hover:bg-[#F5F5F5] hover:shadow-brutal-md'
               }`}
               onClick={() => {
                 onChange(opt.id)

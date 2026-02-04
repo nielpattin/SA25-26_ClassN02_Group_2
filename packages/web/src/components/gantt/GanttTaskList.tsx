@@ -19,6 +19,7 @@ export function GanttTaskList({
 }: GanttTaskListProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: tasks.length,
     getScrollElement: () => containerRef.current,
@@ -38,7 +39,7 @@ export function GanttTaskList({
 
   return (
     <div 
-      className={`bg-canvas flex min-h-0 shrink-0 flex-col border-r border-black transition-all duration-300 ${
+      className={`flex min-h-0 shrink-0 flex-col border-r border-black bg-canvas transition-all duration-300 ${
         isCollapsed ? 'w-0 overflow-hidden opacity-0' : 'w-72'
       }`}
     >

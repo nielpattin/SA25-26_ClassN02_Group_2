@@ -52,8 +52,8 @@ function VerifyEmail() {
 
   if (!token) {
     return (
-      <div className="bg-canvas flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="bg-surface shadow-brutal-xl relative w-full max-w-100 border border-black p-10 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-canvas p-4">
+        <div className="relative w-full max-w-100 border border-black bg-surface p-10 text-center shadow-brutal-xl">
           <h2 className="m-0 mb-6 text-2xl font-extrabold text-black uppercase">Check your email</h2>
           <p className="mb-8 font-bold text-black uppercase opacity-70">
             We've sent a verification link to your email address. Please click the link to verify your account.
@@ -67,8 +67,8 @@ function VerifyEmail() {
   }
 
   return (
-    <div className="bg-canvas flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="bg-surface shadow-brutal-xl relative w-full max-w-100 border border-black p-10 text-center">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-canvas p-4">
+      <div className="relative w-full max-w-100 border border-black bg-surface p-10 text-center shadow-brutal-xl">
         <h2 className="m-0 mb-6 text-2xl font-extrabold text-black uppercase">
           {verifying ? 'Verifying...' : success ? 'Verified!' : 'Verification Failed'}
         </h2>
@@ -77,25 +77,25 @@ function VerifyEmail() {
           <div className="flex flex-col items-center gap-4">
             <p className="font-bold text-black uppercase opacity-70">Please wait while we verify your email...</p>
             <div className="h-1 w-full overflow-hidden border border-black bg-white">
-              <div className="bg-accent h-full animate-pulse" style={{ width: '100%' }}></div>
+              <div className="h-full animate-pulse bg-accent" style={{ width: '100%' }}></div>
             </div>
           </div>
         )}
 
         {success && (
           <div className="flex flex-col items-center gap-4">
-            <p className="text-success-border font-bold uppercase">
+            <p className="font-bold text-success-border uppercase">
               Your email has been verified successfully. Redirecting you...
             </p>
             <div className="h-1 w-full overflow-hidden border border-black bg-white">
-              <div className="bg-accent h-full animate-pulse" style={{ width: '100%' }}></div>
+              <div className="h-full animate-pulse bg-accent" style={{ width: '100%' }}></div>
             </div>
           </div>
         )}
 
         {error && (
           <div className="flex flex-col items-center gap-4">
-            <div className="bg-danger-bg w-full border border-black p-4 text-sm font-bold text-black uppercase">
+            <div className="w-full border border-black bg-danger-bg p-4 text-sm font-bold text-black uppercase">
               {error}
             </div>
             <p className="font-bold text-black uppercase opacity-70">

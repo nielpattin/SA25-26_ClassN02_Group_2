@@ -1,5 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { LayoutDashboard, Users, Plus, ChevronsUpDown, Check, LogOut, Building2, Settings, Users as MembersIcon, Search, Archive } from 'lucide-react'
+import { LayoutDashboard, Users, Plus, ChevronsUpDown, Check, LogOut, Building2, Settings, ShieldCheck, Users as MembersIcon, Search, Archive } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useSession, signOut } from '../../api/auth'
 import { useState, useRef, useEffect } from 'react'
@@ -32,6 +32,7 @@ export function Sidebar() {
 
   const myMembership = Array.isArray(members) ? members.find(m => m.userId === session?.user?.id) : null
   const canManage = myMembership?.role === 'owner' || myMembership?.role === 'admin'
+  const canAccessAdmin = !!session?.user?.adminRole
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -64,7 +65,7 @@ export function Sidebar() {
         <div className="relative flex items-center gap-2 border-b border-black p-4" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="hover:bg-accent flex flex-1 items-center justify-between gap-2 border border-black bg-white p-2 text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-none"
+            className="flex flex-1 items-center justify-between gap-2 border border-black bg-white p-2 text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:bg-accent hover:shadow-none"
           >
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-black bg-black text-white">
@@ -115,7 +116,7 @@ export function Sidebar() {
                     setIsDropdownOpen(false)
                     setIsCreateWorkspaceModalOpen(true)
                   }}
-                  className="hover:bg-accent mt-2 flex w-full items-center gap-2 border-t border-black px-2 py-2 text-xs font-bold uppercase hover:text-black"
+                  className="mt-2 flex w-full items-center gap-2 border-t border-black px-2 py-2 text-xs font-bold uppercase hover:bg-accent hover:text-black"
                 >
                   <Plus size={14} />
                   Create Workspace
@@ -174,6 +175,20 @@ export function Sidebar() {
               Settings
             </Link>
 
+            {canAccessAdmin && (
+              <Link
+                to="/admin"
+                className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
+                  isActive('/admin')
+                    ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                    : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                }`}
+              >
+                <ShieldCheck size={16} />
+                Admin
+              </Link>
+            )}
+
             {canManage && (
               <Link
                 to="/archive"
@@ -210,7 +225,7 @@ export function Sidebar() {
           
           <button
             onClick={handleSignOut}
-            className="hover:bg-accent flex w-full items-center justify-center gap-2 border border-black bg-white py-2 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+            className="flex w-full items-center justify-center gap-2 border border-black bg-white py-2 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
           >
             <LogOut size={14} />
             Sign Out

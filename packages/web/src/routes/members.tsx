@@ -59,7 +59,7 @@ function MembersPage() {
     <div className="p-12 lg:px-16">
       <header className="mb-10 flex items-center justify-between">
           <div>
-            <h1 className="font-heading m-0 text-[32px] font-bold tracking-tight text-black uppercase">
+            <h1 className="m-0 font-heading text-[32px] font-bold tracking-tight text-black uppercase">
               Workspace Members
             </h1>
             <p className="mt-2 text-sm font-medium text-gray-500 uppercase">
@@ -68,7 +68,7 @@ function MembersPage() {
           </div>
         <button
           onClick={() => setIsInviteModalOpen(true)}
-          className="hover:bg-accent hover:shadow-brutal-md flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:text-black"
+          className="flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-md"
         >
           <UserPlus size={16} />
           Invite Member

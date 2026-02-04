@@ -37,30 +37,30 @@ export function CalendarHeader({
   return (
     <div className="flex items-center justify-between border-b border-black bg-white px-6 py-4">
       <div className="flex items-center gap-4">
-        <h2 className="font-heading w-64 text-xl font-bold text-black">{getRangeLabel()}</h2>
-        <div className="shadow-brutal-sm flex items-center border border-black bg-white">
+        <h2 className="w-64 font-heading text-xl font-bold text-black">{getRangeLabel()}</h2>
+        <div className="flex items-center border border-black bg-white shadow-brutal-sm">
           <button
             onClick={onPrev}
-            className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center border-r border-black transition-colors"
+            className="flex size-8 cursor-pointer items-center justify-center border-r border-black transition-colors hover:bg-accent"
           >
             <ChevronLeft size={18} />
           </button>
           <button
             onClick={onNext}
-            className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center transition-colors"
+            className="flex size-8 cursor-pointer items-center justify-center transition-colors hover:bg-accent"
           >
             <ChevronRight size={18} />
           </button>
         </div>
         <button
           onClick={onToday}
-          className="shadow-brutal-sm hover:bg-accent h-8 cursor-pointer border border-black bg-white px-3 text-xs font-bold uppercase transition-all hover:-translate-px hover:shadow-none"
+          className="h-8 cursor-pointer border border-black bg-white px-3 text-xs font-bold uppercase shadow-brutal-sm transition-all hover:-translate-px hover:bg-accent hover:shadow-none"
         >
           Today
         </button>
       </div>
 
-      <div className="shadow-brutal-sm flex items-center border border-black bg-white">
+      <div className="flex items-center border border-black bg-white shadow-brutal-sm">
         {(['day', 'week', 'month'] as ViewMode[]).map(mode => (
           <button
             key={mode}

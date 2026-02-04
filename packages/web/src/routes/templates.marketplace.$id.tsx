@@ -133,7 +133,7 @@ function TemplateDetailComponent() {
 
         <div className="flex flex-col gap-12 lg:flex-row lg:items-start">
           <div className="flex-1">
-            <h1 className="font-heading m-0 text-4xl font-black tracking-tighter text-black uppercase lg:text-6xl">
+            <h1 className="m-0 font-heading text-4xl font-black tracking-tighter text-black uppercase lg:text-6xl">
               {template.name}
             </h1>
             
@@ -143,7 +143,7 @@ function TemplateDetailComponent() {
                   <User size={14} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-gray-500 uppercase leading-none">Author</span>
+                  <span className="text-[10px] leading-none font-black text-gray-500 uppercase">Author</span>
                   <span className="text-sm font-black text-black uppercase">{template.author?.name || 'Kyte'}</span>
                 </div>
               </div>
@@ -153,7 +153,7 @@ function TemplateDetailComponent() {
                   <Calendar size={14} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-gray-500 uppercase leading-none">Published</span>
+                  <span className="text-[10px] leading-none font-black text-gray-500 uppercase">Published</span>
                   <span className="text-sm font-black text-black uppercase">
                     {new Date(template.approvedAt || template.createdAt).toLocaleDateString()}
                   </span>
@@ -166,7 +166,7 @@ function TemplateDetailComponent() {
                     <Tag size={14} />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-gray-500 uppercase leading-none">Category</span>
+                    <span className="text-[10px] leading-none font-black text-gray-500 uppercase">Category</span>
                     <span className="text-sm font-black text-black uppercase">{template.categories[0]}</span>
                   </div>
                 </div>
@@ -178,7 +178,7 @@ function TemplateDetailComponent() {
             </p>
 
             <div className="mt-12">
-              <h3 className="font-heading mb-6 flex items-center gap-2 text-xl font-black text-black uppercase">
+              <h3 className="mb-6 flex items-center gap-2 font-heading text-xl font-black text-black uppercase">
                 <Layout size={20} />
                 Structure Preview
               </h3>
@@ -187,7 +187,7 @@ function TemplateDetailComponent() {
                 {template.columnDefinitions.map((col, i) => (
                   <div 
                     key={i}
-                    className="shadow-brutal-sm flex flex-col border-2 border-black bg-white"
+                    className="flex flex-col border-2 border-black bg-white shadow-brutal-sm"
                   >
                     <div className="border-b-2 border-black bg-black p-3 text-[11px] font-black text-white uppercase">
                       {col.name}
@@ -204,7 +204,7 @@ function TemplateDetailComponent() {
 
             {template.defaultLabels && template.defaultLabels.length > 0 && (
               <div className="mt-12">
-                <h3 className="font-heading mb-6 flex items-center gap-2 text-xl font-black text-black uppercase">
+                <h3 className="mb-6 flex items-center gap-2 font-heading text-xl font-black text-black uppercase">
                   <Tag size={20} />
                   Included Labels
                 </h3>
@@ -212,7 +212,7 @@ function TemplateDetailComponent() {
                   {template.defaultLabels.map((label, i) => (
                     <div 
                       key={i}
-                      className="shadow-brutal-sm flex items-center gap-2 border-2 border-black px-4 py-2 text-[11px] font-black text-black uppercase transition-all"
+                      className="flex items-center gap-2 border-2 border-black px-4 py-2 text-[11px] font-black text-black uppercase shadow-brutal-sm transition-all"
                       style={{ backgroundColor: label.color }}
                     >
                       {label.name}
@@ -224,9 +224,9 @@ function TemplateDetailComponent() {
           </div>
 
           <div className="lg:sticky lg:top-8 lg:w-80">
-            <div className="shadow-brutal-lg border-2 border-black bg-white p-8">
-              <h4 className="font-heading mb-2 text-xs font-black text-gray-500 uppercase">Ready to start?</h4>
-              <p className="mb-8 text-sm font-bold text-black uppercase leading-tight">
+            <div className="border-2 border-black bg-white p-8 shadow-brutal-lg">
+              <h4 className="mb-2 font-heading text-xs font-black text-gray-500 uppercase">Ready to start?</h4>
+              <p className="mb-8 text-sm/tight font-bold text-black uppercase">
                 Click below to clone this template into one of your workspaces.
               </p>
               <Button

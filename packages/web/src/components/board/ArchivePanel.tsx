@@ -60,7 +60,7 @@ export function ArchivePanel({ isOpen, onClose, boardId }: ArchivePanelProps) {
 
       {/* Panel */}
       <aside 
-        className={`shadow-brutal-xl fixed top-0 right-0 z-50 h-screen w-80 border-l border-black bg-white transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 z-50 h-screen w-80 border-l border-black bg-white shadow-brutal-xl transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -73,7 +73,7 @@ export function ArchivePanel({ isOpen, onClose, boardId }: ArchivePanelProps) {
             </div>
             <button 
               onClick={onClose}
-              className="hover:bg-accent shadow-brutal-sm cursor-pointer border border-black p-1 transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-none"
+              className="cursor-pointer border border-black p-1 shadow-brutal-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-none"
             >
               <X size={16} />
             </button>
@@ -96,7 +96,7 @@ export function ArchivePanel({ isOpen, onClose, boardId }: ArchivePanelProps) {
                   {archive?.columns && archive.columns.length > 0 ? (
                     <div className="space-y-3">
                       {archive.columns.map((column) => (
-                        <div key={column.id} className="shadow-brutal-sm border border-black bg-white p-3">
+                        <div key={column.id} className="border border-black bg-white p-3 shadow-brutal-sm">
                           <div className="flex items-start justify-between">
                             <div className="overflow-hidden">
                               <p className="truncate text-xs font-bold uppercase">{column.name}</p>
@@ -151,7 +151,7 @@ export function ArchivePanel({ isOpen, onClose, boardId }: ArchivePanelProps) {
                   {archive?.tasks && archive.tasks.length > 0 ? (
                     <div className="space-y-3">
                       {archive.tasks.map((task) => (
-                        <div key={task.id} className="shadow-brutal-sm border border-black bg-white p-3">
+                        <div key={task.id} className="border border-black bg-white p-3 shadow-brutal-sm">
                           <div className="flex items-start justify-between">
                             <div className="overflow-hidden">
                               <p className="truncate text-xs font-bold uppercase">{task.title}</p>

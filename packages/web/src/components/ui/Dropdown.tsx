@@ -91,7 +91,7 @@ export function Dropdown({ trigger, items, position = 'bottom-right', onOpenChan
       </div>
       {isOpen && createPortal(
         <div 
-          className={`bg-surface shadow-brutal-md absolute z-10000 min-w-[200px] rounded-none border border-black p-1 transition-opacity duration-100 ${position}`}
+          className={`absolute z-10000 min-w-[200px] rounded-none border border-black bg-surface p-1 shadow-brutal-md transition-opacity duration-100 ${position}`}
           ref={menuRef}
           style={{ 
             top: coords.top, 
@@ -106,7 +106,7 @@ export function Dropdown({ trigger, items, position = 'bottom-right', onOpenChan
           {items.map((item, index) => (
             <div
               key={index}
-              className={`font-heading hover:bg-accent hover:shadow-brutal-md flex cursor-pointer items-center gap-2.5 p-2.5 text-[13px] font-extrabold uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 ${item.variant === 'danger' ? 'text-text-danger hover:bg-text-danger hover:text-white' : 'text-black'}`}
+              className={`flex cursor-pointer items-center gap-2.5 p-2.5 font-heading text-[13px] font-extrabold uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:shadow-brutal-md ${item.variant === 'danger' ? 'text-text-danger hover:bg-text-danger hover:text-white' : 'text-black'}`}
               onClick={() => {
                 item.onClick()
                 setIsOpen(false)

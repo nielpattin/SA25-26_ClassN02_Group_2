@@ -38,7 +38,7 @@ function DashboardComponent() {
 
   if (isSessionLoading) {
     return (
-      <div className="bg-canvas min-h-screen p-12">
+      <div className="min-h-screen bg-canvas p-12">
         <div className="font-heading font-extrabold text-black uppercase">Loading...</div>
       </div>
     )
@@ -65,12 +65,12 @@ function DashboardComponent() {
           <BoardsDashboard />
         </DashboardLayout>
       ) : (
-        <div className="bg-canvas min-h-screen p-12">
+        <div className="min-h-screen bg-canvas p-12">
           <header className="mb-10 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex flex-col gap-2">
                 <Link to="/" className="text-sm font-extrabold text-black uppercase hover:underline">← Home</Link>
-                <h1 className="font-heading m-0 text-[32px] font-bold tracking-tight text-black uppercase">Workspace</h1>
+                <h1 className="m-0 font-heading text-[32px] font-bold tracking-tight text-black uppercase">Workspace</h1>
               </div>
             </div>
           </header>
@@ -78,7 +78,7 @@ function DashboardComponent() {
             <p className="m-0 text-lg font-bold text-black uppercase">Please log in to view your boards</p>
             <button 
               onClick={() => setShowAuthModal(true)} 
-              className="hover:bg-accent hover:shadow-brutal-md rounded-none border border-black bg-black px-6 py-3 font-extrabold tracking-wider text-white uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:text-black"
+              className="rounded-none border border-black bg-black px-6 py-3 font-extrabold tracking-wider text-white uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-md"
             >
               Login / Sign Up
             </button>
@@ -137,14 +137,14 @@ function BoardsDashboard() {
   })
 
   if (isWorkspaceLoading || (isBoardsLoading && currentWorkspace)) {
-     return <div className="font-heading p-12 font-extrabold text-black uppercase">Loading workspace...</div>
+     return <div className="p-12 font-heading font-extrabold text-black uppercase">Loading workspace...</div>
   }
 
   return (
     <div className="p-12 lg:px-16">
       <header className="mb-10 flex items-center justify-between">
         <div>
-          <h1 className="font-heading m-0 text-[32px] font-bold tracking-tight text-black uppercase">
+          <h1 className="m-0 font-heading text-[32px] font-bold tracking-tight text-black uppercase">
             {currentWorkspace?.personal ? 'My Boards' : `${currentWorkspace?.name} Boards`}
           </h1>
           <p className="mt-2 text-sm font-medium text-gray-500 uppercase">
@@ -155,7 +155,7 @@ function BoardsDashboard() {
           <Link
             to="/templates/marketplace"
             search={{ q: '', category: '', sort: 'newest', page: 1 }}
-            className="hover:bg-accent hover:shadow-brutal-md flex items-center gap-2 rounded-none border border-black bg-white px-4 py-2 text-sm font-extrabold text-black uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5"
+            className="flex items-center gap-2 rounded-none border border-black bg-white px-4 py-2 text-sm font-extrabold text-black uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:shadow-brutal-md"
           >
             <ShoppingBag size={16} />
             Templates
@@ -170,13 +170,13 @@ function BoardsDashboard() {
           placeholder="Add a new board..."
           value={newBoardName}
           onChange={(e) => setNewBoardName(e.target.value)}
-          className="font-heading shadow-brutal-md focus:bg-accent flex-1 rounded-none border border-black bg-white px-4 py-3 text-sm font-extrabold tracking-wider text-black uppercase transition-all outline-none focus:-translate-x-0.5 focus:-translate-y-0.5"
+          className="flex-1 rounded-none border border-black bg-white px-4 py-3 font-heading text-sm font-extrabold tracking-wider text-black uppercase shadow-brutal-md transition-all outline-none focus:-translate-x-0.5 focus:-translate-y-0.5 focus:bg-accent"
           onKeyDown={(e) => e.key === 'Enter' && newBoardName && createBoard.mutate(newBoardName)}
         />
         <button
           onClick={() => newBoardName && createBoard.mutate(newBoardName)}
           disabled={createBoard.isPending}
-          className="hover:bg-accent hover:shadow-brutal-md flex cursor-pointer items-center justify-center rounded-none border border-black bg-black px-6 text-white transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:text-black disabled:opacity-50"
+          className="flex cursor-pointer items-center justify-center rounded-none border border-black bg-black px-6 text-white transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-md disabled:opacity-50"
         >
           {createBoard.isPending ? 'Adding...' : <Plus size={16} />}
         </button>
@@ -188,9 +188,9 @@ function BoardsDashboard() {
             key={board.id}
             to="/board/$boardId"
             params={{ boardId: board.id.toString() }}
-            className="group bg-surface shadow-brutal-md hover:bg-accent hover:shadow-brutal-xl flex min-h-40 flex-col justify-between border border-black p-8 transition-all hover:-translate-x-1 hover:-translate-y-1"
+            className="group flex min-h-40 flex-col justify-between border border-black bg-surface p-8 shadow-brutal-md transition-all hover:-translate-x-1 hover:-translate-y-1 hover:bg-accent hover:shadow-brutal-xl"
           >
-            <h3 className="font-heading m-0 text-lg font-extrabold text-black uppercase">{board.name}</h3>
+            <h3 className="m-0 font-heading text-lg font-extrabold text-black uppercase">{board.name}</h3>
             <div className="flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
               <button
                 onClick={(e) => {
@@ -207,7 +207,7 @@ function BoardsDashboard() {
           </Link>
         ))}
         {(!boards || (Array.isArray(boards) && boards.length === 0)) && (
-          <div className="text-text-subtle col-span-full border border-dashed border-black bg-black/5 p-12 text-center font-bold uppercase">
+          <div className="col-span-full border border-dashed border-black bg-black/5 p-12 text-center font-bold text-text-subtle uppercase">
             No boards found in this workspace. Start by adding one above.
           </div>
         )}

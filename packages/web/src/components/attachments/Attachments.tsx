@@ -65,8 +65,8 @@ function AttachmentItem({ attachment, onDelete, onDownload }: AttachmentItemProp
   }
 
   return (
-    <div className="group shadow-brutal-sm hover:shadow-brutal-md flex items-center gap-4 border border-black bg-white p-3 transition-all">
-      <div className="bg-canvas flex size-10 shrink-0 items-center justify-center border border-black text-black">
+    <div className="group flex items-center gap-4 border border-black bg-white p-3 shadow-brutal-sm transition-all hover:shadow-brutal-md">
+      <div className="flex size-10 shrink-0 items-center justify-center border border-black bg-canvas text-black">
         <FileIcon type={iconType} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -176,8 +176,8 @@ function FileUpload({ onUpload, isUploading, uploadProgress, uploadError, onClea
       <div
         className={`relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed p-4 transition-all ${
           isDragging
-            ? 'bg-accent border-black'
-            : 'bg-surface-overlay hover:bg-active border-black/30 hover:border-black'
+            ? 'border-black bg-accent'
+            : 'border-black/30 bg-surface-overlay hover:border-black hover:bg-active'
         } ${isUploading ? 'pointer-events-none opacity-60' : ''}`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -211,7 +211,7 @@ function FileUpload({ onUpload, isUploading, uploadProgress, uploadError, onClea
       {uploadError && (
         <div className="flex items-center justify-between border border-[#E74C3C] bg-[#E74C3C]/10 p-2">
           <span className="text-[12px] font-bold text-[#E74C3C]">{uploadError.message}</span>
-          <button onClick={onClearError} className="hover:text-error-border cursor-pointer text-[#E74C3C]">
+          <button onClick={onClearError} className="cursor-pointer text-[#E74C3C] hover:text-error-border">
             <X size={14} />
           </button>
         </div>
@@ -278,7 +278,7 @@ export function AttachmentSection({
       </div>
 
       {isCreatingLink && (
-        <div className="shadow-brutal-xl mt-2 flex flex-col gap-4 border border-black bg-white p-5">
+        <div className="mt-2 flex flex-col gap-4 border border-black bg-white p-5 shadow-brutal-xl">
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}

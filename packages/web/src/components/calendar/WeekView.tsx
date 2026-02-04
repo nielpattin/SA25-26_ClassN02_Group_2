@@ -50,7 +50,7 @@ export function WeekView({ currentDate, tasks, columns, onTaskClick, onTaskDragS
   }, [tasks])
 
   return (
-    <div className="shadow-brutal-lg flex h-full flex-col border border-black bg-white">
+    <div className="flex h-full flex-col border border-black bg-white shadow-brutal-lg">
       <div className="grid flex-1 grid-cols-7 overflow-hidden bg-black">
         {days.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd')
@@ -71,7 +71,7 @@ export function WeekView({ currentDate, tasks, columns, onTaskClick, onTaskDragS
                 isCurrentToday ? 'bg-accent/5' : ''
               } ${creatingDate && isSameDay(creatingDate, day) ? 'bg-accent/10' : ''}`}
             >
-              <div className={`flex flex-col border-b border-black pb-2 text-center ${isCurrentToday ? 'bg-accent -mx-2 -mt-2 mb-2 p-1' : ''}`}>
+              <div className={`flex flex-col border-b border-black pb-2 text-center ${isCurrentToday ? '-mx-2 -mt-2 mb-2 bg-accent p-1' : ''}`}>
                 <span className="text-[10px] font-black text-black/60 uppercase">
                   {format(day, 'EEE')}
                 </span>
@@ -90,7 +90,7 @@ export function WeekView({ currentDate, tasks, columns, onTaskClick, onTaskDragS
                     <input
                       ref={inputRef}
                       type="text"
-                      className="shadow-brutal-sm w-full border border-black bg-white p-2 text-xs font-bold outline-none"
+                      className="w-full border border-black bg-white p-2 text-xs font-bold shadow-brutal-sm outline-none"
                       placeholder="Task title..."
                       value={quickCreateTitle}
                       onChange={e => setQuickCreateTitle(e.target.value)}

@@ -145,7 +145,7 @@ function SearchModalContent({ close, boardContext }: SearchModalContentProps) {
     >
       <div
         ref={modalRef}
-        className="bg-surface shadow-brutal-xl animate-in fade-in zoom-in-95 flex w-full max-w-2xl flex-col rounded-none border border-black duration-150"
+        className="animate-in fade-in zoom-in-95 flex w-full max-w-2xl flex-col rounded-none border border-black bg-surface shadow-brutal-xl duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative border-b border-black">
@@ -161,7 +161,7 @@ function SearchModalContent({ close, boardContext }: SearchModalContentProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="font-heading w-full rounded-none border-none bg-transparent py-4 pr-4 pl-12 text-sm font-extrabold tracking-wider text-black uppercase outline-none placeholder:text-gray-400 placeholder:normal-case"
+            className="w-full rounded-none border-none bg-transparent py-4 pr-4 pl-12 font-heading text-sm font-extrabold tracking-wider text-black uppercase outline-none placeholder:text-gray-400 placeholder:normal-case"
             aria-label="Search query"
           />
           <kbd className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 rounded-none border border-black bg-black/5 px-2 py-1 text-xs font-bold text-gray-500">
@@ -283,7 +283,7 @@ function SearchResults({ query, onNavigate, selectedIndex, onItemsChange, boardI
 
   if (isLoading) {
     return (
-      <div className="font-heading p-6 text-center font-extrabold text-black uppercase">
+      <div className="p-6 text-center font-heading font-extrabold text-black uppercase">
         Searching...
       </div>
     )

@@ -46,7 +46,7 @@ export function SearchableSelect({
         ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="font-body shadow-brutal-sm hover:shadow-brutal-md flex w-full cursor-pointer items-center justify-between rounded-none border border-black bg-white px-3 py-2.5 text-left text-[13px] font-bold text-black transition-all outline-none hover:-translate-x-0.5 hover:-translate-y-0.5"
+        className="flex w-full cursor-pointer items-center justify-between rounded-none border border-black bg-white px-3 py-2.5 text-left font-body text-[13px] font-bold text-black shadow-brutal-sm transition-all outline-none hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-md"
       >
         <div className="flex items-center gap-2 overflow-hidden">
           <span className="truncate">{selectedOption?.name || placeholder}</span>
@@ -78,7 +78,7 @@ export function SearchableSelect({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="font-body w-full rounded-none border border-black bg-white py-2 pr-3 pl-9 text-[12px] font-bold transition-all outline-none focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                className="w-full rounded-none border border-black bg-white py-2 pr-3 pl-9 font-body text-[12px] font-bold transition-all outline-none focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
               />
             </div>
           </div>
@@ -98,7 +98,7 @@ export function SearchableSelect({
                     setIsOpen(false)
                     setSearch('')
                   }}
-                  className={`font-body group hover:bg-accent hover:shadow-brutal-sm flex w-full items-center justify-between border border-transparent px-3 py-2 text-left text-[12px] font-bold transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:border-black ${value === option.id ? 'shadow-inner-brutal bg-active border-black' : 'bg-white'}`}
+                  className={`group flex w-full items-center justify-between border border-transparent px-3 py-2 text-left font-body text-[12px] font-bold transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:border-black hover:bg-accent hover:shadow-brutal-sm ${value === option.id ? 'shadow-inner-brutal border-black bg-active' : 'bg-white'}`}
                 >
                   <span className="truncate">{option.name}</span>
                   {option.badge && (

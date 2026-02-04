@@ -54,8 +54,8 @@ function UserDetailComponent() {
       await action()
       setActionMessage({ type: 'success', text: successMessage })
       refetch()
-    } catch (err: any) {
-      setActionMessage({ type: 'error', text: err.message || 'Action failed' })
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err instanceof Error ? err.message : 'Action failed' })
     }
   }
 
@@ -128,10 +128,10 @@ function UserDetailComponent() {
             <ArrowLeft size={14} className="mr-1" />
             Back to User Lookup
           </Link>
-          <h1 className="font-heading text-4xl font-black uppercase tracking-tighter">
+          <h1 className="font-heading text-4xl font-black tracking-tighter uppercase">
             User Detail
           </h1>
-          <p className="mt-2 text-sm font-bold text-gray-500 uppercase tracking-wide">
+          <p className="mt-2 text-sm font-bold tracking-wide text-gray-500 uppercase">
             View account information and perform assistance actions
           </p>
         </div>
@@ -165,7 +165,7 @@ function UserDetailComponent() {
                   <span className="text-xl font-black">{user.name[0]?.toUpperCase() || 'U'}</span>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Name</p>
+                  <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Name</p>
                   <p className="text-lg font-black">{user.name}</p>
                 </div>
               </div>
@@ -176,16 +176,16 @@ function UserDetailComponent() {
                   <Mail size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Email</p>
+                  <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Email</p>
                   <p className="text-sm font-bold">{user.email}</p>
                   <div className="mt-1 flex items-center gap-2">
                     {user.emailVerified ? (
-                      <span className="inline-flex items-center gap-1 border border-black bg-success px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-brutal-xs">
+                      <span className="shadow-brutal-xs inline-flex items-center gap-1 border border-black bg-success px-2 py-0.5 text-[10px] font-black text-black uppercase">
                         <CheckCircle size={10} />
                         Verified
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 border border-black bg-warning px-2 py-0.5 text-[10px] font-black uppercase text-black shadow-brutal-xs">
+                      <span className="shadow-brutal-xs inline-flex items-center gap-1 border border-black bg-warning px-2 py-0.5 text-[10px] font-black text-black uppercase">
                         <XCircle size={10} />
                         Unverified
                       </span>
@@ -200,7 +200,7 @@ function UserDetailComponent() {
                   <Calendar size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Created</p>
+                  <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Created</p>
                   <p className="text-sm font-bold">{new Date(user.createdAt).toLocaleDateString()}</p>
                   <p className="text-xs text-gray-500">{new Date(user.createdAt).toLocaleTimeString()}</p>
                 </div>
@@ -212,20 +212,20 @@ function UserDetailComponent() {
                   <ShieldCheck size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Status</p>
+                  <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Status</p>
                   <div className="mt-1 flex flex-wrap gap-2">
                     {user.adminRole ? (
-                      <span className="inline-flex items-center gap-1 border border-black bg-black px-2 py-1 text-[10px] font-black uppercase text-white shadow-brutal-xs">
+                      <span className="shadow-brutal-xs inline-flex items-center gap-1 border border-black bg-black px-2 py-1 text-[10px] font-black text-white uppercase">
                         <ShieldCheck size={12} />
                         {user.adminRole.replace('_', ' ')}
                       </span>
                     ) : (
-                      <span className="inline-block border border-black bg-white px-2 py-1 text-[10px] font-black uppercase text-black shadow-brutal-xs">
+                      <span className="shadow-brutal-xs inline-block border border-black bg-white px-2 py-1 text-[10px] font-black text-black uppercase">
                         Regular User
                       </span>
                     )}
                     {isDeleted && (
-                      <span className="inline-flex items-center gap-1 border border-black bg-error px-2 py-1 text-[10px] font-black uppercase text-white shadow-brutal-xs">
+                      <span className="shadow-brutal-xs inline-flex items-center gap-1 border border-black bg-error px-2 py-1 text-[10px] font-black text-white uppercase">
                         <Trash2 size={12} />
                         Scheduled for Deletion
                       </span>
@@ -247,19 +247,19 @@ function UserDetailComponent() {
               <div className="border-2 border-black bg-gray-50 p-4 text-center shadow-brutal-sm">
                 <Briefcase size={24} className="mx-auto mb-2 text-gray-400" />
                 <p className="text-2xl font-black">{user.workspacesCount}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Workspaces</p>
+                <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Workspaces</p>
               </div>
               <div className="border-2 border-black bg-gray-50 p-4 text-center shadow-brutal-sm">
                 <LayoutGrid size={24} className="mx-auto mb-2 text-gray-400" />
                 <p className="text-2xl font-black">{user.boardsCount}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Boards</p>
+                <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Boards</p>
               </div>
               <div className="border-2 border-black bg-gray-50 p-4 text-center shadow-brutal-sm">
                 <Calendar size={24} className="mx-auto mb-2 text-gray-400" />
                 <p className="text-sm font-black">
                   {user.lastActive ? new Date(user.lastActive).toLocaleDateString() : 'Never'}
                 </p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Last Active</p>
+                <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Last Active</p>
               </div>
             </div>
           </div>
@@ -273,7 +273,7 @@ function UserDetailComponent() {
             {/* Support Actions */}
             {!isAdminUser && (
               <div className="space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500">Support Actions</h3>
+                <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Support Actions</h3>
                 
                 <Button
                   variant="secondary"
@@ -308,7 +308,7 @@ function UserDetailComponent() {
             {/* Super Admin Actions */}
             {!isAdminUser && (
               <div className="mt-6 space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500">Super Admin Actions</h3>
+                <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Super Admin Actions</h3>
                 
                 {isDeleted && (
                   <Button

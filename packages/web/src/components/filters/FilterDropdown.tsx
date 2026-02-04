@@ -86,7 +86,7 @@ export function FilterDropdown({ trigger, children, isOpen, onOpenChange }: Filt
         createPortal(
           <div
             ref={menuRef}
-            className="bg-surface shadow-brutal-md absolute z-10000 min-w-[200px] border border-black p-2 transition-opacity duration-100"
+            className="absolute z-10000 min-w-[200px] border border-black bg-surface p-2 shadow-brutal-md transition-opacity duration-100"
             style={{
               top: coords.top,
               left: coords.left,

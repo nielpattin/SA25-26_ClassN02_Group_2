@@ -68,14 +68,14 @@ function RecoveryHub() {
   }
 
   return (
-    <div className="bg-canvas flex min-h-screen flex-col items-center justify-center p-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-canvas p-6">
       <div className="w-full max-w-xl">
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-6 flex items-center gap-3">
             <Shield className="text-black" size={32} />
             <span className="font-heading text-2xl font-bold tracking-tight text-black">KYTE</span>
           </div>
-          <h1 className="font-heading mb-2 text-3xl font-bold tracking-tight text-black">
+          <h1 className="mb-2 font-heading text-3xl font-bold tracking-tight text-black">
             Account Recovery
           </h1>
           <p className="text-sm font-medium text-gray-500">
@@ -105,7 +105,7 @@ function RecoveryHub() {
             <button
               onClick={handleRestore}
               disabled={isRestoring}
-              className="hover:shadow-brutal-md group flex items-center gap-4 border border-black bg-black p-4 text-left transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+              className="group flex items-center gap-4 border border-black bg-black p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-brutal-md disabled:cursor-not-allowed disabled:opacity-50"
             >
               <div className="flex size-10 shrink-0 items-center justify-center border border-white/20 bg-white/10">
                 <RefreshCw className={`text-white ${isRestoring ? 'animate-spin' : ''}`} size={20} />
@@ -123,7 +123,7 @@ function RecoveryHub() {
             <button
               onClick={handleExport}
               disabled={isExporting}
-              className="hover:shadow-brutal-md group flex items-center gap-4 border border-black bg-white p-4 text-left transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+              className="group flex items-center gap-4 border border-black bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-brutal-md disabled:cursor-not-allowed disabled:opacity-50"
             >
               <div className="flex size-10 shrink-0 items-center justify-center border border-black/10 bg-gray-50">
                 <Download className={`text-black ${isExporting ? 'animate-bounce' : ''}`} size={20} />

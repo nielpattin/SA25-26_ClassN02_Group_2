@@ -143,7 +143,7 @@ export function AdminSidebar() {
         
         <button
           onClick={handleSignOut}
-          className="hover:bg-accent flex w-full items-center justify-center gap-2 border border-black bg-white py-2 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+          className="flex w-full items-center justify-center gap-2 border border-black bg-white py-2 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
         >
           <LogOut size={14} />
           Sign Out

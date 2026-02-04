@@ -45,7 +45,7 @@ export function UserHoverCard({ member, anchorRect, isOpen }: UserHoverCardProps
 
   return createPortal(
     <div
-      className="shadow-brutal-md animate-in fade-in z-30000 flex h-[100px] w-[240px] flex-col border border-black bg-white p-4 transition-opacity duration-150"
+      className="animate-in fade-in z-30000 flex h-[100px] w-[240px] flex-col border border-black bg-white p-4 shadow-brutal-md transition-opacity duration-150"
       style={{
         position: 'absolute',
         top: `${position.top}px`,
@@ -59,11 +59,11 @@ export function UserHoverCard({ member, anchorRect, isOpen }: UserHoverCardProps
           size="lg"
         />
         <div className="flex flex-1 flex-col overflow-hidden">
-          <span className="font-heading truncate text-[14px] font-extrabold tracking-tight text-black uppercase">
+          <span className="truncate font-heading text-[14px] font-extrabold tracking-tight text-black uppercase">
             {member.userName || 'Unknown User'}
           </span>
           <div className="mt-1 flex items-center gap-2">
-            <span className="bg-accent border border-black px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-black uppercase">
+            <span className="border border-black bg-accent px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-black uppercase">
               {member.role}
             </span>
           </div>

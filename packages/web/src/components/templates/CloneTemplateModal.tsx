@@ -44,21 +44,21 @@ export function CloneTemplateModal({ template, isOpen, onClose }: CloneTemplateM
         onClick={onClose}
       />
       
-      <div className="bg-canvas shadow-brutal-xl relative w-full max-w-md border-2 border-black p-8 transition-all">
+      <div className="relative w-full max-w-md border-2 border-black bg-canvas p-8 shadow-brutal-xl transition-all">
         <button 
           onClick={onClose}
-          className="hover:bg-accent hover:shadow-brutal-sm absolute top-4 right-4 flex h-8 w-8 items-center justify-center border border-black bg-white transition-all active:translate-0"
+          className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center border border-black bg-white transition-all hover:bg-accent hover:shadow-brutal-sm active:translate-0"
         >
           <X size={18} />
         </button>
 
-        <h2 className="font-heading mb-6 text-2xl font-black tracking-tight text-black uppercase">
+        <h2 className="mb-6 font-heading text-2xl font-black tracking-tight text-black uppercase">
           Clone Template
         </h2>
 
         <div className="space-y-6">
           <div>
-            <label className="font-heading mb-2 block text-[10px] font-black text-black uppercase">
+            <label className="mb-2 block font-heading text-[10px] font-black text-black uppercase">
               Board Name
             </label>
             <Input 
@@ -69,7 +69,7 @@ export function CloneTemplateModal({ template, isOpen, onClose }: CloneTemplateM
           </div>
 
           <div>
-            <label className="font-heading mb-2 block text-[10px] font-black text-black uppercase">
+            <label className="mb-2 block font-heading text-[10px] font-black text-black uppercase">
               Target Workspace
             </label>
             <Select 

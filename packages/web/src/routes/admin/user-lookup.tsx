@@ -44,10 +44,10 @@ function UserLookupComponent() {
   return (
     <div className="p-12">
       <header className="mb-12">
-        <h1 className="font-heading mb-2 text-4xl font-black uppercase tracking-tighter">
+        <h1 className="mb-2 font-heading text-4xl font-black tracking-tighter uppercase">
           User Lookup
         </h1>
-        <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">
+        <p className="text-sm font-bold tracking-wide text-gray-500 uppercase">
           Search for users by email, name, or ID
         </p>
       </header>
@@ -102,11 +102,11 @@ function UserLookupComponent() {
             <table className="w-full border-collapse text-left">
               <thead className="border-b border-black bg-black text-white">
                 <tr>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">User</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Email</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Role</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Last Active</th>
+                  <th className="px-6 py-4 text-[10px] font-black tracking-widest uppercase">User</th>
+                  <th className="px-6 py-4 text-[10px] font-black tracking-widest uppercase">Email</th>
+                  <th className="px-6 py-4 text-[10px] font-black tracking-widest uppercase">Role</th>
+                  <th className="px-6 py-4 text-[10px] font-black tracking-widest uppercase">Status</th>
+                  <th className="px-6 py-4 text-[10px] font-black tracking-widest uppercase">Last Active</th>
                 </tr>
               </thead>
               <tbody>
@@ -124,7 +124,7 @@ function UserLookupComponent() {
                   users.map((user) => (
                     <tr
                       key={user.id}
-                      className="border-b border-black last:border-0 hover:bg-gray-50 transition-colors"
+                      className="border-b border-black transition-colors last:border-0 hover:bg-gray-50"
                     >
                       <td className="px-6 py-4">
                         <Link 
@@ -147,24 +147,24 @@ function UserLookupComponent() {
                       </td>
                       <td className="px-6 py-4">
                         {user.adminRole ? (
-                          <span className="inline-flex items-center gap-1 border border-black bg-black px-2 py-1 text-[10px] font-black uppercase text-white shadow-brutal-xs">
+                          <span className="shadow-brutal-xs inline-flex items-center gap-1 border border-black bg-black px-2 py-1 text-[10px] font-black text-white uppercase">
                             <ShieldCheck size={12} />
                             {user.adminRole.replace('_', ' ')}
                           </span>
                         ) : (
-                          <span className="inline-block border border-black bg-white px-2 py-1 text-[10px] font-black uppercase text-black shadow-brutal-xs">
+                          <span className="shadow-brutal-xs inline-block border border-black bg-white px-2 py-1 text-[10px] font-black text-black uppercase">
                             User
                           </span>
                         )}
                       </td>
                       <td className="px-6 py-4">
                         {user.deletedAt ? (
-                          <span className="inline-flex items-center gap-1 border border-black bg-error px-2 py-1 text-[10px] font-black uppercase text-white shadow-brutal-xs">
+                          <span className="shadow-brutal-xs inline-flex items-center gap-1 border border-black bg-error px-2 py-1 text-[10px] font-black text-white uppercase">
                             <Trash2 size={12} />
                             Deleted
                           </span>
                         ) : (
-                          <span className="inline-block border border-black bg-success px-2 py-1 text-[10px] font-black uppercase text-black shadow-brutal-xs">
+                          <span className="shadow-brutal-xs inline-block border border-black bg-success px-2 py-1 text-[10px] font-black text-black uppercase">
                             Active
                           </span>
                         )}
@@ -218,7 +218,7 @@ function UserLookupComponent() {
       {searchQuery.length < 2 && !isLoading && (
         <div className="flex flex-col items-center justify-center py-20">
           <Search size={64} className="mb-6 text-gray-200" />
-          <p className="text-lg font-black uppercase text-gray-400">Enter a search term to find users</p>
+          <p className="text-lg font-black text-gray-400 uppercase">Enter a search term to find users</p>
         </div>
       )}
     </div>

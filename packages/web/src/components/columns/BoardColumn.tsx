@@ -110,13 +110,13 @@ export const BoardColumn = memo(function BoardColumn({
 
   return (
     <div
-      className={`relative flex max-h-full w-(--board-column-width,300px) min-w-(--board-column-width,300px) flex-col rounded-none border p-4 ${isDragging ? 'translate-0! border-dashed border-black/20 bg-black/5 opacity-100 shadow-none!' : 'bg-surface shadow-brutal-lg -translate-x-px -translate-y-px border-black'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
+      className={`relative flex max-h-full w-(--board-column-width,300px) min-w-(--board-column-width,300px) flex-col rounded-none border p-4 ${isDragging ? 'translate-0! border-dashed border-black/20 bg-black/5 opacity-100 shadow-none!' : '-translate-x-px -translate-y-px border-black bg-surface shadow-brutal-lg'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
       data-column-id={column.id}
       data-role="column"
     >
       <div className={`flex min-h-0 flex-1 flex-col ${isDragging ? 'invisible' : ''}`}>
         <h4
-          className="font-heading relative mb-5 flex shrink-0 cursor-grab items-center gap-2.5 border-b border-black p-2 text-(length:--column-header-size,14px) font-extrabold tracking-widest text-black uppercase"
+          className="relative mb-5 flex shrink-0 cursor-grab items-center gap-2.5 border-b border-black p-2 font-heading text-(length:--column-header-size,14px) font-extrabold tracking-widest text-black uppercase"
           onMouseDown={onDragStart}
           data-role="column-header"
         >
@@ -147,7 +147,7 @@ export const BoardColumn = memo(function BoardColumn({
               {column.name}
             </span>
           )}
-          <span className="bg-accent ml-auto border border-black px-2 py-0.5 text-[11px] font-extrabold">
+          <span className="ml-auto border border-black bg-accent px-2 py-0.5 text-[11px] font-extrabold">
             {cards.length}
           </span>
           <div onMouseDown={e => e.stopPropagation()} className="flex items-center">
@@ -175,7 +175,7 @@ export const BoardColumn = memo(function BoardColumn({
             />
           ))}
           {cards.length === 0 && (
-            <div className="text-text-subtle border border-dashed border-black bg-black/5 p-4 text-center text-[12px] font-bold uppercase">
+            <div className="border border-dashed border-black bg-black/5 p-4 text-center text-[12px] font-bold text-text-subtle uppercase">
               {isFiltering ? 'No tasks match filters' : 'No items'}
             </div>
           )}
@@ -184,7 +184,7 @@ export const BoardColumn = memo(function BoardColumn({
           {isAddingTask ? (
             <Input
               ref={inputRef}
-              className="shadow-brutal-md font-heading text-[13px] font-extrabold tracking-wider uppercase"
+              className="font-heading text-[13px] font-extrabold tracking-wider uppercase shadow-brutal-md"
               placeholder="What needs to be done?"
               value={newTaskTitle}
               onChange={e => setNewTaskTitle(e.target.value)}

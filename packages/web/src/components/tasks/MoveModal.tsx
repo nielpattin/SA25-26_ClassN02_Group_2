@@ -80,11 +80,11 @@ export function MoveModal({ boards, currentBoardId, currentColumnId, cardId, onM
 
   return createPortal(
     <div className="fixed inset-0 z-11000 flex items-center justify-center bg-black/80" onClick={onCancel}>
-      <div className="shadow-brutal-xl flex w-[90%] max-w-100 flex-col rounded-none border border-black bg-white" onClick={(e) => e.stopPropagation()}>
+      <div className="flex w-[90%] max-w-100 flex-col rounded-none border border-black bg-white shadow-brutal-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-black px-6 py-4">
-          <h2 className="font-heading m-0 text-[18px] font-extrabold text-black uppercase">Move Card</h2>
+          <h2 className="m-0 font-heading text-[18px] font-extrabold text-black uppercase">Move Card</h2>
           <button 
-            className="hover:bg-text-danger hover:shadow-brutal-sm flex h-8 w-8 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:text-white active:translate-0 active:shadow-none" 
+            className="flex h-8 w-8 cursor-pointer items-center justify-center border border-black bg-white text-black transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-text-danger hover:text-white hover:shadow-brutal-sm active:translate-0 active:shadow-none" 
             onClick={onCancel}
           >
             <X size={16} />

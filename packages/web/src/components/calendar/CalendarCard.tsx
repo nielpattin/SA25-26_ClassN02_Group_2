@@ -49,7 +49,7 @@ export const CalendarCard = memo(function CalendarCard({ task, onClick, onDragSt
     <div
       onClick={handleClick}
       onMouseDown={handleMouseDown}
-      className={`group shadow-brutal-sm flex cursor-pointer flex-col border border-black transition-all hover:translate-px hover:shadow-none ${styles.card} ${
+      className={`group flex cursor-pointer flex-col border border-black shadow-brutal-sm transition-all hover:translate-px hover:shadow-none ${styles.card} ${
         isOverdue ? 'bg-[#E74C3C] text-white' : isDueSoon ? 'bg-accent text-black' : 'bg-white text-black'
       }`}
     >

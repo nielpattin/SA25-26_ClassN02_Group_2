@@ -42,7 +42,7 @@ export function LabelSection({ cardLabels = [], allLabels, onToggle, onAdd, onDe
           return (
             <div key={label.id} className="group relative flex">
               <button
-                className={`${labelPillBase} ${isActive ? 'shadow-brutal-sm opacity-100' : 'opacity-60 shadow-none hover:opacity-100'} ${textColor}`}
+                className={`${labelPillBase} ${isActive ? 'opacity-100 shadow-brutal-sm' : 'opacity-60 shadow-none hover:opacity-100'} ${textColor}`}
                 style={{ '--label-color': label.color } as React.CSSProperties}
                 onClick={() => onToggle(label.id)}
               >
@@ -67,7 +67,7 @@ export function LabelSection({ cardLabels = [], allLabels, onToggle, onAdd, onDe
       </div>
 
       {isCreating && (
-        <div className="shadow-brutal-xl mt-2 flex flex-col gap-4 border border-black bg-white p-5">
+        <div className="mt-2 flex flex-col gap-4 border border-black bg-white p-5 shadow-brutal-xl">
           <Input
             value={newLabelName}
             onChange={(e) => setNewLabelName(e.target.value)}

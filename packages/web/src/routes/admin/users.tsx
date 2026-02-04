@@ -1,11 +1,12 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAdminUsers, usePromoteUser, useDemoteUser } from '../../hooks/useAdmin'
+import type { AdminRole } from '@kyte/server/src/modules/admin/admin.model'
 import { Button } from '../../components/ui/Button'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { Select } from '../../components/ui/Select'
 import { authClient } from '../../api/auth'
-import { ShieldCheck, UserMinus, UserPlus, RefreshCw, AlertCircle } from 'lucide-react'
+import { ShieldCheck, UserMinus, RefreshCw, AlertCircle } from 'lucide-react'
 
 export const Route = createFileRoute('/admin/users')({
   beforeLoad: async () => {
@@ -35,8 +36,8 @@ function AdminUsersComponent() {
       setErrorMessage(null)
       await demoteMutation.mutateAsync(demoteUserId)
       setDemoteUserId(null)
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to demote user')
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to demote user')
     }
   }
 
@@ -44,10 +45,10 @@ function AdminUsersComponent() {
     if (!promoteUserId) return
     try {
       setErrorMessage(null)
-      await promoteMutation.mutateAsync({ id: promoteUserId, role: selectedRole as any })
+      await promoteMutation.mutateAsync({ id: promoteUserId, role: selectedRole as AdminRole })
       setPromoteUserId(null)
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to promote user')
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to promote user')
     }
   }
 
@@ -56,7 +57,7 @@ function AdminUsersComponent() {
       <div className="flex h-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <RefreshCw className="animate-spin text-black" size={32} />
-          <span className="text-xs font-bold uppercase tracking-widest">Loading Admin Users...</span>
+          <span className="text-xs font-bold tracking-widest uppercase">Loading Admin Users...</span>
         </div>
       </div>
     )
@@ -70,7 +71,7 @@ function AdminUsersComponent() {
             <AlertCircle size={32} />
             <div>
               <h2 className="text-xl font-black uppercase">Error Loading Users</h2>
-              <p className="font-bold">{(error as any).message || 'An unexpected error occurred'}</p>
+              <p className="font-bold">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
             </div>
           </div>
           <Button variant="secondary" className="mt-6" onClick={() => refetch()}>
@@ -85,10 +86,10 @@ function AdminUsersComponent() {
     <div className="p-12">
       <header className="mb-12 flex items-end justify-between">
         <div>
-          <h1 className="font-heading mb-2 text-4xl font-black uppercase tracking-tighter">
+          <h1 className="mb-2 font-heading text-4xl font-black tracking-tighter uppercase">
             Admin Users
           </h1>
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">
+          <p className="text-sm font-bold tracking-wide text-gray-500 uppercase">
             Manage platform administrators and their roles
           </p>
         </div>
@@ -110,16 +111,16 @@ function AdminUsersComponent() {
         <table className="w-full border-collapse text-left">
           <thead className="border-b border-black bg-black text-white">
             <tr>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">User</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Role</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Email</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Last Active</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right">Actions</th>
+              <th className="px-6 py-4 text-[10px] font-black tracking-widest uppercase">User</th>
+              <th className="px-6 py-4 text-[10px] font-black tracking-widest uppercase">Role</th>
+              <th className="px-6 py-4 text-[10px] font-black tracking-widest uppercase">Email</th>
+              <th className="px-6 py-4 text-[10px] font-black tracking-widest uppercase">Last Active</th>
+              <th className="px-6 py-4 text-right text-[10px] font-black tracking-widest uppercase">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {users?.map((user: any) => (
-              <tr key={user.id} className="border-b border-black last:border-0 hover:bg-hover transition-colors">
+            {users?.map((user) => (
+              <tr key={user.id} className="border-b border-black transition-colors last:border-0 hover:bg-hover">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 shrink-0 border border-black bg-gray-100">
@@ -135,7 +136,7 @@ function AdminUsersComponent() {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`inline-block border border-black px-2 py-1 text-[10px] font-black uppercase shadow-brutal-xs ${
+                  <span className={`shadow-brutal-xs inline-block border border-black px-2 py-1 text-[10px] font-black uppercase ${
                     user.adminRole === 'super_admin' ? 'bg-black text-white' : 
                     user.adminRole === 'moderator' ? 'bg-accent text-black' : 'bg-white text-black'
                   }`}>
@@ -201,7 +202,7 @@ function AdminUsersComponent() {
           onCancel={() => setPromoteUserId(null)}
         >
           <div className="my-4">
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-gray-500">
+            <label className="mb-2 block text-[10px] font-black tracking-widest text-gray-500 uppercase">
               Select Role
             </label>
             <Select

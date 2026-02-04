@@ -42,7 +42,7 @@ export function CalendarView({ boardId, tasks, columns, onTaskClick, onAddTask, 
 
   return (
     <div
-      className="bg-canvas flex flex-1 flex-col overflow-hidden"
+      className="flex flex-1 flex-col overflow-hidden bg-canvas"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}

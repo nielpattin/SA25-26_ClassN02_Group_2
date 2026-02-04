@@ -132,7 +132,7 @@ function AdminAuditLogComponent() {
   if (error) {
     return (
       <div className="p-12">
-        <div className="bg-error shadow-brutal-lg border border-black p-8">
+        <div className="border border-black bg-error p-8 shadow-brutal-lg">
           <div className="flex items-center gap-4 text-white">
             <AlertCircle size={32} />
             <div>
@@ -155,7 +155,7 @@ function AdminAuditLogComponent() {
     <div className="p-12">
       <header className="mb-12 flex items-end justify-between">
         <div>
-          <h1 className="font-heading mb-2 text-4xl font-black tracking-tighter uppercase">
+          <h1 className="mb-2 font-heading text-4xl font-black tracking-tighter uppercase">
             Audit Log
           </h1>
           <p className="text-sm font-bold tracking-wide text-gray-500 uppercase">
@@ -215,7 +215,7 @@ function AdminAuditLogComponent() {
         </div>
       </div>
 
-      <div className="shadow-brutal-lg overflow-hidden border border-black bg-white">
+      <div className="overflow-hidden border border-black bg-white shadow-brutal-lg">
         <table className="w-full border-collapse text-left">
           <thead className="border-b border-black bg-black text-white">
             <tr>
@@ -234,7 +234,7 @@ function AdminAuditLogComponent() {
               </tr>
             ) : (
               (logs as AuditLog[]).map((log) => (
-                <tr key={log.id} className="hover:bg-hover border-b border-black transition-colors last:border-0">
+                <tr key={log.id} className="border-b border-black transition-colors last:border-0 hover:bg-hover">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <User size={14} className="text-gray-400" />

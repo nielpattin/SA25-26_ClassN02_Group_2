@@ -56,7 +56,7 @@ function ArchivePage() {
   return (
     <div className="p-12 lg:px-16">
       <header className="mb-10">
-        <h1 className="font-heading m-0 text-[32px] font-bold tracking-tight text-black uppercase">
+        <h1 className="m-0 font-heading text-[32px] font-bold tracking-tight text-black uppercase">
           Workspace Archive
         </h1>
         <p className="mt-2 text-sm font-medium text-gray-500 uppercase">
@@ -131,7 +131,7 @@ function ArchivePage() {
           <div className="mb-6 flex h-16 w-16 items-center justify-center border border-black bg-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <PackageOpen size={32} />
           </div>
-          <h2 className="font-heading mb-2 text-xl font-bold text-black uppercase">No archived boards</h2>
+          <h2 className="mb-2 font-heading text-xl font-bold text-black uppercase">No archived boards</h2>
           <p className="max-w-xs text-xs font-medium text-gray-500 uppercase">
             Boards you archive will appear here. Admins can restore or permanently delete them.
           </p>

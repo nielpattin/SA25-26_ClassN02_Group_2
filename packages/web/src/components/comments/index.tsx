@@ -93,7 +93,7 @@ function CommentItem({ comment, members, cardId, sessionUserId }: CommentItemPro
         fallback={comment.userName || 'U'} 
         size="md" 
       />
-      <div className="shadow-brutal-sm hover:shadow-brutal-md flex flex-1 flex-col gap-2 border border-black bg-white p-4 transition-all hover:-translate-0.5">
+      <div className="flex flex-1 flex-col gap-2 border border-black bg-white p-4 shadow-brutal-sm transition-all hover:-translate-0.5 hover:shadow-brutal-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span className="text-[13px] font-extrabold tracking-wider text-black uppercase">{comment.userName}</span>
@@ -127,7 +127,7 @@ function CommentItem({ comment, members, cardId, sessionUserId }: CommentItemPro
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-success-border h-6 w-6! p-0"
+                className="h-6 w-6! p-0 text-success-border"
                 onClick={() => {
                   updateComment.mutate({ id: comment.id, content: editContent }, {
                     onSuccess: () => setIsEditing(false)

@@ -68,7 +68,7 @@ export const TaskCard = memo(function TaskCard({
       data-state={isDragging ? 'placeholder' : undefined}
     >
       <div
-        className={`bg-surface shadow-brutal-sm flex cursor-pointer flex-col gap-2 border border-black p-3 text-[14px] transition-[transform,box-shadow,background-color] duration-200 ${isDragging ? 'invisible! transition-none!' : 'hover:bg-accent hover:shadow-brutal-lg hover:-translate-x-0.5 hover:-translate-y-0.5'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
+        className={`flex cursor-pointer flex-col gap-2 border border-black bg-surface p-3 text-[14px] shadow-brutal-sm transition-[transform,box-shadow,background-color] duration-200 ${isDragging ? 'invisible! transition-none!' : 'hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:shadow-brutal-lg'} ${isAnyDragging ? 'pointer-events-none' : ''}`}
         onClick={handleClick}
         data-role="card"
       >

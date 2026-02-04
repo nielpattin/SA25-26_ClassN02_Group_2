@@ -79,7 +79,7 @@ export function ConnectedAccounts() {
         <button
           onClick={() => (githubConnected ? handleDisconnect('github') : handleConnect('github'))}
           disabled={loadingProvider === 'github'}
-          className={`shadow-brutal-sm hover:shadow-brutal flex cursor-pointer items-center justify-center gap-3 border border-black px-6 py-4 text-xs font-bold tracking-widest uppercase transition-all hover:-translate-0.5 active:translate-0 active:shadow-none ${
+          className={`hover:shadow-brutal flex cursor-pointer items-center justify-center gap-3 border border-black px-6 py-4 text-xs font-bold tracking-widest uppercase shadow-brutal-sm transition-all hover:-translate-0.5 active:translate-0 active:shadow-none ${
             githubConnected ? 'bg-danger-bg text-black' : 'bg-white text-black'
           } disabled:cursor-not-allowed disabled:opacity-50`}
         >

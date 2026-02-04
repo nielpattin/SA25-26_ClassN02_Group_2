@@ -11,7 +11,7 @@ export function TaskActivity({ taskId }: TaskActivityProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="font-heading m-0 flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
+      <h3 className="m-0 flex items-center gap-1.5 font-heading text-[11px] font-extrabold tracking-widest text-black uppercase opacity-60">
         <History size={14} /> Activity
       </h3>
       <ActivitySection activities={activities} />

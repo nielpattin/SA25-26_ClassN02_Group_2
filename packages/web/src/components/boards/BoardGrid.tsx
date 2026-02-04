@@ -9,7 +9,7 @@ export interface BoardGridProps {
 export const BoardGrid = memo(({ children, isEmpty, emptyMessage = 'No boards found. Start by adding one above.' }: BoardGridProps) => {
   if (isEmpty) {
     return (
-      <div className="text-text-subtle col-span-full border border-dashed border-black bg-black/5 p-12 text-center font-bold uppercase">
+      <div className="col-span-full border border-dashed border-black bg-black/5 p-12 text-center font-bold text-text-subtle uppercase">
         {emptyMessage}
       </div>
     )

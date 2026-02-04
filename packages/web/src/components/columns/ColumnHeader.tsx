@@ -45,7 +45,7 @@ export const ColumnHeader = memo(function ColumnHeader({
 
   return (
     <h4
-      className="font-heading relative mb-5 flex shrink-0 cursor-grab items-center gap-2.5 border-b border-black p-2 text-(length:--column-header-size,14px) font-extrabold tracking-widest text-black uppercase"
+      className="relative mb-5 flex shrink-0 cursor-grab items-center gap-2.5 border-b border-black p-2 font-heading text-(length:--column-header-size,14px) font-extrabold tracking-widest text-black uppercase"
       onMouseDown={onDragStart}
       data-role="column-header"
     >
@@ -76,7 +76,7 @@ export const ColumnHeader = memo(function ColumnHeader({
           {name}
         </span>
       )}
-      <span className="bg-accent ml-auto border border-black px-2 py-0.5 text-[11px] font-extrabold">
+      <span className="ml-auto border border-black bg-accent px-2 py-0.5 text-[11px] font-extrabold">
         {cardCount}
       </span>
       <div onMouseDown={e => e.stopPropagation()} className="flex items-center">

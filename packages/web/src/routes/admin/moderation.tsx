@@ -41,7 +41,6 @@ const TEMPLATE_CATEGORIES = [
 function ModerationComponent() {
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState<'submissions' | 'takedowns'>('submissions')
-  const [statusFilter, setStatusFilter] = useState<string>('')
   const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
@@ -149,7 +148,7 @@ function ModerationComponent() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="border border-black bg-white px-3 py-1.5 text-xs font-bold uppercase focus:outline-none focus:ring-2 focus:ring-black"
+              className="border border-black bg-white px-3 py-1.5 text-xs font-bold uppercase focus:ring-2 focus:ring-black focus:outline-none"
             >
               {TEMPLATE_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat === 'All' ? '' : cat}>
@@ -181,7 +180,7 @@ function ModerationComponent() {
                 {filteredSubmissions.map((template: Template) => (
                   <div
                     key={template.id}
-                    className="shadow-brutal-sm border-2 border-black bg-white"
+                    className="border-2 border-black bg-white shadow-brutal-sm"
                   >
                     <div className="p-6">
                       <div className="flex items-start justify-between gap-4">
@@ -345,7 +344,7 @@ function ModerationComponent() {
                 {takedowns.map((template: TakedownRequest) => (
                   <div
                     key={template.id}
-                    className="shadow-brutal-sm border-2 border-black bg-white"
+                    className="border-2 border-black bg-white shadow-brutal-sm"
                   >
                     <div className="p-6">
                       <div className="flex items-start justify-between gap-4">
