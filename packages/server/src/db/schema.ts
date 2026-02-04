@@ -326,7 +326,9 @@ export const activities = pgTable('activities', {
 	// Before/after values for updates
 	changes: jsonb('changes'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
-})
+}, (table) => [
+	index('idx_activities_board_created').on(table.boardId, table.createdAt),
+])
 
 // Platform admin audit log
 export const adminAuditLog = pgTable('admin_audit_log', {

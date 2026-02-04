@@ -32,4 +32,23 @@ export const TaskActivitiesParams = t.Object({
   taskId: t.String({ format: 'uuid' }),
 })
 
+export const ExportActivitiesQuery = t.Object({
+  dateFrom: t.String({ format: 'date' }),
+  dateTo: t.String({ format: 'date' }),
+  format: t.Optional(t.Union([t.Literal('json'), t.Literal('csv')])),
+})
+
 export type CreateActivityInputType = typeof CreateActivityInput.static
+
+export interface ActivityExportRow {
+  id: string
+  boardId: string
+  taskId: string | null
+  userId: string
+  userName: string | null
+  action: string
+  targetType: string
+  targetId: string
+  changes: unknown
+  createdAt: string
+}

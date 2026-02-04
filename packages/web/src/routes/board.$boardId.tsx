@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { ChevronRight, Archive, Download, Kanban, Calendar, ChartGantt, MoreHorizontal, Share2 } from 'lucide-react'
+import { ChevronRight, Archive, Download, Kanban, Calendar, ChartGantt, MoreHorizontal, Share2, History } from 'lucide-react'
 import { PublishTemplateModal } from '../components/board/PublishTemplateModal'
 import { useBoardFiltersStore } from '../store/boardViewStore'
 import { useBoardSocket, setDragging as setGlobalDragging } from '../hooks/useBoardSocket'
@@ -31,11 +31,13 @@ import { useRecordBoardVisit } from '../hooks/useRecentBoards'
 import { useSearchModal } from '../context/SearchContext'
 import { filterTasks } from '../hooks/filterTasks'
 import { useLabels } from '../hooks/useLabels'
-import { useBoardMembers } from '../hooks/useAssignees'
+import { useBoardMembers, type BoardMember } from '../hooks/useAssignees'
+import { useSession } from '../api/auth'
 import { CardModal, TaskCard } from '../components/tasks'
 import { BoardColumn } from '../components/columns'
 import { ArchivePanel } from '../components/board/ArchivePanel'
 import { ExportBoardModal } from '../components/board/ExportBoardModal'
+import { ExportActivityModal } from '../components/board/ExportActivityModal'
 import { WorkspaceProvider } from '../context/WorkspaceContext'
 import { SearchTrigger } from '../components/search'
 import { BoardFilterBar } from '../components/filters'
@@ -74,6 +76,7 @@ function BoardComponent() {
   // Local UI state
   const [isArchiveOpen, setArchiveOpen] = useState(false)
   const [isExportOpen, setExportOpen] = useState(false)
+  const [isActivityExportOpen, setActivityExportOpen] = useState(false)
   const [isPublishOpen, setPublishOpen] = useState(false)
 
   // Fetch preferences from server (source of truth for view/zoom/filters)
@@ -165,6 +168,7 @@ function BoardComponent() {
   const { data: allCards = [], isLoading: tasksLoading } = useTasks(boardId)
   const { data: labels = [] } = useLabels(boardId)
   const { data: members = [] } = useBoardMembers(boardId)
+  const { data: session } = useSession()
   const createTask = useCreateTask(boardId)
   const createColumn = useCreateColumn()
   const renameColumn = useRenameColumn(boardId)
@@ -278,6 +282,13 @@ function BoardComponent() {
     [boardId, queryClient]
   )
 
+  // Check if current user is board admin
+  const isBoardAdmin = useMemo(() => {
+    if (!session?.user?.id || !members) return false
+    const currentUserMember = members.find((m: BoardMember) => m.userId === session.user.id)
+    return currentUserMember?.role === 'admin' || board?.ownerId === session.user.id
+  }, [session?.user?.id, members, board?.ownerId])
+
   if (boardLoading || columnsLoading || tasksLoading || !prefsLoaded) {
     return (
       <div className="font-heading bg-canvas flex h-screen items-center justify-center font-extrabold text-black uppercase">
@@ -375,6 +386,15 @@ function BoardComponent() {
                     icon: <Download size={16} />,
                     onClick: () => setExportOpen(true),
                   },
+                  ...(isBoardAdmin
+                    ? [
+                        {
+                          label: 'Export Activity Log',
+                          icon: <History size={16} />,
+                          onClick: () => setActivityExportOpen(true),
+                        },
+                      ]
+                    : []),
                   {
                     label: 'Publish to Market',
                     icon: <Share2 size={16} />,
@@ -444,6 +464,15 @@ function BoardComponent() {
             boardId={boardId}
             boardName={board.name}
           />
+
+          {isBoardAdmin && (
+            <ExportActivityModal
+              isOpen={isActivityExportOpen}
+              onClose={() => setActivityExportOpen(false)}
+              boardId={boardId}
+              boardName={board.name}
+            />
+          )}
 
           <PublishTemplateModal
             isOpen={isPublishOpen}
