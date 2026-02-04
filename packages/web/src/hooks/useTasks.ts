@@ -73,6 +73,7 @@ export type UpdateTaskInput = {
 export type MoveTaskInput = {
   columnId: string
   position: string
+  version?: number
 }
 
 // Query key factory
@@ -195,25 +196,29 @@ export function useMoveTask(boardId: string) {
       const { error } = await api.v1.tasks({ id: taskId }).move.patch(moveInput)
       if (error) throw error
     },
-    onMutate: async ({ taskId, columnId, position }) => {
+    onMutate: async ({ taskId, columnId, position, version }) => {
       await queryClient.cancelQueries({ queryKey: taskKeys.list(boardId) })
-      
+
       const previousTasks = queryClient.getQueryData<TaskWithLabels[]>(taskKeys.list(boardId))
-      
+
       if (previousTasks) {
         queryClient.setQueryData<TaskWithLabels[]>(taskKeys.list(boardId), prev => {
           if (!prev) return prev
-          return prev.map(task => 
-            task.id === taskId ? { ...task, columnId, position } : task
+          return prev.map(task =>
+            task.id === taskId ? { ...task, columnId, position, version } : task
           )
         })
       }
-      
+
       return { previousTasks }
     },
-    onError: (_err, _variables, context) => {
+    onError: (err, _variables, context) => {
       if (context?.previousTasks) {
         queryClient.setQueryData(taskKeys.list(boardId), context.previousTasks)
+      }
+      // Retry on conflict by refetching
+      if ((err as { status?: number }).status === 409) {
+        queryClient.invalidateQueries({ queryKey: taskKeys.list(boardId) })
       }
     },
     onSettled: () => {

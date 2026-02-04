@@ -247,14 +247,19 @@ function BoardPage() {
         afterCol?.position || null
       )
 
+      // Get current version for conflict detection
+      const column = serverColumns.find(c => c.id === columnId)
+      const version = (column as Column & { version?: number })?.version
+
       // The mutation handles optimistic updates and error rollback
       moveColumn.mutate(
-        { columnId, position: calculatedPosition },
+        { columnId, position: calculatedPosition, version },
         {
           onSettled: () => setIsDragging(false)
         }
       )
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [moveColumn, setIsDragging]
   )
 
@@ -285,9 +290,13 @@ function BoardPage() {
 
       const calculatedPosition = generateKeyBetween(beforePos, afterPos)
 
+      // Get current version for conflict detection
+      const task = allCards.find(c => c.id === droppedCardId)
+      const version = (task as TaskWithLabels & { version?: number })?.version
+
       // The mutation handles optimistic updates and error rollback
       moveTask.mutate(
-        { taskId: droppedCardId, columnId, position: calculatedPosition },
+        { taskId: droppedCardId, columnId, position: calculatedPosition, version },
         {
           onSettled: () => setIsDragging(false)
         }

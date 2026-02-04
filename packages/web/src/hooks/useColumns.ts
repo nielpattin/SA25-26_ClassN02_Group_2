@@ -15,6 +15,7 @@ export type CreateColumnInput = {
 
 export type MoveColumnInput = {
   position: string
+  version?: number
 }
 
 // Query key factory
@@ -108,22 +109,26 @@ export function useMoveColumn(boardId: string) {
       const { error } = await api.v1.columns({ id: columnId }).move.patch(moveInput)
       if (error) throw error
     },
-    onMutate: async ({ columnId, position }) => {
+    onMutate: async ({ columnId, position, version }) => {
       await queryClient.cancelQueries({ queryKey: columnKeys.list(boardId) })
-      
+
       const previousColumns = queryClient.getQueryData<Column[]>(columnKeys.list(boardId))
-      
+
       if (previousColumns) {
         queryClient.setQueryData<Column[]>(columnKeys.list(boardId), prev =>
-          prev?.map(col => (col.id === columnId ? { ...col, position } : col))
+          prev?.map(col => (col.id === columnId ? { ...col, position, version } : col))
         )
       }
-      
+
       return { previousColumns }
     },
-    onError: (_err, _variables, context) => {
+    onError: (err, _variables, context) => {
       if (context?.previousColumns) {
         queryClient.setQueryData(columnKeys.list(boardId), context.previousColumns)
+      }
+      // Retry on conflict by refetching
+      if ((err as { status?: number }).status === 409) {
+        queryClient.invalidateQueries({ queryKey: columnKeys.list(boardId) })
       }
     },
     onSettled: () => {
