@@ -131,15 +131,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
     }
   }, [])
 
-  useEffect(() => {
-    if (card?.description) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDescription(card.description)
-    }
-    if (card?.coverImageUrl) {
-      setCoverUrl(card.coverImageUrl)
-    }
-  }, [card?.description, card?.coverImageUrl])
+
 
   const updateCard = useMutation({
     mutationFn: async (updates: Partial<Card>) => {
@@ -304,7 +296,10 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
               ) : (
                 <div
                   className="min-h-25 cursor-pointer border border-black bg-surface-overlay p-4 text-[14px] leading-relaxed wrap-break-word text-[#333333] shadow-brutal-sm transition-all hover:-translate-0.5 hover:bg-active hover:shadow-brutal-md"
-                  onClick={() => setIsEditingDescription(true)}
+                  onClick={() => {
+                    setDescription(card.description || '')
+                    setIsEditingDescription(true)
+                  }}
                 >
                   {card.description || 'Add a more detailed description...'}
                 </div>
@@ -539,7 +534,10 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
                   ref={coverTriggerRef}
                   variant="secondary"
                   fullWidth
-                  onClick={() => setIsCoverOpen(prev => !prev)}
+                  onClick={() => {
+                    setCoverUrl(card.coverImageUrl || '')
+                    setIsCoverOpen(prev => !prev)
+                  }}
                 >
                   <Image size={14} /> Cover
                 </Button>
