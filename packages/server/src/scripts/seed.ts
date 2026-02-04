@@ -1,34 +1,8 @@
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { generatePositions } from '../shared/position'
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { hashPassword } from 'better-auth/crypto'
-
-const TEST_USER = {
-  email: 'test@kyte.dev',
-  password: 'password123',
-  name: 'Test User',
-  adminRole: 'super_admin',
-}
-
-const ADDITIONAL_USERS = Array.from({ length: 21 }, (_, i) => ({
-  email: `dev${i + 1}@kyte.dev`,
-  password: 'password123',
-  name: `Developer ${String.fromCharCode(65 + i)}`,
-}))
-
-const COMMENTS_POOL = [
-  "Working on the fix now.",
-  "This looks like a priority.",
-  "Can we discuss this in the next sync?",
-  "I've updated the description with more details.",
-  "LGTM!",
-  "Merged to main.",
-  "Need more info on the reproduction steps.",
-  "I'll take a look at this tomorrow.",
-  "Great job on the initial implementation!",
-  "Is this blocking anyone?",
-]
 
 function generateId(length = 32) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -39,29 +13,213 @@ function generateId(length = 32) {
   return result
 }
 
-async function createUserDirectly(userData: { email: string; password: string; name: string; adminRole?: string }) {
-  const existingUser = await db.query.users.findFirst({
-    where: eq(schema.users.email, userData.email),
+function randomDate(daysAgo: number, daysAhead: number): Date {
+  const offset = Math.floor(Math.random() * (daysAhead + daysAgo)) - daysAgo
+  return new Date(Date.now() + offset * 24 * 60 * 60 * 1000)
+}
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function pickN<T>(arr: T[], n: number): T[] {
+  const shuffled = [...arr].sort(() => 0.5 - Math.random())
+  return shuffled.slice(0, Math.min(n, arr.length))
+}
+
+const ECOMMERCE_COLUMNS = [
+  'Backlog',
+  'Sprint Planning',
+  'In Development',
+  'Code Review',
+  'QA Testing',
+  'UAT',
+  'Ready for Deploy',
+  'Done',
+]
+
+const ECOMMERCE_LABELS = [
+  { name: 'Bug', color: '#e74c3c' },
+  { name: 'Feature', color: '#27ae60' },
+  { name: 'Enhancement', color: '#3498db' },
+  { name: 'UI/UX', color: '#9b59b6' },
+  { name: 'Backend', color: '#e67e22' },
+  { name: 'Frontend', color: '#1abc9c' },
+  { name: 'Database', color: '#34495e' },
+  { name: 'Security', color: '#c0392b' },
+  { name: 'Performance', color: '#f39c12' },
+  { name: 'Documentation', color: '#95a5a6' },
+  { name: 'Critical', color: '#8e44ad' },
+  { name: 'Low Priority', color: '#bdc3c7' },
+]
+
+const ECOMMERCE_TASKS: Record<string, { title: string; description: string; labels: string[] }[]> = {
+  'Backlog': [
+    { title: 'Implement gift card system', description: 'Allow customers to purchase and redeem digital gift cards. Support multiple denominations ($25, $50, $100, $250). Include email delivery with custom messages.', labels: ['Feature', 'Backend', 'Frontend'] },
+    { title: 'Add product comparison feature', description: 'Enable customers to compare up to 4 products side-by-side. Show specifications, pricing, ratings, and availability in a comparison table.', labels: ['Feature', 'UI/UX'] },
+    { title: 'Integrate with ShipStation API', description: 'Connect order fulfillment system with ShipStation for automated shipping label generation and tracking updates.', labels: ['Feature', 'Backend'] },
+    { title: 'Build loyalty points program', description: 'Create a points-based rewards system. 1 point per $1 spent, redeemable at 100 points = $5 discount. Track points history and expiration.', labels: ['Feature', 'Backend', 'Database'] },
+    { title: 'Add multi-currency support', description: 'Support USD, EUR, GBP, CAD, AUD. Auto-detect based on IP location. Allow manual currency selection. Update prices in real-time.', labels: ['Feature', 'Backend'] },
+    { title: 'Implement abandoned cart emails', description: 'Send automated reminder emails for abandoned carts after 1 hour, 24 hours, and 72 hours. Include cart contents and direct checkout link.', labels: ['Feature', 'Backend'] },
+    { title: 'Create mobile app deep linking', description: 'Support deep links from marketing emails and social media to specific products in the mobile app.', labels: ['Feature', 'Enhancement'] },
+    { title: 'Add voice search capability', description: 'Integrate Web Speech API for voice-activated product search on desktop and mobile browsers.', labels: ['Feature', 'Frontend', 'UI/UX'] },
+  ],
+  'Sprint Planning': [
+    { title: 'Design new checkout flow wireframes', description: 'Create wireframes for streamlined 3-step checkout: 1) Shipping, 2) Payment, 3) Review & Confirm. Focus on mobile-first design.', labels: ['UI/UX', 'Frontend'] },
+    { title: 'Plan database migration for order history', description: 'Design schema changes to support order versioning and audit trail. Plan zero-downtime migration strategy.', labels: ['Database', 'Backend'] },
+    { title: 'Scope product recommendation engine', description: 'Define requirements for ML-based product recommendations. Consider collaborative filtering vs content-based approaches.', labels: ['Feature', 'Backend'] },
+    { title: 'Architecture review for microservices split', description: 'Evaluate splitting monolith into inventory, orders, and payments microservices. Document pros/cons and migration path.', labels: ['Backend', 'Documentation'] },
+  ],
+  'In Development': [
+    { title: 'Implement Stripe subscription billing', description: 'Add support for recurring subscription products. Handle proration, cancellation, and plan upgrades/downgrades. Webhook integration for payment events.', labels: ['Feature', 'Backend', 'Critical'] },
+    { title: 'Build product filtering system', description: 'Create faceted search with filters for price range, brand, size, color, rating, availability. Support URL-based filter state for bookmarking.', labels: ['Feature', 'Frontend', 'Backend'] },
+    { title: 'Add real-time inventory updates', description: 'Implement WebSocket-based inventory sync to show live stock counts. Update cart if items become unavailable.', labels: ['Feature', 'Backend', 'Frontend'] },
+    { title: 'Create admin dashboard analytics', description: 'Build dashboard showing daily sales, top products, conversion funnel, and customer acquisition metrics. Use Chart.js for visualizations.', labels: ['Feature', 'Frontend', 'UI/UX'] },
+    { title: 'Implement product image zoom', description: 'Add hover zoom on desktop and pinch-to-zoom on mobile for product images. Support 360° product view for featured items.', labels: ['Enhancement', 'Frontend', 'UI/UX'] },
+    { title: 'Build order tracking page', description: 'Create customer-facing order tracking with timeline view. Show order placed, processing, shipped, out for delivery, delivered statuses.', labels: ['Feature', 'Frontend'] },
+  ],
+  'Code Review': [
+    { title: 'Review PayPal integration PR', description: 'Code review for PayPal Express Checkout integration. Verify error handling, refund flow, and sandbox testing coverage.', labels: ['Backend', 'Security'] },
+    { title: 'Review cart persistence implementation', description: 'Verify cart data is correctly stored in localStorage for guests and synced to database for logged-in users.', labels: ['Frontend', 'Backend'] },
+    { title: 'Review product search indexing', description: 'Check Elasticsearch indexing logic for product catalog. Verify relevance scoring and typo tolerance implementation.', labels: ['Backend', 'Performance'] },
+  ],
+  'QA Testing': [
+    { title: 'Test checkout flow on all browsers', description: 'Cross-browser testing on Chrome, Firefox, Safari, Edge. Verify payment processing, form validation, and error states.', labels: ['Frontend', 'Critical'] },
+    { title: 'Load test product catalog API', description: 'Run k6 load tests simulating 1000 concurrent users browsing products. Target: <200ms p95 response time.', labels: ['Performance', 'Backend'] },
+    { title: 'Security audit for payment processing', description: 'Verify PCI DSS compliance. Test for SQL injection, XSS, CSRF vulnerabilities. Review token handling and encryption.', labels: ['Security', 'Critical'] },
+    { title: 'Test mobile responsive layouts', description: 'Verify all pages render correctly on iPhone SE, iPhone 14, Pixel 7, Samsung Galaxy. Test touch interactions and gestures.', labels: ['Frontend', 'UI/UX'] },
+    { title: 'Regression test user authentication', description: 'Test login, signup, password reset, social auth (Google, Facebook, Apple). Verify session handling and token refresh.', labels: ['Backend', 'Security'] },
+  ],
+  'UAT': [
+    { title: 'UAT: New product detail page', description: 'Business stakeholders to verify new PDP layout, pricing display, variant selection, and add-to-cart flow.', labels: ['UI/UX', 'Frontend'] },
+    { title: 'UAT: Refund process workflow', description: 'Customer service team to test refund initiation, approval workflow, and customer notification emails.', labels: ['Backend', 'Feature'] },
+    { title: 'UAT: Inventory management updates', description: 'Warehouse team to verify stock count updates, low stock alerts, and reorder point notifications.', labels: ['Backend', 'Feature'] },
+  ],
+  'Ready for Deploy': [
+    { title: 'Deploy: Updated shipping calculator', description: 'New shipping rate calculator with real-time carrier API integration. Supports UPS, FedEx, USPS. Includes dimensional weight calculation.', labels: ['Backend', 'Feature'] },
+    { title: 'Deploy: Customer review system', description: 'Product review and rating system with photo uploads, verified purchase badges, and helpful vote sorting.', labels: ['Feature', 'Frontend', 'Backend'] },
+  ],
+  'Done': [
+    { title: 'Implement shopping cart', description: 'Full shopping cart functionality with add, remove, update quantity. Persist across sessions. Calculate subtotal, tax, shipping.', labels: ['Feature', 'Frontend', 'Backend'] },
+    { title: 'Build user authentication system', description: 'Email/password auth with email verification. Social login via Google and Facebook. Password reset flow with secure tokens.', labels: ['Feature', 'Backend', 'Security'] },
+    { title: 'Create product catalog pages', description: 'Category listing pages with pagination, sorting (price, popularity, newest), and grid/list view toggle.', labels: ['Feature', 'Frontend'] },
+    { title: 'Implement search functionality', description: 'Full-text product search with autocomplete, search suggestions, and recent searches. Elasticsearch backend.', labels: ['Feature', 'Backend', 'Frontend'] },
+    { title: 'Set up CI/CD pipeline', description: 'GitHub Actions workflow for automated testing, linting, and deployment to staging/production environments.', labels: ['Enhancement', 'Documentation'] },
+    { title: 'Configure CDN for static assets', description: 'CloudFront CDN setup for images, CSS, JS. Implement cache invalidation on deployments. 50% reduction in load times.', labels: ['Performance', 'Backend'] },
+    { title: 'Add SEO meta tags', description: 'Dynamic meta titles, descriptions, and Open Graph tags for all product and category pages. Structured data for rich snippets.', labels: ['Enhancement', 'Frontend'] },
+    { title: 'Implement responsive design', description: 'Mobile-first responsive layouts for all pages. Breakpoints at 640px, 768px, 1024px, 1280px.', labels: ['Frontend', 'UI/UX'] },
+  ],
+}
+
+const ECOMMERCE_COMMENTS = [
+  'I have pushed the initial implementation. Ready for review.',
+  'Found an edge case with empty cart - will fix today.',
+  'Blocked on API documentation from payment provider.',
+  'Performance looks good - p95 latency is under 150ms.',
+  'Added unit tests covering the main scenarios.',
+  'Discussed with product team - they want this for next sprint.',
+  'Security review passed, no critical issues found.',
+  'Mobile testing complete, works on all target devices.',
+  'Updated the PR with requested changes.',
+  'Deployed to staging for QA verification.',
+  'Customer feedback incorporated into the design.',
+  'Database migration script tested successfully.',
+  'Integration tests passing in CI.',
+  'Reverted due to production incident - investigating.',
+  'Fixed the regression, ready for re-review.',
+  'Accessibility audit complete - WCAG 2.1 AA compliant.',
+  'Added error tracking with Sentry integration.',
+  'Cache invalidation logic verified.',
+  'API rate limiting implemented and tested.',
+  'Documentation updated in Confluence.',
+]
+
+const RANDOM_BOARD_NAMES = [
+  'Website Redesign',
+  'Mobile App Development',
+  'Marketing Campaign Q1',
+  'Customer Support Tickets',
+  'Product Roadmap 2024',
+  'Bug Tracker',
+  'Content Calendar',
+  'Event Planning',
+  'Research Projects',
+  'Personal Tasks',
+  'Team Onboarding',
+  'Infrastructure Updates',
+  'Feature Requests',
+  'Sprint Board',
+  'Release Planning',
+]
+
+const RANDOM_TASK_TITLES = [
+  'Update documentation',
+  'Fix navigation menu bug',
+  'Optimize database queries',
+  'Design new landing page',
+  'Implement dark mode',
+  'Add email notifications',
+  'Create API endpoints',
+  'Write unit tests',
+  'Review pull request',
+  'Update dependencies',
+  'Configure monitoring',
+  'Set up analytics',
+  'Improve error handling',
+  'Refactor legacy code',
+  'Add input validation',
+  'Create user guide',
+  'Fix responsive layout',
+  'Implement caching',
+  'Add search functionality',
+  'Create admin panel',
+  'Set up backup system',
+  'Optimize images',
+  'Add loading states',
+  'Implement pagination',
+  'Create onboarding flow',
+  'Add export feature',
+  'Fix memory leak',
+  'Update API documentation',
+  'Add keyboard shortcuts',
+  'Implement undo/redo',
+]
+
+type Priority = 'low' | 'medium' | 'high' | 'urgent' | 'none'
+type Size = 'xs' | 's' | 'm' | 'l' | 'xl' | null
+type AdminRole = 'super_admin' | 'moderator' | 'support'
+
+const PRIORITIES: Priority[] = ['low', 'medium', 'high', 'urgent', 'none']
+const SIZES: Size[] = ['xs', 's', 'm', 'l', 'xl', null]
+
+async function createUser(data: {
+  email: string
+  password: string
+  name: string
+  adminRole?: AdminRole
+}): Promise<string> {
+  const existing = await db.query.users.findFirst({
+    where: eq(schema.users.email, data.email),
   })
 
-  if (existingUser) {
-    if (userData.adminRole && existingUser.adminRole !== userData.adminRole) {
+  if (existing) {
+    if (data.adminRole && existing.adminRole !== data.adminRole) {
       await db.update(schema.users)
-        .set({ adminRole: userData.adminRole as any })
-        .where(eq(schema.users.id, existingUser.id))
+        .set({ adminRole: data.adminRole })
+        .where(eq(schema.users.id, existing.id))
     }
-    return existingUser.id
+    return existing.id
   }
 
   const userId = generateId()
-  const hashedPassword = await hashPassword(userData.password)
+  const hashedPassword = await hashPassword(data.password)
 
   await db.insert(schema.users).values({
     id: userId,
-    name: userData.name,
-    email: userData.email,
+    name: data.name,
+    email: data.email,
     emailVerified: true,
-    adminRole: userData.adminRole as any,
+    adminRole: data.adminRole,
   })
 
   await db.insert(schema.accounts).values({
@@ -85,7 +243,6 @@ async function createUserDirectly(userData: { email: string; password: string; n
     role: 'owner',
   })
 
-  console.log(`Created personal workspace for user ${userId}`)
   return userId
 }
 
@@ -100,6 +257,7 @@ async function cleanDatabase() {
     schema.checklists,
     schema.taskLabels,
     schema.taskAssignees,
+    schema.taskDependencies,
     schema.activities,
     schema.idempotencyKeys,
     schema.starredBoards,
@@ -143,233 +301,407 @@ async function ensureSearchVectors() {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_tasks_search_vector ON tasks USING gin(search_vector)`)
 }
 
-async function seed() {
-  console.log('--- Seeding started ---')
+async function createEcommerceBoard(
+  workspaceId: string,
+  ownerId: string,
+  memberIds: string[],
+  position: string
+) {
+  console.log('Creating e-commerce board with realistic data...')
 
-  await ensureSearchVectors()
-  await cleanDatabase()
-
-  console.log('Creating users...')
-  const allUserIds = await Promise.all([
-    createUserDirectly(TEST_USER),
-    ...ADDITIONAL_USERS.map(u => createUserDirectly(u))
-  ])
-  const ownerId = allUserIds[0]
-
-  console.log('Creating workspace and members...')
-  const [workspace] = await db.insert(schema.workspaces).values({
-    name: 'Seed Workspace',
-    slug: `seed-workspace-${Date.now()}`,
-    personal: true,
-  }).returning()
-
-  await db.insert(schema.members).values(
-    allUserIds.map((id, index) => ({
-      workspaceId: workspace.id,
-      userId: id,
-      role: (index === 0 ? 'owner' : 'member') as 'owner' | 'member',
-    }))
-  )
-
-  const priorities = ['low', 'medium', 'high', 'urgent', 'none'] as const
-  const getTaskDates = () => {
-    // Start date between -30 and +30 days from now
-    const startOffset = Math.floor(Math.random() * 60) - 30
-    const startDate = new Date(Date.now() + startOffset * 24 * 60 * 60 * 1000)
-    
-    // Due date is 1-14 days after start date
-    const duration = Math.floor(Math.random() * 14) + 1
-    const dueDate = new Date(startDate.getTime() + duration * 24 * 60 * 60 * 1000)
-    
-    return { startDate, dueDate }
-  }
-
-  const taskLabelsToInsert: any[] = []
-  const taskAssigneesToInsert: any[] = []
-  const taskCommentsToInsert: any[] = []
-  const checklistsToInsert: any[] = []
-
-  const prepareTaskData = (taskId: string, labels: any[]) => {
-    const numLabels = Math.floor(Math.random() * 4)
-    if (numLabels > 0) {
-      const shuffled = [...labels].sort(() => 0.5 - Math.random())
-      for (let j = 0; j < numLabels; j++) {
-        taskLabelsToInsert.push({ taskId, labelId: shuffled[j].id })
-      }
-    }
-
-    const numAssignees = Math.floor(Math.random() * 4)
-    if (numAssignees > 0) {
-      const shuffledUsers = [...allUserIds].sort(() => 0.5 - Math.random())
-      for (let j = 0; j < numAssignees; j++) {
-        taskAssigneesToInsert.push({ taskId, userId: shuffledUsers[j], assignedBy: ownerId })
-      }
-    }
-
-    const numComments = Math.floor(Math.random() * 4)
-    for (let j = 0; j < numComments; j++) {
-      taskCommentsToInsert.push({
-        taskId,
-        userId: allUserIds[Math.floor(Math.random() * allUserIds.length)],
-        content: COMMENTS_POOL[Math.floor(Math.random() * COMMENTS_POOL.length)],
-      })
-    }
-  }
-
-  const labelData = [
-    { name: 'Bug', color: '#e74c3c' },
-    { name: 'Feature', color: '#2ecc71' },
-    { name: 'UI/UX', color: '#9b59b6' },
-    { name: 'Research', color: '#3498db' },
-    { name: 'Important', color: '#f1c40f' },
-    { name: 'Docs', color: '#34495e' },
-  ]
-
-  console.log('Creating boards, columns and tasks...')
-  const boardPositions = generatePositions(null, null, 2)
-  
-  const [smallBoard] = await db.insert(schema.boards).values({
-    name: 'Small Board',
-    workspaceId: workspace.id,
-    ownerId: ownerId,
-    position: boardPositions[0],
+  const [board] = await db.insert(schema.boards).values({
+    name: 'ShopFlow E-Commerce Platform',
+    description: 'Complete e-commerce website development project. Building a modern, scalable online shopping platform with React frontend and Node.js backend.',
+    workspaceId,
+    ownerId,
+    position,
     visibility: 'private',
   }).returning()
 
   await db.insert(schema.boardMembers).values(
-    allUserIds.map((id, index) => ({
-      boardId: smallBoard.id,
+    memberIds.map((id, index) => ({
+      boardId: board.id,
       userId: id,
       role: (index === 0 ? 'admin' : 'member') as 'admin' | 'member',
     }))
   )
 
-  const smallLabels = await db.insert(schema.labels).values(
-    labelData.map(l => ({ ...l, boardId: smallBoard.id }))
+  const labels = await db.insert(schema.labels).values(
+    ECOMMERCE_LABELS.map(l => ({ ...l, boardId: board.id }))
   ).returning()
 
-  const smallColNames = ['To Do', 'Done']
-  const smallColPositions = generatePositions(null, null, 2)
-  const smallColumns = await db.insert(schema.columns).values(
-    smallColNames.map((name, i) => ({
+  const labelMap = new Map(labels.map(l => [l.name, l.id]))
+
+  const colPositions = generatePositions(null, null, ECOMMERCE_COLUMNS.length)
+  const columns = await db.insert(schema.columns).values(
+    ECOMMERCE_COLUMNS.map((name, i) => ({
       name,
-      boardId: smallBoard.id,
-      position: smallColPositions[i],
+      boardId: board.id,
+      position: colPositions[i],
     }))
   ).returning()
 
-  for (const col of smallColumns) {
-    const taskPositions = generatePositions(null, null, 3)
+  const taskLabelsToInsert: { taskId: string; labelId: string }[] = []
+  const taskAssigneesToInsert: { taskId: string; userId: string; assignedBy: string }[] = []
+  const commentsToInsert: { taskId: string; userId: string; content: string }[] = []
+  const checklistsToInsert: { taskId: string; title: string; position: string }[] = []
+
+  for (const col of columns) {
+    const tasksForColumn = ECOMMERCE_TASKS[col.name] || []
+    if (tasksForColumn.length === 0) continue
+
+    const taskPositions = generatePositions(null, null, tasksForColumn.length)
     const tasks = await db.insert(schema.tasks).values(
-      Array.from({ length: 3 }).map((_, i) => {
-        const { startDate, dueDate } = getTaskDates()
+      tasksForColumn.map((t, i) => {
         const hasDates = Math.random() > 0.3
+        const startDate = hasDates ? randomDate(-14, 7) : null
+        const dueDate = startDate ? new Date(startDate.getTime() + (Math.random() * 14 + 3) * 24 * 60 * 60 * 1000) : null
+
         return {
-          title: `Simple Task ${i + 1} in ${col.name}`,
+          title: t.title,
+          description: t.description,
           columnId: col.id,
           position: taskPositions[i],
-          priority: priorities[Math.floor(Math.random() * priorities.length)],
-          startDate: hasDates ? startDate : null,
-          dueDate: hasDates ? dueDate : null,
-        }
-      })
-    ).returning()
-    
-    for (const task of tasks) {
-      prepareTaskData(task.id, smallLabels)
-    }
-  }
-
-  const [bigBoard] = await db.insert(schema.boards).values({
-    name: 'Big Board',
-    workspaceId: workspace.id,
-    ownerId: ownerId,
-    position: boardPositions[1],
-    visibility: 'private',
-  }).returning()
-
-  await db.insert(schema.boardMembers).values(
-    allUserIds.map((id, index) => ({
-      boardId: bigBoard.id,
-      userId: id,
-      role: (index === 0 ? 'admin' : 'member') as 'admin' | 'member',
-    }))
-  )
-
-  const bigLabels = await db.insert(schema.labels).values(
-    labelData.map(l => ({ ...l, boardId: bigBoard.id }))
-  ).returning()
-
-  const bigColNames = ['Backlog', 'Analysis', 'Design', 'Ready', 'In Dev', 'Testing', 'Review', 'Staging', 'Prod', 'Done']
-  const bigColPositions = generatePositions(null, null, 10)
-  const bigColumns = await db.insert(schema.columns).values(
-    bigColNames.map((name, i) => ({
-      name,
-      boardId: bigBoard.id,
-      position: bigColPositions[i],
-    }))
-  ).returning()
-
-  for (const col of bigColumns) {
-    const taskPositions = generatePositions(null, null, 15)
-    const tasks = await db.insert(schema.tasks).values(
-      Array.from({ length: 15 }).map((_, i) => {
-        const { startDate, dueDate } = getTaskDates()
-        const hasDates = Math.random() > 0.2
-        return {
-          title: `Detailed Task ${i + 1} in ${col.name}`,
-          description: `Description for task ${i + 1}.`,
-          columnId: col.id,
-          position: taskPositions[i],
-          priority: priorities[Math.floor(Math.random() * priorities.length)],
-          startDate: hasDates ? startDate : null,
-          dueDate: hasDates ? dueDate : null,
+          priority: pick(PRIORITIES) as Priority,
+          size: pick(SIZES) as Size,
+          startDate,
+          dueDate,
         }
       })
     ).returning()
 
-    for (const task of tasks) {
-      prepareTaskData(task.id, bigLabels)
-      
-      if (Math.random() > 0.4) {
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i]
+      const taskData = tasksForColumn[i]
+
+      for (const labelName of taskData.labels) {
+        const labelId = labelMap.get(labelName)
+        if (labelId) {
+          taskLabelsToInsert.push({ taskId: task.id, labelId })
+        }
+      }
+
+      const numAssignees = Math.floor(Math.random() * 3) + 1
+      const assignees = pickN(memberIds, numAssignees)
+      for (const userId of assignees) {
+        taskAssigneesToInsert.push({ taskId: task.id, userId, assignedBy: ownerId })
+      }
+
+      const numComments = Math.floor(Math.random() * 4) + 1
+      for (let j = 0; j < numComments; j++) {
+        commentsToInsert.push({
+          taskId: task.id,
+          userId: pick(memberIds),
+          content: pick(ECOMMERCE_COMMENTS),
+        })
+      }
+
+      if (Math.random() > 0.5) {
         checklistsToInsert.push({
           taskId: task.id,
-          title: 'Project Requirements',
+          title: pick(['Acceptance Criteria', 'Technical Tasks', 'QA Checklist', 'Deploy Checklist']),
           position: 'a',
         })
       }
     }
   }
 
-  console.log('Performing final bulk inserts...')
   if (taskLabelsToInsert.length > 0) await db.insert(schema.taskLabels).values(taskLabelsToInsert)
   if (taskAssigneesToInsert.length > 0) await db.insert(schema.taskAssignees).values(taskAssigneesToInsert)
-  if (taskCommentsToInsert.length > 0) await db.insert(schema.comments).values(taskCommentsToInsert)
-  
+  if (commentsToInsert.length > 0) await db.insert(schema.comments).values(commentsToInsert)
+
   if (checklistsToInsert.length > 0) {
-    const insertedChecklists = await db.insert(schema.checklists).values(checklistsToInsert).returning()
-    const checklistItemsData: any[] = []
-    for (const cl of insertedChecklists) {
-      const numItems = Math.floor(Math.random() * 5) + 2
+    const checklists = await db.insert(schema.checklists).values(checklistsToInsert).returning()
+    const checklistItems: { checklistId: string; content: string; isCompleted: boolean; position: string }[] = []
+
+    for (const cl of checklists) {
+      const numItems = Math.floor(Math.random() * 5) + 3
       const itemPositions = generatePositions(null, null, numItems)
-      for (let j = 0; j < numItems; j++) {
-        checklistItemsData.push({
+      const itemTemplates = [
+        'Write unit tests for new functionality',
+        'Update API documentation',
+        'Code review completed',
+        'QA sign-off obtained',
+        'Performance benchmarks meet requirements',
+        'Security review passed',
+        'Accessibility compliance verified',
+        'Cross-browser testing done',
+        'Mobile responsiveness verified',
+        'Error handling implemented',
+        'Logging and monitoring added',
+        'Database migrations tested',
+      ]
+
+      for (let i = 0; i < numItems; i++) {
+        checklistItems.push({
           checklistId: cl.id,
-          content: `Requirement step ${j + 1}`,
-          isCompleted: Math.random() > 0.6,
-          position: itemPositions[j],
+          content: itemTemplates[i % itemTemplates.length],
+          isCompleted: Math.random() > 0.4,
+          position: itemPositions[i],
         })
       }
     }
-    if (checklistItemsData.length > 0) await db.insert(schema.checklistItems).values(checklistItemsData)
+
+    if (checklistItems.length > 0) await db.insert(schema.checklistItems).values(checklistItems)
   }
 
-  console.log('--- Seeding complete! ---')
+  return board.id
+}
+
+async function createRandomBoard(
+  workspaceId: string,
+  ownerId: string,
+  memberIds: string[],
+  position: string,
+  boardName: string
+) {
+  const [board] = await db.insert(schema.boards).values({
+    name: boardName,
+    workspaceId,
+    ownerId,
+    position,
+    visibility: Math.random() > 0.7 ? 'public' : 'private',
+  }).returning()
+
+  await db.insert(schema.boardMembers).values(
+    memberIds.slice(0, Math.floor(Math.random() * memberIds.length) + 1).map((id, index) => ({
+      boardId: board.id,
+      userId: id,
+      role: (index === 0 ? 'admin' : 'member') as 'admin' | 'member',
+    }))
+  )
+
+  const labelData = pickN(ECOMMERCE_LABELS, Math.floor(Math.random() * 6) + 3)
+  const labels = await db.insert(schema.labels).values(
+    labelData.map(l => ({ ...l, boardId: board.id }))
+  ).returning()
+
+  const colNames = pickN(['To Do', 'In Progress', 'Review', 'Done', 'Backlog', 'Testing', 'Blocked'], Math.floor(Math.random() * 4) + 3)
+  const colPositions = generatePositions(null, null, colNames.length)
+  const columns = await db.insert(schema.columns).values(
+    colNames.map((name, i) => ({
+      name,
+      boardId: board.id,
+      position: colPositions[i],
+    }))
+  ).returning()
+
+  const taskLabelsToInsert: { taskId: string; labelId: string }[] = []
+  const taskAssigneesToInsert: { taskId: string; userId: string; assignedBy: string }[] = []
+
+  for (const col of columns) {
+    const numTasks = Math.floor(Math.random() * 8) + 2
+    const taskPositions = generatePositions(null, null, numTasks)
+
+    const tasks = await db.insert(schema.tasks).values(
+      Array.from({ length: numTasks }).map((_, i) => {
+        const hasDates = Math.random() > 0.5
+        const startDate = hasDates ? randomDate(-30, 14) : null
+        const dueDate = startDate ? new Date(startDate.getTime() + (Math.random() * 21 + 1) * 24 * 60 * 60 * 1000) : null
+
+        return {
+          title: pick(RANDOM_TASK_TITLES),
+          columnId: col.id,
+          position: taskPositions[i],
+          priority: pick(PRIORITIES) as Priority,
+          size: pick(SIZES) as Size,
+          startDate,
+          dueDate,
+        }
+      })
+    ).returning()
+
+    for (const task of tasks) {
+      const numLabels = Math.floor(Math.random() * 3)
+      for (const label of pickN(labels, numLabels)) {
+        taskLabelsToInsert.push({ taskId: task.id, labelId: label.id })
+      }
+
+      if (Math.random() > 0.6) {
+        taskAssigneesToInsert.push({
+          taskId: task.id,
+          userId: pick(memberIds),
+          assignedBy: ownerId,
+        })
+      }
+    }
+  }
+
+  if (taskLabelsToInsert.length > 0) await db.insert(schema.taskLabels).values(taskLabelsToInsert)
+  if (taskAssigneesToInsert.length > 0) await db.insert(schema.taskAssignees).values(taskAssigneesToInsert)
+
+  return board.id
+}
+
+async function seed() {
+  console.log('=== KYTE SEED SCRIPT ===')
+  console.log('')
+
+  await ensureSearchVectors()
+  await cleanDatabase()
+
+  console.log('Creating admin user...')
+  const adminId = await createUser({
+    email: 'admin@kyte.dev',
+    password: 'password123',
+    name: 'Admin User',
+    adminRole: 'super_admin',
+  })
+
+  console.log('Creating moderator user...')
+  const modId = await createUser({
+    email: 'mod_1@kyte.dev',
+    password: 'password123',
+    name: 'Moderator One',
+    adminRole: 'moderator',
+  })
+
+  console.log('Creating support user...')
+  const supportId = await createUser({
+    email: 'support_1@kyte.dev',
+    password: 'password123',
+    name: 'Support Agent',
+    adminRole: 'support',
+  })
+
+  console.log('Creating dev team (dev_1@ to dev_10@)...')
+  const devIds: string[] = []
+  for (let i = 1; i <= 10; i++) {
+    const devId = await createUser({
+      email: `dev_${i}@kyte.dev`,
+      password: 'password123',
+      name: `Developer ${i}`,
+    })
+    devIds.push(devId)
+  }
+  const leadDevId = devIds[0]
+
+  console.log('Creating regular users (user_1@ to user_300@)...')
+  const userIds: string[] = []
+  const userBatch = 50
+  for (let batch = 0; batch < 6; batch++) {
+    const start = batch * userBatch + 1
+    const end = Math.min((batch + 1) * userBatch, 300)
+    console.log(`  Creating users ${start} to ${end}...`)
+
+    const batchPromises = []
+    for (let i = start; i <= end; i++) {
+      batchPromises.push(
+        createUser({
+          email: `user_${i}@kyte.dev`,
+          password: 'password123',
+          name: `User ${i}`,
+        })
+      )
+    }
+    const batchIds = await Promise.all(batchPromises)
+    userIds.push(...batchIds)
+  }
+
+  console.log('')
+  console.log('Creating dev team workspace...')
+  const [devWorkspace] = await db.insert(schema.workspaces).values({
+    name: 'ShopFlow Development Team',
+    slug: `shopflow-dev-${Date.now()}`,
+    personal: false,
+  }).returning()
+
+  await db.insert(schema.members).values(
+    devIds.map((id, index) => ({
+      workspaceId: devWorkspace.id,
+      userId: id,
+      role: (index === 0 ? 'owner' : 'member') as 'owner' | 'member',
+    }))
+  )
+
+  const devBoardPositions = generatePositions(null, null, 2)
+  await createEcommerceBoard(devWorkspace.id, leadDevId, devIds, devBoardPositions[0])
+
+  const [devBoard2] = await db.insert(schema.boards).values({
+    name: 'Team Sprint Board',
+    description: 'Current sprint tasks and bug fixes',
+    workspaceId: devWorkspace.id,
+    ownerId: leadDevId,
+    position: devBoardPositions[1],
+    visibility: 'private',
+  }).returning()
+
+  await db.insert(schema.boardMembers).values(
+    devIds.map((id, index) => ({
+      boardId: devBoard2.id,
+      userId: id,
+      role: (index === 0 ? 'admin' : 'member') as 'admin' | 'member',
+    }))
+  )
+
+  const sprintCols = ['To Do', 'In Progress', 'Done']
+  const sprintColPositions = generatePositions(null, null, 3)
+  await db.insert(schema.columns).values(
+    sprintCols.map((name, i) => ({
+      name,
+      boardId: devBoard2.id,
+      position: sprintColPositions[i],
+    }))
+  )
+
+  console.log('')
+  console.log('Creating random boards for regular users...')
+  let boardCount = 0
+  const totalRandomBoards = 50
+
+  for (let i = 0; i < totalRandomBoards; i++) {
+    const ownerId = pick(userIds)
+
+    const [ownerMembership] = await db
+      .select({ workspaceId: schema.members.workspaceId })
+      .from(schema.members)
+      .innerJoin(schema.workspaces, eq(schema.workspaces.id, schema.members.workspaceId))
+      .where(and(
+        eq(schema.members.userId, ownerId),
+        eq(schema.workspaces.personal, true)
+      ))
+      .limit(1)
+
+    if (!ownerMembership) continue
+    const ownerWorkspaceId = ownerMembership.workspaceId
+
+    const boardPosition = generatePositions(null, null, 1)[0]
+    const potentialMembers = pickN(userIds.filter(id => id !== ownerId), Math.floor(Math.random() * 5) + 1)
+
+    await createRandomBoard(
+      ownerWorkspaceId,
+      ownerId,
+      [ownerId, ...potentialMembers],
+      boardPosition,
+      pick(RANDOM_BOARD_NAMES)
+    )
+
+    boardCount++
+    if (boardCount % 10 === 0) {
+      console.log(`  Created ${boardCount}/${totalRandomBoards} random boards...`)
+    }
+  }
+
+  console.log('')
+  console.log('=== SEED COMPLETE ===')
+  console.log('')
+  console.log('Created users:')
+  console.log('  - admin@kyte.dev (super_admin)')
+  console.log('  - mod_1@kyte.dev (moderator)')
+  console.log('  - support_1@kyte.dev (support)')
+  console.log('  - dev_1@kyte.dev to dev_10@kyte.dev (dev team)')
+  console.log('  - user_1@kyte.dev to user_300@kyte.dev (regular users)')
+  console.log('')
+  console.log('Password for all users: password123')
+  console.log('')
+  console.log('Featured board:')
+  console.log('  - ShopFlow E-Commerce Platform (owned by dev_1@kyte.dev)')
+  console.log('')
 }
 
 seed()
   .then(() => process.exit(0))
   .catch((err) => {
-    console.error(err)
+    console.error('Seed failed:', err)
     process.exit(1)
   })
