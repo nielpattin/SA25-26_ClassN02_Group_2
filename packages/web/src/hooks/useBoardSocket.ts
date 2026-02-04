@@ -65,8 +65,14 @@ export function useBoardSocket(boardId: string) {
   }, [isDragging, boardId, queryClient])
 
   useEffect(() => {
+    let lastCheck = 0
+    const THROTTLE_MS = 1000
+
     const handleActivity = () => {
       const now = Date.now()
+      if (now - lastCheck < THROTTLE_MS) return
+      lastCheck = now
+
       if (now - lastActivityRef.current > 30000) {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ type: 'presence:activity' }))
@@ -75,9 +81,9 @@ export function useBoardSocket(boardId: string) {
       }
     }
 
-    window.addEventListener('mousemove', handleActivity)
-    window.addEventListener('keydown', handleActivity)
-    window.addEventListener('mousedown', handleActivity)
+    window.addEventListener('mousemove', handleActivity, { passive: true })
+    window.addEventListener('keydown', handleActivity, { passive: true })
+    window.addEventListener('mousedown', handleActivity, { passive: true })
 
     return () => {
       window.removeEventListener('mousemove', handleActivity)
