@@ -38,7 +38,7 @@ export function GanttContainer({ tasks, boardId, onTaskClick, todayTrigger, zoom
   const { data: dependencies = [] } = useDependencies(boardId)
   const baseColumnWidth = ZOOM_COLUMN_WIDTHS[zoomMode]
   const columnWidth = useMemo(() => {
-    if (zoomMode !== 'quarter' || !timelineWidth) return baseColumnWidth
+    if ((zoomMode !== 'quarter' && zoomMode !== 'month') || !timelineWidth) return baseColumnWidth
     const days = Math.max(range.totalDays, 1)
     const fitWidth = Math.ceil(timelineWidth / days)
     return Math.max(baseColumnWidth, fitWidth)

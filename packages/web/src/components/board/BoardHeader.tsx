@@ -53,21 +53,25 @@ export function BoardHeader({
   onOpenPublish,
 }: BoardHeaderProps) {
   return (
-    <header className="flex shrink-0 items-center justify-between gap-4 border-b border-black bg-canvas px-6 py-4">
-      <div className="flex items-center gap-3">
-        <Link
-          to="/boards"
-          className="text-sm font-extrabold text-black uppercase hover:bg-accent hover:px-1 hover:shadow-brutal-sm"
-        >
-          Workspace
-        </Link>
-        <ChevronRight size={14} className="text-text-muted" />
-        <h1 className="m-0 font-heading text-[18px] font-bold text-black">{boardName}</h1>
-        <div className="ml-4">
+    <header className="shrink-0 border-b border-black bg-canvas">
+      <div className="flex items-center justify-between gap-4 px-6 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <Link
+            to="/boards"
+            className="shrink-0 text-sm font-extrabold text-black uppercase hover:bg-accent hover:px-1 hover:shadow-brutal-sm"
+          >
+            Workspace
+          </Link>
+          <ChevronRight size={14} className="shrink-0 text-text-muted" />
+          <h1 className="m-0 truncate font-heading text-[18px] font-bold whitespace-nowrap text-black">{boardName}</h1>
+        </div>
+        <div className="flex shrink-0 items-center gap-4">
           <PresenceStrip presence={presence} />
+          <SearchTrigger />
         </div>
       </div>
-      <div className="flex items-center gap-4">
+
+      <div className="flex items-center justify-between gap-4 border-t border-black/10 px-6 py-2">
         <BoardFilterBar
           pendingFilters={pendingFilters}
           labels={labels}
@@ -80,73 +84,74 @@ export function BoardHeader({
           onApply={onApplyFilters}
           onClear={onClearFilters}
         />
-        <div className="flex items-center gap-0 border border-black bg-white shadow-brutal-sm">
-          <button
-            onClick={() => onViewChange('kanban')}
-            className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
-              currentView === 'kanban' ? 'bg-accent' : 'hover:bg-accent/50'
-            }`}
-            title="Kanban View"
-          >
-            <Kanban size={18} />
-          </button>
-          <div className="h-9 w-px bg-black" />
-          <button
-            onClick={() => onViewChange('calendar')}
-            className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
-              currentView === 'calendar' ? 'bg-accent' : 'hover:bg-accent/50'
-            }`}
-            title="Calendar View"
-          >
-            <Calendar size={18} />
-          </button>
-          <div className="h-9 w-px bg-black" />
-          <button
-            onClick={() => onViewChange('gantt')}
-            className={`flex h-9 w-9 cursor-pointer items-center justify-center transition-all ${
-              currentView === 'gantt' ? 'bg-accent' : 'hover:bg-accent/50'
-            }`}
-            title="Gantt View"
-          >
-            <ChartGantt size={18} />
-          </button>
-        </div>
-        <button
-          onClick={onOpenArchive}
-          className="flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white shadow-brutal-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-none"
-          title="Open Archive"
-        >
-          <Archive size={18} />
-        </button>
-        <Dropdown
-          trigger={
-            <button className="flex h-9 w-9 cursor-pointer items-center justify-center border border-black bg-white shadow-brutal-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-none">
-              <MoreHorizontal size={18} />
+        <div className="flex shrink-0 items-center gap-3">
+          <div className="flex items-center gap-0 border border-black bg-white shadow-brutal-sm">
+            <button
+              onClick={() => onViewChange('kanban')}
+              className={`flex h-8 w-8 cursor-pointer items-center justify-center transition-all ${
+                currentView === 'kanban' ? 'bg-accent' : 'hover:bg-accent/50'
+              }`}
+              title="Kanban View"
+            >
+              <Kanban size={16} />
             </button>
-          }
-          items={[
-            {
-              label: 'Export Board',
-              icon: <Download size={16} />,
-              onClick: onOpenExport,
-            },
-            ...(isBoardAdmin
-              ? [
-                  {
-                    label: 'Export Activity Log',
-                    icon: <History size={16} />,
-                    onClick: onOpenActivityExport,
-                  },
-                ]
-              : []),
-            {
-              label: 'Publish to Market',
-              icon: <Share2 size={16} />,
-              onClick: onOpenPublish,
-            },
-          ]}
-        />
-        <SearchTrigger />
+            <div className="h-8 w-px bg-black" />
+            <button
+              onClick={() => onViewChange('calendar')}
+              className={`flex h-8 w-8 cursor-pointer items-center justify-center transition-all ${
+                currentView === 'calendar' ? 'bg-accent' : 'hover:bg-accent/50'
+              }`}
+              title="Calendar View"
+            >
+              <Calendar size={16} />
+            </button>
+            <div className="h-8 w-px bg-black" />
+            <button
+              onClick={() => onViewChange('gantt')}
+              className={`flex h-8 w-8 cursor-pointer items-center justify-center transition-all ${
+                currentView === 'gantt' ? 'bg-accent' : 'hover:bg-accent/50'
+              }`}
+              title="Gantt View"
+            >
+              <ChartGantt size={16} />
+            </button>
+          </div>
+          <button
+            onClick={onOpenArchive}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center border border-black bg-white shadow-brutal-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-none"
+            title="Open Archive"
+          >
+            <Archive size={16} />
+          </button>
+          <Dropdown
+            trigger={
+              <button className="flex h-8 w-8 cursor-pointer items-center justify-center border border-black bg-white shadow-brutal-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-none">
+                <MoreHorizontal size={16} />
+              </button>
+            }
+            items={[
+              {
+                label: 'Export Board',
+                icon: <Download size={16} />,
+                onClick: onOpenExport,
+              },
+              ...(isBoardAdmin
+                ? [
+                    {
+                      label: 'Export Activity Log',
+                      icon: <History size={16} />,
+                      onClick: onOpenActivityExport,
+                    },
+                  ]
+                : []),
+              {
+                label: 'Publish to Market',
+                icon: <Share2 size={16} />,
+                onClick: onOpenPublish,
+              },
+            ]}
+          />
+        </div>
       </div>
     </header>
   )

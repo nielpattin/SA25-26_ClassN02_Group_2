@@ -46,7 +46,7 @@ export function BoardFilterBar({
     (pendingFilters.dueDate ? 1 : 0)
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       <FilterDropdown
         isOpen={openDropdown === 'labels'}
         onOpenChange={open => setOpenDropdown(open ? 'labels' : null)}
@@ -146,7 +146,7 @@ export function BoardFilterBar({
         isOpen={openDropdown === 'dueDate'}
         onOpenChange={open => setOpenDropdown(open ? 'dueDate' : null)}
         trigger={
-          <button className="flex items-center gap-1.5 border border-black bg-white px-2.5 py-1.5 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+          <button className="flex items-center gap-1.5 whitespace-nowrap border border-black bg-white px-2.5 py-1.5 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <Calendar size={12} />
             <span>
               {pendingFilters.dueDate
