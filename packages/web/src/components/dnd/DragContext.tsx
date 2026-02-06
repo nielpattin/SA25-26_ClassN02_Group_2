@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import { useMemo, useRef, type ReactNode } from 'react'
 import {
   DragRefsContext,
   type DragRefs,
@@ -20,12 +20,13 @@ export function DragProvider({ children }: DragProviderProps) {
   const dragDirectionRef = useRef({ x: 0, y: 0 })
   const cardRectsRef = useRef<CardRect[]>([])
   const columnRectsRef = useRef<ColumnRect[]>([])
+  const cardRectsMetaRef = useRef({ columnId: null, scrollTop: 0, needsRefresh: true })
   const isDraggingCardRef = useRef(false)
-  const pendingCardDragRef = useRef<PendingDrag<{ id: string; [key: string]: unknown }>>(null)
+  const pendingCardDragRef = useRef<PendingDrag<{ id: string, [key: string]: unknown }>>(null)
   const pendingColumnDragRef = useRef<PendingColumnDrag>(null)
-  const lastDropTargetRef = useRef<{ columnId: string; insertBeforeId: string | null } | null>(null)
+  const lastDropTargetRef = useRef<{ columnId: string, insertBeforeId: string | null } | null>(null)
 
-  const refs: DragRefs = {
+  const refs = useMemo<DragRefs>(() => ({
     scrollContainerRef,
     ghostRef,
     cardGhostRef,
@@ -33,11 +34,25 @@ export function DragProvider({ children }: DragProviderProps) {
     dragDirectionRef,
     cardRectsRef,
     columnRectsRef,
+    cardRectsMetaRef,
     isDraggingCardRef,
     pendingCardDragRef,
     pendingColumnDragRef,
     lastDropTargetRef,
-  }
+  }), [
+    scrollContainerRef,
+    ghostRef,
+    cardGhostRef,
+    lastMousePosRef,
+    dragDirectionRef,
+    cardRectsRef,
+    columnRectsRef,
+    cardRectsMetaRef,
+    isDraggingCardRef,
+    pendingCardDragRef,
+    pendingColumnDragRef,
+    lastDropTargetRef,
+  ])
 
   return (
     <DragRefsContext.Provider value={refs}>

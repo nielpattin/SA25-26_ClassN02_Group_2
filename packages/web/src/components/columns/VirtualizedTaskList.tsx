@@ -1,6 +1,7 @@
-import { useRef, Fragment } from 'react'
+import { useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { TaskCard } from '../tasks'
+import { useDragStore } from '../../store/dragStore'
 import type { TaskWithLabels } from '../../hooks/useTasks'
 import type { DropTarget } from '../dnd/dragTypes'
 
@@ -13,9 +14,49 @@ interface VirtualizedTaskListProps {
   onCardClick: (id: string) => void
   onCardDragStart: (card: TaskWithLabels, e: React.MouseEvent) => void
   draggedCardId: string | null
+  dragSourceColumnId: string | null
+  draggedHeight: number
   isAnyDragging: boolean
   isFiltering: boolean
   dropTarget: DropTarget | null
+}
+
+function getVirtualShift(
+  index: number,
+  cardId: string,
+  cards: TaskWithLabels[],
+  draggedCardId: string | null,
+  dragSourceColumnId: string | null,
+  draggedHeight: number,
+  dropTarget: DropTarget | null,
+  columnId: string,
+): number {
+  if (!draggedCardId || cardId === draggedCardId || !dropTarget) return 0
+
+  const amount = draggedHeight + CARD_GAP
+  const isSource = dragSourceColumnId === columnId
+  const isTarget = dropTarget.columnId === columnId
+  const draggedIndex = cards.findIndex(c => c.id === draggedCardId)
+  const insertIndex = isTarget
+    ? (dropTarget.insertBeforeId
+      ? cards.findIndex(c => c.id === dropTarget.insertBeforeId)
+      : cards.length)
+    : -1
+
+  if (isSource && isTarget) {
+    if (draggedIndex < 0 || insertIndex < 0) return 0
+    if (draggedIndex < insertIndex) {
+      if (index > draggedIndex && index < insertIndex) return -amount
+    } else if (draggedIndex > insertIndex) {
+      if (index >= insertIndex && index < draggedIndex) return amount
+    }
+  } else if (isSource && !isTarget) {
+    if (draggedIndex >= 0 && index > draggedIndex) return -amount
+  } else if (!isSource && isTarget) {
+    if (insertIndex >= 0 && index >= insertIndex) return amount
+  }
+
+  return 0
 }
 
 export function VirtualizedTaskList({
@@ -24,10 +65,13 @@ export function VirtualizedTaskList({
   onCardClick,
   onCardDragStart,
   draggedCardId,
+  dragSourceColumnId,
+  draggedHeight,
   isAnyDragging,
   isFiltering,
   dropTarget,
 }: VirtualizedTaskListProps) {
+  const isActivelyDragging = useDragStore((s) => s.isDragging)
   const parentRef = useRef<HTMLDivElement>(null)
 
   const virtualizer = useVirtualizer({
@@ -37,9 +81,6 @@ export function VirtualizedTaskList({
     gap: CARD_GAP,
     overscan: 5,
   })
-
-  const showDropIndicatorAtEnd =
-    dropTarget?.columnId === columnId && dropTarget.insertBeforeId === null && cards.length > 0
 
   const showDropIndicatorEmpty =
     dropTarget?.columnId === columnId && dropTarget.insertBeforeId === null && cards.length === 0
@@ -63,70 +104,52 @@ export function VirtualizedTaskList({
     <div
       ref={parentRef}
       className="flex min-h-5 flex-1 flex-col overflow-y-auto px-1 pt-1 pb-3"
+      data-role="card-list"
     >
       <div
         style={{
-          height: `${virtualizer.getTotalSize() + (showDropIndicatorAtEnd ? 96 + CARD_GAP : 0)}px`,
+          height: `${virtualizer.getTotalSize()}px`,
           width: '100%',
           position: 'relative',
         }}
       >
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const card = cards[virtualRow.index]
-          const showIndicatorBefore =
-            dropTarget?.columnId === columnId && dropTarget.insertBeforeId === card.id
-          const shouldHide = card.id === draggedCardId
+          const isDragged = card.id === draggedCardId
+          const shift = getVirtualShift(
+            virtualRow.index, card.id, cards,
+            draggedCardId, dragSourceColumnId, draggedHeight,
+            dropTarget, columnId,
+          )
 
           return (
-            <Fragment key={card.id}>
-              {showIndicatorBefore && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: virtualRow.start - CARD_GAP - 96,
-                    left: 0,
-                    width: '100%',
-                    height: 96,
-                  }}
-                  className="rounded-none border-2 border-dashed border-black/40 bg-black/5"
-                />
-              )}
-              <div
-                data-index={virtualRow.index}
-                ref={virtualizer.measureElement}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
-                {!shouldHide && (
-                  <TaskCard
-                    task={card}
-                    onTaskClick={onCardClick}
-                    onTaskDragStart={onCardDragStart}
-                    isAnyDragging={isAnyDragging}
-                  />
-                )}
-              </div>
-            </Fragment>
+            <div
+              key={card.id}
+              data-index={virtualRow.index}
+              data-role="card-wrapper"
+              data-card-id={card.id}
+              data-shift={shift || undefined}
+              ref={virtualizer.measureElement}
+              style={{
+                position: 'absolute',
+                top: `${virtualRow.start}px`,
+                left: 0,
+                width: '100%',
+                transform: shift ? `translateY(${shift}px)` : undefined,
+                transition: isActivelyDragging ? 'transform 150ms ease' : 'none',
+                opacity: isDragged ? 0.15 : 1,
+                pointerEvents: isDragged ? 'none' : undefined,
+              }}
+            >
+              <TaskCard
+                task={card}
+                onTaskClick={onCardClick}
+                onTaskDragStart={onCardDragStart}
+                isAnyDragging={isAnyDragging}
+              />
+            </div>
           )
         })}
-
-        {showDropIndicatorAtEnd && (
-          <div
-            style={{
-              position: 'absolute',
-              top: virtualizer.getTotalSize() + CARD_GAP,
-              left: 0,
-              width: '100%',
-              height: 96,
-            }}
-            className="rounded-none border-2 border-dashed border-black/40 bg-black/5"
-          />
-        )}
       </div>
     </div>
   )

@@ -14,7 +14,7 @@ import {
 } from '../dnd'
 import { Input } from '../ui/Input'
 
-type Column = { id: string; name: string; position: string; boardId: string }
+type Column = { id: string, name: string, position: string, boardId: string }
 
 export type KanbanBoardProps = {
   boardId: string
@@ -23,7 +23,7 @@ export type KanbanBoardProps = {
   filteredCards: TaskWithLabels[]
   newColumnName: string
   setNewColumnName: (name: string) => void
-  createColumn: { mutate: (input: { name: string; boardId: string }) => void }
+  createColumn: { mutate: (input: { name: string, boardId: string }) => void }
   onCardClick: (id: string) => void
   onAddTask: (columnId: string, title: string) => void | Promise<void>
   onRenameColumn: (columnId: string, newName: string) => void
@@ -62,6 +62,8 @@ export function KanbanBoard({
   const dropTarget = useDragStore((s) => s.dropTarget)
   const isScrolling = useDragStore((s) => s.isScrolling)
   const isDragging = useDragStore((s) => s.isDragging)
+  const dragSourceColumnId = useDragStore((s) => s.dragSourceColumnId)
+  const draggedHeight = useDragStore((s) => s.draggedHeight)
 
   const { scrollContainerRef, ghostRef, cardGhostRef } = useDragRefs()
 
@@ -128,6 +130,8 @@ export function KanbanBoard({
             boards={allBoards}
             isDragging={column.id === draggedColumnId}
             draggedCardId={draggedCardId}
+            dragSourceColumnId={dragSourceColumnId}
+            draggedHeight={draggedHeight}
             isAnyDragging={isAnyDragging}
             isFiltering={isFiltering}
             dropTarget={dropTarget}

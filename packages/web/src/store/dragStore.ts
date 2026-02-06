@@ -99,6 +99,7 @@ export const useDragStore = create<DragStore>((set, get) => ({
   setScrollLeft: (left) => set({ scrollLeft: left }),
 
   clearCardDrag: () => set({
+    isDragging: false,
     draggedCardId: null,
     draggedCardData: null,
     dropTarget: null,

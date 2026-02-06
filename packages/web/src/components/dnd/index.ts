@@ -9,6 +9,7 @@ export type {
   PendingDrag,
   ColumnRect,
   CardRect,
+  CardRectsMeta,
   DragRefs,
   PendingColumnDrag,
 } from './dragTypes'

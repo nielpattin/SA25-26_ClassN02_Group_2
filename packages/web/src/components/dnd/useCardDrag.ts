@@ -3,7 +3,14 @@ import { useDragRefs } from './dragTypes'
 import { useDragStore, type DropTarget } from '../../store/dragStore'
 
 export function useCardDrag() {
-  const { scrollContainerRef, columnRectsRef, cardGhostRef, lastDropTargetRef } = useDragRefs()
+  const {
+    scrollContainerRef,
+    columnRectsRef,
+    cardGhostRef,
+    lastDropTargetRef,
+    cardRectsRef,
+    cardRectsMetaRef,
+  } = useDragRefs()
   const setDropTarget = useDragStore((s) => s.setDropTarget)
 
   const updateCardPosition = useCallback((e: React.MouseEvent) => {
@@ -22,26 +29,54 @@ export function useCardDrag() {
 
     if (hoveredCol) {
       const targetColId = hoveredCol.id
+      const stateChanged = cardRectsMetaRef.current.columnId !== targetColId
+      const listEl = scrollContainerRef.current.querySelector(
+        `[data-role="column"][data-column-id="${targetColId}"] [data-role="card-list"]`
+      ) as HTMLElement | null
+      const listRect = listEl?.getBoundingClientRect()
+      const listTop = listRect?.top ?? 0
+      const listScrollTop = listEl?.scrollTop ?? 0
+      const relativeMouseY = e.clientY - listTop + listScrollTop
 
-      const cardElements = Array.from(
-        scrollContainerRef.current.querySelectorAll(
-          `[data-role="card-wrapper"][data-column-id="${targetColId}"]:not([data-card-id="${state.draggedCardId}"])`
-        )
-      )
+      const needsRefresh = cardRectsMetaRef.current.needsRefresh
+      const scrollChanged = cardRectsMetaRef.current.scrollTop !== listScrollTop
 
-      const rects = cardElements.map(el => {
-        const cardContent = el.querySelector('[data-role="card"]') || el
-        const r = cardContent.getBoundingClientRect()
-        return {
-          id: (el as HTMLElement).dataset.cardId ?? '',
-          top: r.top,
-          bottom: r.bottom,
-          midY: r.top + r.height / 2,
+      if (stateChanged || needsRefresh || scrollChanged) {
+        const columnEl = scrollContainerRef.current.querySelector(
+          `[data-role="column"][data-column-id="${targetColId}"]`
+        ) as HTMLElement | null
+
+        if (columnEl) {
+          const cardElements = Array.from(
+            columnEl.querySelectorAll('[data-role="card-wrapper"][data-card-id]')
+          ) as HTMLElement[]
+
+          cardRectsRef.current = cardElements.map(el => {
+            return {
+              id: el.dataset.cardId ?? '',
+              columnId: targetColId,
+              top: el.offsetTop,
+              height: el.offsetHeight,
+            }
+          })
         }
-      })
+
+        cardRectsMetaRef.current = {
+          columnId: targetColId,
+          scrollTop: listScrollTop,
+          needsRefresh: false,
+        }
+      }
+
+      const rects = cardRectsRef.current
+        .filter(r => r.columnId === targetColId && r.id !== state.draggedCardId)
+        .map(r => ({
+          id: r.id,
+          midY: r.top + r.height / 2,
+        }))
 
       const offset = state.dragOffset
-      const draggedMidY = e.clientY - offset.y + state.draggedHeight / 2
+      const draggedMidY = relativeMouseY - offset.y + state.draggedHeight / 2
 
       let insertBeforeId: string | null = null
       for (const r of rects) {
@@ -60,7 +95,15 @@ export function useCardDrag() {
         setDropTarget(newTarget)
       }
     }
-  }, [scrollContainerRef, columnRectsRef, cardGhostRef, lastDropTargetRef, setDropTarget])
+  }, [
+    scrollContainerRef,
+    columnRectsRef,
+    cardGhostRef,
+    lastDropTargetRef,
+    cardRectsRef,
+    cardRectsMetaRef,
+    setDropTarget,
+  ])
 
   return { updateCardPosition }
 }

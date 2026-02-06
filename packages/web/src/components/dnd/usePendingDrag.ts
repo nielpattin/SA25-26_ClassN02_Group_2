@@ -4,7 +4,7 @@ import { useDragStore, type DraggableItem } from '../../store/dragStore'
 
 export function usePendingDrag(onDragStart?: () => void) {
   const { pendingCardDragRef, pendingColumnDragRef, lastDropTargetRef } = useDragRefs()
-  const { scrollContainerRef, columnRectsRef } = useDragRefs()
+  const { scrollContainerRef, columnRectsRef, cardRectsRef, cardRectsMetaRef } = useDragRefs()
 
   const setDraggedCardId = useDragStore((s) => s.setDraggedCardId)
   const setDraggedCardData = useDragStore((s) => s.setDraggedCardData)
@@ -36,6 +36,33 @@ export function usePendingDrag(onDragStart?: () => void) {
     })
   }, [scrollContainerRef, columnRectsRef])
 
+  const cacheCardRects = useCallback((columnId: string) => {
+    if (!scrollContainerRef.current) return
+    const columnEl = scrollContainerRef.current.querySelector(
+      `[data-role="column"][data-column-id="${columnId}"]`
+    ) as HTMLElement | null
+
+    if (!columnEl) return
+
+    const listEl = columnEl.querySelector('[data-role="card-list"]') as HTMLElement | null
+    const cardElements = Array.from(
+      columnEl.querySelectorAll('[data-role="card-wrapper"][data-card-id]')
+    ) as HTMLElement[]
+
+    cardRectsRef.current = cardElements.map(el => ({
+      id: el.dataset.cardId ?? '',
+      columnId,
+      top: el.offsetTop,
+      height: el.offsetHeight,
+    }))
+
+    cardRectsMetaRef.current = {
+      columnId,
+      scrollTop: listEl?.scrollTop ?? 0,
+      needsRefresh: false,
+    }
+  }, [scrollContainerRef, cardRectsRef, cardRectsMetaRef])
+
   const activateCardDrag = useCallback(<TCard extends DraggableItem>(
     e: React.MouseEvent,
     allCards: TCard[]
@@ -64,9 +91,15 @@ export function usePendingDrag(onDragStart?: () => void) {
       ? colCards[myIdx + 1].id
       : null
 
+    cacheCardRects(cardWithCol.columnId)
     setDropTarget({ columnId: cardWithCol.columnId, insertBeforeId: initialInsertBeforeId })
     setDragSourceColumnId(cardWithCol.columnId)
     lastDropTargetRef.current = { columnId: cardWithCol.columnId, insertBeforeId: initialInsertBeforeId }
+    cardRectsMetaRef.current = {
+      ...cardRectsMetaRef.current,
+      columnId: cardWithCol.columnId,
+      needsRefresh: true,
+    }
 
     onDragStart?.()
     isDraggingCardRef.current = true
@@ -74,9 +107,20 @@ export function usePendingDrag(onDragStart?: () => void) {
 
     return true
   }, [
-    pendingCardDragRef, cacheColumnRects, setDraggedCardId, setDraggedCardData,
-    setDraggedWidth, setDraggedHeight, setDragOffset, setDropTarget,
-    setDragSourceColumnId, lastDropTargetRef, onDragStart, isDraggingCardRef,
+    pendingCardDragRef,
+    cacheColumnRects,
+    cacheCardRects,
+    setDraggedCardId,
+    setDraggedCardData,
+    setDraggedWidth,
+    setDraggedHeight,
+    setDragOffset,
+    setDropTarget,
+    setDragSourceColumnId,
+    cardRectsMetaRef,
+    lastDropTargetRef,
+    onDragStart,
+    isDraggingCardRef,
   ])
 
   const activateColumnDrag = useCallback(<TColumn extends DraggableItem>(

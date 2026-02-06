@@ -1,15 +1,13 @@
-import { forwardRef, type ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { MoreHorizontal } from 'lucide-react'
 
 export type ColumnGhostProps = {
   name: string
   cardCount: number
+  ref?: Ref<HTMLDivElement>
 }
 
-export const ColumnGhost = forwardRef<HTMLDivElement, ColumnGhostProps>(function ColumnGhost(
-  { name, cardCount },
-  ref
-) {
+export function ColumnGhost({ name, cardCount, ref }: ColumnGhostProps) {
   return (
     <div
       className="pointer-events-none fixed top-0 left-0 z-1000 w-(--board-column-width,300px) rounded-none border border-black bg-surface p-(--column-padding,16px) opacity-80 shadow-brutal-2xl! will-change-transform"
@@ -24,18 +22,16 @@ export const ColumnGhost = forwardRef<HTMLDivElement, ColumnGhostProps>(function
       </h4>
     </div>
   )
-})
+}
 
 ColumnGhost.displayName = 'ColumnGhost'
 
 export type CardGhostProps = {
   children: ReactNode
+  ref?: Ref<HTMLDivElement>
 }
 
-export const CardGhost = forwardRef<HTMLDivElement, CardGhostProps>(function CardGhost(
-  { children },
-  ref
-) {
+export function CardGhost({ children, ref }: CardGhostProps) {
   return (
     <div
       className="pointer-events-none fixed top-0 left-0 z-1000 w-[calc(var(--board-column-width,300px)-48px)] opacity-90 will-change-transform"
@@ -44,7 +40,7 @@ export const CardGhost = forwardRef<HTMLDivElement, CardGhostProps>(function Car
       <div className="rotate-2 border border-black shadow-brutal-2xl!">{children}</div>
     </div>
   )
-})
+}
 
 CardGhost.displayName = 'CardGhost'
 

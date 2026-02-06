@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Priority, Size, Reminder } from '@kyte/server/src'
 import { api } from '../api/client'
+import { useDragStore } from '../store/dragStore'
 
 export type { Priority, Size, Reminder }
 
@@ -21,7 +22,6 @@ export type ChecklistProgress = {
   total: number
 }
 
-// Task type for list views
 export type TaskWithLabels = {
   id: string
   title: string
@@ -41,7 +41,6 @@ export type TaskWithLabels = {
   version?: number
 }
 
-// Task type from detail endpoint (labels as string IDs)
 export type Task = {
   id: string
   title: string
@@ -80,7 +79,6 @@ export type MoveTaskInput = {
   version?: number
 }
 
-// Query key factory
 export const taskKeys = {
   all: ['cards'] as const,
   lists: () => [...taskKeys.all, 'list'] as const,
@@ -89,9 +87,6 @@ export const taskKeys = {
   detail: (id: string) => [...taskKeys.details(), id] as const,
 }
 
-/**
- * Fetch all tasks for a board (enriched with labels, checklist progress)
- */
 export function useTasks(boardId: string) {
   return useQuery({
     queryKey: taskKeys.list(boardId),
@@ -108,9 +103,6 @@ export function useTasks(boardId: string) {
   })
 }
 
-/**
- * Fetch a single task by ID
- */
 export function useTask(taskId: string) {
   return useQuery({
     queryKey: taskKeys.detail(taskId),
@@ -123,9 +115,6 @@ export function useTask(taskId: string) {
   })
 }
 
-/**
- * Create a new task
- */
 export function useCreateTask(boardId: string) {
   const queryClient = useQueryClient()
 
@@ -141,9 +130,6 @@ export function useCreateTask(boardId: string) {
   })
 }
 
-/**
- * Update a task
- */
 export function useUpdateTask(boardId: string) {
   const queryClient = useQueryClient()
 
@@ -189,9 +175,6 @@ export function useUpdateTask(boardId: string) {
   })
 }
 
-/**
- * Move a task (change column and/or position) with optimistic updates
- */
 export function useMoveTask(boardId: string) {
   const queryClient = useQueryClient()
 
@@ -200,19 +183,26 @@ export function useMoveTask(boardId: string) {
       const { error } = await api.v1.tasks({ id: taskId }).move.patch(moveInput)
       if (error) throw error
     },
-    onMutate: async ({ taskId, columnId, position, version }) => {
-      await queryClient.cancelQueries({ queryKey: taskKeys.list(boardId) })
+    onMutate: ({ taskId, columnId, position, version }) => {
+      queryClient.cancelQueries({ queryKey: taskKeys.list(boardId) })
 
       const previousTasks = queryClient.getQueryData<TaskWithLabels[]>(taskKeys.list(boardId))
 
       if (previousTasks) {
         queryClient.setQueryData<TaskWithLabels[]>(taskKeys.list(boardId), prev => {
           if (!prev) return prev
-          return prev.map(task =>
+          const next = prev.map(task =>
             task.id === taskId ? { ...task, columnId, position, version } : task
           )
+          return next.sort((a, b) => {
+            if (a.columnId !== b.columnId) return a.columnId.localeCompare(b.columnId)
+            if (a.position !== b.position) return a.position < b.position ? -1 : 1
+            return a.id.localeCompare(b.id)
+          })
         })
       }
+
+      useDragStore.getState().clearCardDrag()
 
       return { previousTasks }
     },
@@ -220,7 +210,6 @@ export function useMoveTask(boardId: string) {
       if (context?.previousTasks) {
         queryClient.setQueryData(taskKeys.list(boardId), context.previousTasks)
       }
-      // Retry on conflict by refetching
       if ((err as { status?: number }).status === 409) {
         queryClient.invalidateQueries({ queryKey: taskKeys.list(boardId) })
       }
@@ -231,9 +220,6 @@ export function useMoveTask(boardId: string) {
   })
 }
 
-/**
- * Archive a task
- */
 export function useArchiveTask(boardId: string) {
   const queryClient = useQueryClient()
 
@@ -245,10 +231,10 @@ export function useArchiveTask(boardId: string) {
     onMutate: async (taskId) => {
       await queryClient.cancelQueries({ queryKey: taskKeys.list(boardId) })
       
-      const previousTasks = queryClient.getQueryData<Task[]>(taskKeys.list(boardId))
+      const previousTasks = queryClient.getQueryData<TaskWithLabels[]>(taskKeys.list(boardId))
       
       if (previousTasks) {
-        queryClient.setQueryData<Task[]>(
+        queryClient.setQueryData<TaskWithLabels[]>(
           taskKeys.list(boardId),
           prev => prev?.filter(t => t.id !== taskId)
         )

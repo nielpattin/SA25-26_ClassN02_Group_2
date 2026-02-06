@@ -4,7 +4,6 @@ import { generateKeyBetween } from 'fractional-indexing'
 import { PublishTemplateModal } from '../components/board/PublishTemplateModal'
 import { useBoardFiltersStore } from '../store/boardViewStore'
 import { useBoardSocket } from '../hooks/useBoardSocket'
-import { useDragStore } from '../store/dragStore'
 import { useBoard } from '../hooks/useBoards'
 import {
   useBoardPreferences,
@@ -40,7 +39,7 @@ import { WorkspaceProvider } from '../context/WorkspaceContext'
 import { DragProvider } from '../components/dnd'
 import type { ColumnDropResult, CardDropResult } from '../components/dnd'
 
-type Column = { id: string; name: string; position: string; boardId: string }
+type Column = { id: string, name: string, position: string, boardId: string }
 
 type BoardSearch = {
   cardId?: string
@@ -49,7 +48,7 @@ type BoardSearch = {
 export const Route = createFileRoute('/board/$boardId')({
   component: BoardPage,
   validateSearch: (search: Record<string, unknown>): BoardSearch => ({
-    cardId: (search.cardId as string) || undefined,
+    cardId: typeof search.cardId === 'string' ? search.cardId : undefined,
   }),
 })
 
@@ -233,8 +232,6 @@ function BoardPage() {
   )
 
   // Drop handlers for API persistence
-  const setIsDragging = useDragStore((state) => state.setDragging)
-
   const handleColumnDrop = useCallback(
     (result: ColumnDropResult<Column>) => {
       const { columnId, finalColumns, placeholderIndex } = result
@@ -253,13 +250,10 @@ function BoardPage() {
 
       // The mutation handles optimistic updates and error rollback
       moveColumn.mutate(
-        { columnId, position: calculatedPosition, version },
-        {
-          onSettled: () => setIsDragging(false)
-        }
+        { columnId, position: calculatedPosition, version }
       )
     },
-    [moveColumn, setIsDragging, serverColumns]
+    [moveColumn, serverColumns]
   )
 
   const handleCardDrop = useCallback(
@@ -295,13 +289,10 @@ function BoardPage() {
 
       // The mutation handles optimistic updates and error rollback
       moveTask.mutate(
-        { taskId: droppedCardId, columnId, position: calculatedPosition, version },
-        {
-          onSettled: () => setIsDragging(false)
-        }
+        { taskId: droppedCardId, columnId, position: calculatedPosition, version }
       )
     },
-    [moveTask, setIsDragging, allCards]
+    [moveTask, allCards]
   )
 
   // Check if current user is board admin

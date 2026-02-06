@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
+import { useDragStore } from '../store/dragStore'
 
 export type Column = {
   id: string
@@ -19,7 +20,6 @@ export type MoveColumnInput = {
   version?: number
 }
 
-// Query key factory
 export const columnKeys = {
   all: ['columns'] as const,
   lists: () => [...columnKeys.all, 'list'] as const,
@@ -28,9 +28,6 @@ export const columnKeys = {
   detail: (id: string) => [...columnKeys.details(), id] as const,
 }
 
-/**
- * Fetch all columns for a board, sorted by position
- */
 export function useColumns(boardId: string) {
   return useQuery({
     queryKey: columnKeys.list(boardId),
@@ -46,9 +43,6 @@ export function useColumns(boardId: string) {
   })
 }
 
-/**
- * Create a new column
- */
 export function useCreateColumn() {
   const queryClient = useQueryClient()
 
@@ -64,14 +58,11 @@ export function useCreateColumn() {
   })
 }
 
-/**
- * Rename a column
- */
 export function useRenameColumn(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ columnId, name }: { columnId: string; name: string }) => {
+    mutationFn: async ({ columnId, name }: { columnId: string, name: string }) => {
       const { error } = await api.v1.columns({ id: columnId }).patch({ name })
       if (error) throw error
     },
@@ -99,9 +90,6 @@ export function useRenameColumn(boardId: string) {
   })
 }
 
-/**
- * Move a column (reorder) with optimistic updates
- */
 export function useMoveColumn(boardId: string) {
   const queryClient = useQueryClient()
 
@@ -110,16 +98,24 @@ export function useMoveColumn(boardId: string) {
       const { error } = await api.v1.columns({ id: columnId }).move.patch(moveInput)
       if (error) throw error
     },
-    onMutate: async ({ columnId, position, version }) => {
-      await queryClient.cancelQueries({ queryKey: columnKeys.list(boardId) })
+    onMutate: ({ columnId, position, version }) => {
+      queryClient.cancelQueries({ queryKey: columnKeys.list(boardId) })
 
       const previousColumns = queryClient.getQueryData<Column[]>(columnKeys.list(boardId))
 
       if (previousColumns) {
-        queryClient.setQueryData<Column[]>(columnKeys.list(boardId), prev =>
-          prev?.map(col => (col.id === columnId ? { ...col, position, version } : col))
-        )
+        queryClient.setQueryData<Column[]>(columnKeys.list(boardId), prev => {
+          if (!prev) return prev
+          return prev
+            .map(col => (col.id === columnId ? { ...col, position, version } : col))
+            .sort((a, b) => {
+              if (a.position !== b.position) return a.position < b.position ? -1 : 1
+              return a.id.localeCompare(b.id)
+            })
+        })
       }
+
+      useDragStore.getState().clearColumnDrag()
 
       return { previousColumns }
     },
@@ -127,7 +123,6 @@ export function useMoveColumn(boardId: string) {
       if (context?.previousColumns) {
         queryClient.setQueryData(columnKeys.list(boardId), context.previousColumns)
       }
-      // Retry on conflict by refetching
       if ((err as { status?: number }).status === 409) {
         queryClient.invalidateQueries({ queryKey: columnKeys.list(boardId) })
       }
@@ -138,9 +133,6 @@ export function useMoveColumn(boardId: string) {
   })
 }
 
-/**
- * Archive a column
- */
 export function useArchiveColumn(boardId: string) {
   const queryClient = useQueryClient()
 
@@ -174,9 +166,6 @@ export function useArchiveColumn(boardId: string) {
   })
 }
 
-/**
- * Copy a column
- */
 export function useCopyColumn(boardId: string) {
   const queryClient = useQueryClient()
 
@@ -187,20 +176,16 @@ export function useCopyColumn(boardId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: columnKeys.list(boardId) })
-      // Also invalidate tasks since the copy includes tasks
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
     },
   })
 }
 
-/**
- * Move a column to a different board
- */
 export function useMoveColumnToBoard(boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ columnId, targetBoardId }: { columnId: string; targetBoardId: string }) => {
+    mutationFn: async ({ columnId, targetBoardId }: { columnId: string, targetBoardId: string }) => {
       const { error } = await api.v1.columns({ id: columnId })['move-to-board'].patch({ targetBoardId })
       if (error) throw error
     },

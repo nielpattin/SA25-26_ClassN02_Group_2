@@ -28,6 +28,12 @@ export type CardRect = {
   height: number
 }
 
+export type CardRectsMeta = {
+  columnId: string | null
+  scrollTop: number
+  needsRefresh: boolean
+}
+
 export type PendingColumnDrag = {
   columnId: string
   x: number
@@ -41,14 +47,15 @@ export type DragRefs = {
   scrollContainerRef: RefObject<HTMLDivElement | null>
   ghostRef: RefObject<HTMLDivElement | null>
   cardGhostRef: RefObject<HTMLDivElement | null>
-  lastMousePosRef: RefObject<{ x: number; y: number }>
-  dragDirectionRef: RefObject<{ x: number; y: number }>
+  lastMousePosRef: RefObject<{ x: number, y: number }>
+  dragDirectionRef: RefObject<{ x: number, y: number }>
   cardRectsRef: RefObject<CardRect[]>
+  cardRectsMetaRef: RefObject<CardRectsMeta>
   columnRectsRef: RefObject<ColumnRect[]>
   isDraggingCardRef: RefObject<boolean>
-  pendingCardDragRef: RefObject<PendingDrag<{ id: string; [key: string]: unknown }>>
+  pendingCardDragRef: RefObject<PendingDrag<{ id: string, [key: string]: unknown }>>
   pendingColumnDragRef: RefObject<PendingColumnDrag>
-  lastDropTargetRef: RefObject<{ columnId: string; insertBeforeId: string | null } | null>
+  lastDropTargetRef: RefObject<{ columnId: string, insertBeforeId: string | null } | null>
 }
 
 export const DragRefsContext = createContext<DragRefs | undefined>(undefined)

@@ -62,9 +62,6 @@ export const TaskCard = memo(function TaskCard({
     <div
       className={`card-wrapper ${isDragging ? 'relative rounded-none border border-dashed border-black bg-black/5 shadow-none! transition-none!' : ''}`}
       onMouseDown={handleMouseDown}
-      data-card-id={task.id}
-      data-column-id={task.columnId}
-      data-role="card-wrapper"
       data-state={isDragging ? 'placeholder' : undefined}
     >
       <div
