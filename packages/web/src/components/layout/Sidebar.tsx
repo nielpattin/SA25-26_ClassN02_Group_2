@@ -65,7 +65,8 @@ export function Sidebar() {
         <div className="relative flex items-center gap-2 border-b border-black p-4" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex flex-1 items-center justify-between gap-2 border border-black bg-white p-2 text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:bg-accent hover:shadow-none"
+            title={currentWorkspace?.name || 'Select Workspace'}
+            className="flex min-w-0 flex-1 items-center justify-between gap-2 border border-black bg-white p-2 text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:bg-accent hover:shadow-none"
           >
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-black bg-black text-white">
@@ -105,7 +106,7 @@ export function Sidebar() {
                       currentWorkspace?.id === workspace.id ? 'bg-black/5' : ''
                     }`}
                   >
-                    <span className="truncate">{workspace.name}</span>
+                    <span className="truncate" title={workspace.name}>{workspace.name}</span>
                     {currentWorkspace?.id === workspace.id && (
                       <Check size={14} className="text-black group-hover:text-white" />
                     )}
@@ -133,10 +134,10 @@ export function Sidebar() {
             
             <Link
               to="/boards"
-              className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
+              className={`flex items-center gap-3 border px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
                 isActive('/boards')
-                  ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                  : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                  ? 'border-black bg-black text-white'
+                  : 'border-transparent text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`}
             >
               <LayoutDashboard size={16} />
@@ -153,10 +154,10 @@ export function Sidebar() {
 
             <Link
               to="/members"
-              className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
+              className={`flex items-center gap-3 border px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
                 isActive('/members')
-                  ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                  : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                  ? 'border-black bg-black text-white'
+                  : 'border-transparent text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`}
             >
               <MembersIcon size={16} />
@@ -165,10 +166,10 @@ export function Sidebar() {
 
             <Link
               to="/settings"
-              className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
+              className={`flex items-center gap-3 border px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
                 isActive('/settings')
-                  ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                  : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                  ? 'border-black bg-black text-white'
+                  : 'border-transparent text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
               }`}
             >
               <Settings size={16} />
@@ -178,10 +179,10 @@ export function Sidebar() {
             {canAccessAdmin && (
               <Link
                 to="/admin"
-                className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
+                className={`flex items-center gap-3 border px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
                   isActive('/admin')
-                    ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                    : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                    ? 'border-black bg-black text-white'
+                    : 'border-transparent text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                 }`}
               >
                 <ShieldCheck size={16} />
@@ -192,10 +193,10 @@ export function Sidebar() {
             {canManage && (
               <Link
                 to="/archive"
-                className={`flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
+                className={`flex items-center gap-3 border px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all ${
                   isActive('/archive')
-                    ? 'border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                    : 'text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                    ? 'border-black bg-black text-white'
+                    : 'border-transparent text-black hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                 }`}
               >
                 <Archive size={16} />
