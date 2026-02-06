@@ -69,4 +69,3 @@ bun run dev
 | `cd packages/server && bun run db:reset` | Reset DB + S3 and seed |
 | `cd packages/server && bun run db:push`  | Push schema (interactive) |
 | `cd packages/server && bun test`      | Run server tests         |
-| `bunx playwright test`                | Run E2E tests            |

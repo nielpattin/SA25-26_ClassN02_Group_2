@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Github, X } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import { useSession, signIn } from '../../api/auth'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -21,6 +22,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [loading, setLoading] = useState(false)
   const [showResend, setShowResend] = useState(false)
   const { refetch } = useSession()
+  const navigate = useNavigate()
 
   if (!isOpen) return null
 
@@ -43,8 +45,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             setError(result.error.message || 'Login failed')
           }
         } else {
-          refetch()
+          await refetch()
           onClose()
+          navigate({ to: '/boards' })
         }
       } else if (mode === 'signup') {
         const { signUp } = await import('../../api/auth')
@@ -52,8 +55,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         if (result.error) {
           setError(result.error.message || 'Signup failed')
         } else {
-          refetch()
+          await refetch()
           onClose()
+          navigate({ to: '/boards' })
         }
       } else if (mode === 'forgot') {
         const { forgetPassword } = await import('../../api/auth')

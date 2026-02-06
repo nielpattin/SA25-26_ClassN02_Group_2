@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
+import { useSession } from '../api/auth'
 
 export type RecentBoard = {
   id: string
@@ -17,6 +18,8 @@ export const recentBoardKeys = {
  * Hook to fetch user's recently visited boards
  */
 export function useRecentBoards() {
+  const { data: session } = useSession()
+
   return useQuery({
     queryKey: recentBoardKeys.list(),
     queryFn: async () => {
@@ -24,6 +27,7 @@ export function useRecentBoards() {
       if (error) throw error
       return data as RecentBoard[]
     },
+    enabled: !!session?.user?.id,
   })
 }
 

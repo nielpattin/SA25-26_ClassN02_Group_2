@@ -16,9 +16,30 @@ const escapeCsv = (val: unknown): string => {
 }
 
 export const activityService = {
-  getByBoardId: (boardId: string, limit?: number) => activityRepository.findByBoardId(boardId, limit),
+  getByBoardId: async (boardId: string, userId: string, limit?: number) => {
+    // Verify user has access to this board
+    const { boardService } = await import('../boards/boards.service')
+    const hasAccess = await boardService.canAccessBoard(boardId, userId)
+    if (!hasAccess) {
+      throw new ForbiddenError('Access denied')
+    }
+    
+    return activityRepository.findByBoardId(boardId, limit)
+  },
 
-  getByTaskId: async (taskId: string, limit = 10, cursor?: string) => {
+  getByTaskId: async (taskId: string, userId: string, limit = 10, cursor?: string) => {
+    // Verify user has access to the board this task belongs to
+    const { taskRepository } = await import('../tasks/tasks.repository')
+    const { boardService } = await import('../boards/boards.service')
+    
+    const boardId = await taskRepository.getBoardIdFromTask(taskId)
+    if (boardId) {
+      const hasAccess = await boardService.canAccessBoard(boardId, userId)
+      if (!hasAccess) {
+        throw new ForbiddenError('Access denied')
+      }
+    }
+    
     const items = await activityRepository.findByTaskId(taskId, limit + 1, cursor)
     const hasMore = items.length > limit
     const data = hasMore ? items.slice(0, limit) : items

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
+import { useSession } from '../api/auth'
 import type { AdminRole } from '@kyte/server/src/modules/admin/admin.model'
 
 export type AuditFilters = {
@@ -31,6 +32,8 @@ export const adminKeys = {
 }
 
 export function useDashboardMetrics() {
+  const { data: session } = useSession()
+
   return useQuery({
     queryKey: adminKeys.dashboard(),
     queryFn: async () => {
@@ -38,10 +41,13 @@ export function useDashboardMetrics() {
       if (error) throw error
       return data
     },
+    enabled: !!session?.user?.id,
   })
 }
 
 export function useAdminUsers(limit = 50, offset = 0) {
+  const { data: session } = useSession()
+
   return useQuery({
     queryKey: adminKeys.users(limit, offset),
     queryFn: async () => {
@@ -54,6 +60,7 @@ export function useAdminUsers(limit = 50, offset = 0) {
       if (error) throw error
       return data
     },
+    enabled: !!session?.user?.id,
   })
 }
 
@@ -120,6 +127,8 @@ export function useDemoteUser() {
 }
 
 export function useAuditLogs(filters: AuditFilters = {}) {
+  const { data: session } = useSession()
+
   return useQuery({
     queryKey: adminKeys.audit(filters),
     queryFn: async () => {
@@ -133,6 +142,7 @@ export function useAuditLogs(filters: AuditFilters = {}) {
       if (error) throw error
       return data
     },
+    enabled: !!session?.user?.id,
   })
 }
 
@@ -165,6 +175,8 @@ export function useUserSearch(query: string, limit = 20, offset = 0) {
 }
 
 export function useUserDetail(userId: string) {
+  const { data: session } = useSession()
+
   return useQuery({
     queryKey: [...adminKeys.all, 'userDetail', userId],
     queryFn: async () => {
@@ -172,6 +184,7 @@ export function useUserDetail(userId: string) {
       if (error) throw error
       return data
     },
+    enabled: !!session?.user?.id && !!userId,
   })
 }
 

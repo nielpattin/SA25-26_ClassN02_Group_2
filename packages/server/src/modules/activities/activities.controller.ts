@@ -1,23 +1,24 @@
 import { Elysia, t } from 'elysia'
 import { activityService } from './activities.service'
 import { authPlugin } from '../auth'
-import { UnauthorizedError } from '../../shared/errors'
 import { BoardActivitiesParams, TaskActivitiesParams, ExportActivitiesQuery } from './activities.model'
 
 export const activityController = new Elysia({ prefix: '/activities' })
   .use(authPlugin)
-  .get('/board/:boardId', async ({ params, query }) => {
+  .get('/board/:boardId', async ({ params, query, session }) => {
     const limit = query.limit ? parseInt(query.limit) : 50
-    return activityService.getByBoardId(params.boardId, limit)
+    return activityService.getByBoardId(params.boardId, session.user.id, limit)
   }, {
+    requireAuth: true,
     params: BoardActivitiesParams,
     query: t.Object({ limit: t.Optional(t.String()) }),
   })
 
-  .get('/task/:taskId', async ({ params, query }) => {
+  .get('/task/:taskId', async ({ params, query, session }) => {
     const limit = query.limit ? parseInt(query.limit) : 10
-    return activityService.getByTaskId(params.taskId, limit, query.cursor)
+    return activityService.getByTaskId(params.taskId, session.user.id, limit, query.cursor)
   }, {
+    requireAuth: true,
     params: TaskActivitiesParams,
     query: t.Object({
       limit: t.Optional(t.String()),
@@ -27,8 +28,6 @@ export const activityController = new Elysia({ prefix: '/activities' })
 
   // Board activity export endpoint
   .get('/board/:boardId/export', async ({ params: { boardId }, query, session, set }) => {
-    if (!session) throw new UnauthorizedError()
-
     const format = (query.format as 'json' | 'csv') ?? 'json'
     const result = await activityService.exportBoardActivities(
       boardId,
@@ -44,6 +43,7 @@ export const activityController = new Elysia({ prefix: '/activities' })
     // Return stream directly for efficient large exports
     return result.stream
   }, {
+    requireAuth: true,
     params: BoardActivitiesParams,
     query: ExportActivitiesQuery,
   })

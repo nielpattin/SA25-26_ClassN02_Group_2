@@ -26,10 +26,6 @@ function Index() {
         isOpen={showAuthModal}
         onClose={() => {
           setShowAuthModal(false)
-          // If logged in after modal closes, go to dashboard
-          if (session) {
-      navigate({ to: '/boards' })
-          }
         }}
       />
       <div className="flex min-h-screen flex-col items-center bg-canvas">

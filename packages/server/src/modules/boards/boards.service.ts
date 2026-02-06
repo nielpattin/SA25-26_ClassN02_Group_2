@@ -4,7 +4,7 @@ import { workspaceRepository } from '../workspaces/workspaces.repository'
 import { columnRepository } from '../columns/columns.repository'
 import { taskRepository } from '../tasks/tasks.repository'
 import { eventBus } from '../../events/bus'
-import { ForbiddenError } from '../../shared/errors'
+import { ForbiddenError, NotFoundError } from '../../shared/errors'
 import Archiver from 'archiver'
 import { Readable } from 'stream'
 
@@ -13,7 +13,17 @@ export const boardService = {
 
   getUserBoards: (userId: string) => boardRepository.findByUserId(userId),
 
-  getBoardById: (id: string) => boardRepository.findById(id),
+  getBoardById: async (id: string, userId: string) => {
+    const board = await boardRepository.findById(id)
+    if (!board) throw new NotFoundError('Board not found')
+    
+    const hasAccess = await boardService.canAccessBoard(id, userId)
+    if (!hasAccess) {
+      throw new ForbiddenError('Access denied')
+    }
+    
+    return board
+  },
 
   getBoardsByWorkspaceId: (workspaceId: string) =>
     boardRepository.findByWorkspaceId(workspaceId),
@@ -325,8 +335,16 @@ export const boardService = {
     return archive
   },
 
-  getPreferences: (userId: string, boardId: string) =>
-    boardPreferenceRepository.findByUserAndBoard(userId, boardId),
+  getPreferences: async (userId: string, boardId: string) => {
+    const prefs = await boardPreferenceRepository.findByUserAndBoard(userId, boardId)
+    return prefs ?? {
+      userId,
+      boardId,
+      view: 'kanban' as const,
+      zoomMode: 'week' as const,
+      filters: null,
+    }
+  },
 
   updatePreferences: (userId: string, boardId: string, data: {
     view?: 'kanban' | 'calendar' | 'gantt'

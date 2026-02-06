@@ -2,6 +2,7 @@ import { Elysia } from 'elysia'
 import { columnService } from './columns.service'
 import { authPlugin } from '../auth'
 import { checkRateLimit } from '../../shared/middleware/rate-limit'
+import { UnauthorizedError } from '../../shared/errors'
 import {
   CreateColumnBody,
   UpdateColumnBody,
@@ -13,7 +14,10 @@ import {
 
 export const columnController = new Elysia({ prefix: '/columns' })
   .use(authPlugin)
-  .get('/board/:boardId', ({ params: { boardId } }) => columnService.getColumnsByBoardId(boardId), {
+  .get('/board/:boardId', ({ params: { boardId }, session }) => {
+    return columnService.getColumnsByBoardId(boardId, session.user.id)
+  }, {
+    requireAuth: true,
     params: ColumnBoardParams,
   })
   .post('/', ({ body, session }) => {

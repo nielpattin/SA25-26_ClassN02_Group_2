@@ -20,22 +20,29 @@ export function useChecklists(taskId: string) {
   })
 }
 
-export function useCreateChecklist(taskId: string, boardId?: string) {
+type CreateChecklistInput = {
+  title: string
+  taskId: string
+  boardId?: string
+}
+
+export function useCreateChecklist() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (title: string) => {
-      const { error } = await api.v1.checklists.post({
+    mutationFn: async ({ title, taskId }: CreateChecklistInput) => {
+      const { data, error } = await api.v1.checklists.post({
         title,
         taskId,
       })
       if (error) throw error
+      return data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: checklistKeys.task(taskId) })
-      queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
-      if (boardId) {
-        queryClient.invalidateQueries({ queryKey: taskKeys.list(boardId) })
+    onSuccess: (_, variables) => {
+      queryClient.refetchQueries({ queryKey: checklistKeys.task(variables.taskId) })
+      queryClient.invalidateQueries({ queryKey: taskKeys.detail(variables.taskId) })
+      if (variables.boardId) {
+        queryClient.invalidateQueries({ queryKey: taskKeys.list(variables.boardId) })
       }
     },
   })

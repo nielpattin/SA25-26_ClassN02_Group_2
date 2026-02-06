@@ -35,12 +35,33 @@ function getExtensionFromMimeType(mimeType: string): string {
 }
 
 export const attachmentService = {
-  getByTaskId: async (taskId: string) => {
+  getByTaskId: async (taskId: string, userId: string) => {
+    const boardId = await taskRepository.getBoardIdFromTask(taskId)
+    if (boardId) {
+      const { boardService } = await import('../boards/boards.service')
+      const hasAccess = await boardService.canAccessBoard(boardId, userId)
+      if (!hasAccess) {
+        throw new ForbiddenError('Access denied')
+      }
+    }
+
     return attachmentRepository.findByTaskId(taskId)
   },
 
-  getById: async (id: string) => {
-    return attachmentRepository.getById(id)
+  getById: async (id: string, userId: string) => {
+    const attachment = await attachmentRepository.getById(id)
+    if (!attachment) return null
+
+    const boardId = await taskRepository.getBoardIdFromTask(attachment.taskId)
+    if (boardId) {
+      const { boardService } = await import('../boards/boards.service')
+      const hasAccess = await boardService.canAccessBoard(boardId, userId)
+      if (!hasAccess) {
+        throw new ForbiddenError('Access denied')
+      }
+    }
+
+    return attachment
   },
 
   create: async (data: CreateAttachmentInput, userId: string) => {

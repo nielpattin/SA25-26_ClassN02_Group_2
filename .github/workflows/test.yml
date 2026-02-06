@@ -1,0 +1,81 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kyte
+  BETTER_AUTH_SECRET: test-secret-for-ci
+  RESEND_API_KEY: re_test_fake_key
+  EMAIL_FROM: Kyte <noreply@example.com>
+
+jobs:
+  test-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start PostgreSQL
+        run: |
+          # Check if postgres is already available (local dev with docker-compose)
+          if nc -z localhost 5432 2>/dev/null || docker exec kyte-postgres pg_isready -U postgres 2>/dev/null; then
+            echo "PostgreSQL already running on port 5432, skipping container start"
+            exit 0
+          fi
+          
+          docker run -d --name postgres-ci --network host \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=kyte \
+            postgres:17-alpine
+          
+          for i in {1..30}; do
+            docker exec postgres-ci pg_isready -U postgres && break
+            sleep 1
+          done
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup database schema
+        run: bun run --filter @kyte/server db:push --force
+
+      - name: Run server tests
+        run: bun run --filter @kyte/server test
+
+      - name: Typecheck server
+        run: |
+          cd packages/server
+          bun tsc --noEmit
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f postgres-ci 2>/dev/null || true
+
+  lint-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint web
+        run: bun run --filter @kyte/web lint

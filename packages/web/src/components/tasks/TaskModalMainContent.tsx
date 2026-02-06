@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Type, Paperclip, MessageSquare, Tag } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Textarea } from '../ui/Textarea'
@@ -47,10 +47,6 @@ export function TaskModalMainContent({
 }: TaskModalMainContentProps) {
   const [description, setDescription] = useState(card.description || '')
   const [isDescriptionFocused, setIsDescriptionFocused] = useState(false)
-
-  useEffect(() => {
-    setDescription(card.description || '')
-  }, [card.description])
 
   const hasDescriptionChanges = description !== (card.description || '')
 

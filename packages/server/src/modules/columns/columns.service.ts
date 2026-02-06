@@ -9,7 +9,16 @@ import { db } from '../../db'
 import { columns, tasks } from '../../db/schema'
 
 export const columnService = {
-  getColumnsByBoardId: (boardId: string) => columnRepository.findByBoardId(boardId),
+  getColumnsByBoardId: async (boardId: string, userId: string) => {
+    // Check if user has access to this board
+    const { boardService } = await import('../boards/boards.service')
+    const hasAccess = await boardService.canAccessBoard(boardId, userId)
+    if (!hasAccess) {
+      throw new ForbiddenError('Access denied')
+    }
+    
+    return columnRepository.findByBoardId(boardId)
+  },
 
   createColumn: async (data: { name: string; position?: string; boardId: string }, userId: string) => {
     let position = data.position

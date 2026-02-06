@@ -134,7 +134,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
     },
   })
 
-  const createChecklist = useCreateChecklist(taskId, boardId)
+  const createChecklist = useCreateChecklist()
 
   if (isLoading || !card)
     return (
@@ -163,6 +163,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
 
         <div className="flex min-h-0 flex-1 flex-row overflow-hidden bg-white">
           <TaskModalMainContent
+            key={card.id}
             card={card}
             taskId={taskId}
             boardId={boardId}
@@ -197,7 +198,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
             taskId={taskId}
             boardId={boardId}
             onUpdateCard={(updates) => updateCard.mutate(updates)}
-            onCreateChecklist={(title) => createChecklist.mutate(title)}
+            onCreateChecklist={(title) => createChecklist.mutate({ title, taskId, boardId })}
           />
         </div>
       </div>

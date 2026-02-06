@@ -132,7 +132,7 @@ export const adminService = {
       adminRole: user.adminRole,
       workspacesCount: user.workspacesCount,
       boardsCount: user.boardsCount,
-      lastActive: user.lastActive
+      lastActive: user.lastActive ? new Date(user.lastActive).toISOString() : null
     }
   },
 

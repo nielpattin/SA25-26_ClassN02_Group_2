@@ -21,6 +21,7 @@ export function useNotifications() {
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
+    enabled: !!session?.user?.id,
   })
 
   const { data: unreadCount = 0 } = useQuery({
@@ -31,6 +32,7 @@ export function useNotifications() {
     },
     staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
+    enabled: !!session?.user?.id,
   })
 
   useEffect(() => {

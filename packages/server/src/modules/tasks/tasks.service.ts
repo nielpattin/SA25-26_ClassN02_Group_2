@@ -5,10 +5,24 @@ import { workspaceRepository } from '../workspaces/workspaces.repository'
 import { notificationRepository } from '../notifications/notifications.repository'
 import { eventBus } from '../../events/bus'
 import { generatePosition, needsRebalancing } from '../../shared/position'
-import { ForbiddenError } from '../../shared/errors'
+import { ForbiddenError, NotFoundError } from '../../shared/errors'
 
 export const taskService = {
-  getTaskById: (id: string) => taskRepository.findById(id),
+  getTaskById: async (id: string, userId: string) => {
+    const task = await taskRepository.findById(id)
+    if (!task) throw new NotFoundError('Task not found')
+    
+    const boardId = await taskRepository.getBoardIdFromTask(id)
+    if (boardId) {
+      const { boardService } = await import('../boards/boards.service')
+      const hasAccess = await boardService.canAccessBoard(boardId, userId)
+      if (!hasAccess) {
+        throw new ForbiddenError('Access denied')
+      }
+    }
+    
+    return task
+  },
 
   getTasksByColumnId: (columnId: string) => taskRepository.findByColumnId(columnId),
 

@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useDragRefs } from './dragTypes'
-import { useDragStore, type DraggableItem } from '../../store/dragStore'
+import { useDragStore } from '../../store/dragStore'
 
 export function useColumnDrag() {
   const { scrollContainerRef, columnRectsRef, ghostRef } = useDragRefs()

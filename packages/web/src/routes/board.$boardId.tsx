@@ -395,7 +395,7 @@ function BoardPage() {
           )}
 
           {urlCardId && (
-            <CardModal cardId={urlCardId} boardId={boardId} onClose={handleCloseModal} />
+            <CardModal key={urlCardId} cardId={urlCardId} boardId={boardId} onClose={handleCloseModal} />
           )}
 
           <ArchivePanel

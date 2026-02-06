@@ -1,16 +1,16 @@
-import { betterAuth, APIError } from 'better-auth'
+import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from '../../db'
 import * as schema from '../../db/schema'
-import { eq } from 'drizzle-orm'
 import { emailService, verifyEmailTemplate } from '../email'
 import { checkRateLimit } from '../../shared/middleware/rate-limit'
 import { logger } from '../../shared/logger'
 
 const webUrl = process.env.WEB_URL || 'http://localhost:5173'
-const isE2E = process.env.E2E_TEST === 'true'
+const apiUrl = process.env.API_URL || 'http://localhost:3000'
 
 export const auth = betterAuth({
+  baseURL: apiUrl,
   basePath: '/api/auth',
   database: drizzleAdapter(db, {
     provider: 'pg',
@@ -37,7 +37,7 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: !isE2E,
+    requireEmailVerification: true,
     async sendResetPassword({ user, url }) {
       await emailService.sendEmail({
         to: user.email,
@@ -45,10 +45,10 @@ export const auth = betterAuth({
         html: `Click the link to reset your password: <a href="${url}">${url}</a>`,
       })
     },
-    resetPasswordTokenExpiresIn: 900, // 15 minutes
+    resetPasswordTokenExpiresIn: 900,
   },
   emailVerification: {
-    sendOnSignUp: !isE2E,
+    sendOnSignUp: true,
     async sendVerificationEmail({ user, url }) {
       await checkRateLimit(`email-verify:${user.email}`, 3, 60 * 60 * 1000)
       const token = new URL(url, webUrl).searchParams.get('token')
@@ -63,7 +63,7 @@ export const auth = betterAuth({
         }),
       })
     },
-    verificationTokenExpiresIn: 86400, // 24 hours
+    verificationTokenExpiresIn: 86400,
   },
   socialProviders: {
     github: {
@@ -78,24 +78,22 @@ export const auth = betterAuth({
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // Update session every 24 hours
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
     cookieCache: {
-      enabled: false, // Disable to prevent premature logout
+      enabled: true,
     },
   },
-  trustedOrigins: process.env.CORS_ORIGINS?.split(',') || [webUrl],
+  trustedOrigins: [webUrl, 'http://127.0.0.1:5173', apiUrl, ...(process.env.CORS_ORIGINS?.split(',') || [])],
   advanced: {
-    cookiePrefix: 'kyte',
     crossSubDomainCookies: {
-      enabled: false, // Not using subdomains
-    },
+      enabled: false,
+    }
   },
   databaseHooks: {
     user: {
       create: {
         after: async (user) => {
-          // Create personal workspace for new user
           const slug = `personal-${user.id.slice(0, 8)}`
           const [workspace] = await db.insert(schema.workspaces).values({
             name: 'Personal',
@@ -103,7 +101,6 @@ export const auth = betterAuth({
             personal: true,
           }).returning()
 
-          // Add user as owner
           await db.insert(schema.members).values({
             workspaceId: workspace.id,
             userId: user.id,

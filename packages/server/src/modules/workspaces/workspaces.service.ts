@@ -8,8 +8,17 @@ export const workspaceService = {
     return workspaceRepository.getAll()
   },
 
-  async getById(id: string) {
-    return workspaceRepository.getById(id)
+  async getById(id: string, userId: string) {
+    const workspace = await workspaceRepository.getById(id)
+    if (!workspace) throw new Error('Workspace not found')
+    
+    // Check if user is a member of this workspace
+    const membership = await workspaceRepository.getMember(id, userId)
+    if (!membership) {
+      throw new ForbiddenError('Access denied')
+    }
+    
+    return workspace
   },
 
   async getBySlug(slug: string) {

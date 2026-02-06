@@ -1,10 +1,18 @@
 import { labelRepository } from './labels.repository'
 import { taskRepository } from '../tasks/tasks.repository'
 import { eventBus } from '../../events/bus'
+import { ForbiddenError } from '../../shared/errors'
 import type { CreateLabelInput, UpdateLabelInput } from './labels.model'
 
 export const labelService = {
-  getByBoardId: async (boardId: string) => {
+  getByBoardId: async (boardId: string, userId: string) => {
+    // Check if user has access to this board
+    const { boardService } = await import('../boards/boards.service')
+    const hasAccess = await boardService.canAccessBoard(boardId, userId)
+    if (!hasAccess) {
+      throw new ForbiddenError('Access denied')
+    }
+    
     return labelRepository.findByBoardId(boardId)
   },
 

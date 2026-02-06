@@ -322,7 +322,7 @@ export const activities = pgTable('activities', {
 	userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
 	action: activityActionEnum().notNull(),
 	targetType: activityTargetEnum().notNull(),
-	targetId: uuid('target_id').notNull(),
+	targetId: text('target_id').notNull(),
 	// Before/after values for updates
 	changes: jsonb('changes'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),

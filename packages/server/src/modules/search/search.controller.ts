@@ -7,8 +7,6 @@ import { UnauthorizedError } from '../../shared/errors'
 export const searchController = new Elysia({ prefix: '/search' })
   .use(authPlugin)
   .get('/', async ({ session, query }) => {
-    if (!session) throw new UnauthorizedError()
-
     const { q, scope, boardId, page, limit } = query
 
     return searchService.search(session.user.id, q, {
@@ -18,5 +16,6 @@ export const searchController = new Elysia({ prefix: '/search' })
       limit: limit ? Number(limit) : undefined,
     })
   }, {
+    requireAuth: true,
     query: SearchQuery,
   })

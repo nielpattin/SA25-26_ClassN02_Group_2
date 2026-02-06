@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
+import { useSession } from '../api/auth'
 
 export type Template = {
   id: string
@@ -104,6 +105,8 @@ export function useSubmitTemplate() {
 }
 
 export function usePendingSubmissions() {
+  const { data: session } = useSession()
+
   return useQuery({
     queryKey: templateKeys.submissions(),
     queryFn: async () => {
@@ -111,6 +114,7 @@ export function usePendingSubmissions() {
       if (error) throw error
       return data as unknown as Template[]
     },
+    enabled: !!session?.user?.id,
   })
 }
 
@@ -163,6 +167,8 @@ export type TakedownRequest = {
 }
 
 export function useTakedownRequests() {
+  const { data: session } = useSession()
+
   return useQuery({
     queryKey: [...templateKeys.all, 'takedowns'],
     queryFn: async () => {
@@ -170,6 +176,7 @@ export function useTakedownRequests() {
       if (error) throw error
       return data as unknown as TakedownRequest[]
     },
+    enabled: !!session?.user?.id,
   })
 }
 
@@ -190,6 +197,8 @@ export function useRemoveTemplate() {
 
 // Hook to fetch a board template by ID (for authors to view their own templates with full details)
 export function useBoardTemplate(id: string) {
+  const { data: session } = useSession()
+
   return useQuery({
     queryKey: templateKeys.boardTemplate(id),
     queryFn: async () => {
@@ -197,7 +206,7 @@ export function useBoardTemplate(id: string) {
       if (error) throw error
       return data as unknown as Template
     },
-    enabled: !!id,
+    enabled: !!session?.user?.id && !!id,
   })
 }
 

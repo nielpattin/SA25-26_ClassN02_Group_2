@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useRef, useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useSession } from '../api/auth'
@@ -16,7 +16,10 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefin
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
-  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null)
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
+    () => localStorage.getItem('kyte:current-workspace-id')
+  )
+  const prevUserIdRef = useRef<string | undefined>(session?.user?.id)
 
   const { data: workspaces = [], isLoading } = useQuery({
     queryKey: ['workspaces', session?.user?.id],
@@ -29,26 +32,28 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     enabled: !!session?.user?.id,
   })
 
-  // Set initial workspace (prefer personal or first available)
-  useEffect(() => {
-    if (currentWorkspace || workspaces.length === 0) return
-
-    // Try to restore from localStorage
-    const savedWorkspaceId = localStorage.getItem('kyte:current-workspace-id')
-    const savedWorkspace = workspaces.find(w => w.id === savedWorkspaceId)
-
-    if (savedWorkspace) {
-      setCurrentWorkspace(savedWorkspace)
-    } else {
-      // Default to personal
-      const personal = workspaces.find(w => w.personal)
-      setCurrentWorkspace(personal || workspaces[0])
+  if (prevUserIdRef.current !== session?.user?.id) {
+    prevUserIdRef.current = session?.user?.id
+    if (!session?.user?.id) {
+      setSelectedWorkspaceId(null)
+      localStorage.removeItem('kyte:current-workspace-id')
     }
-  }, [workspaces, currentWorkspace])
+  }
 
-  // Persist selection
+  const currentWorkspace = useMemo(() => {
+    if (!session?.user?.id || workspaces.length === 0) return null
+
+    if (selectedWorkspaceId) {
+      const selected = workspaces.find(w => w.id === selectedWorkspaceId)
+      if (selected) return selected
+    }
+
+    const personal = workspaces.find(w => w.personal)
+    return personal || workspaces[0]
+  }, [session?.user?.id, workspaces, selectedWorkspaceId])
+
   const handleSetWorkspace = (workspace: Workspace) => {
-    setCurrentWorkspace(workspace)
+    setSelectedWorkspaceId(workspace.id)
     localStorage.setItem('kyte:current-workspace-id', workspace.id)
   }
 

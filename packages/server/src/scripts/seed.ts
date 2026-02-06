@@ -1,7 +1,7 @@
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { generatePositions } from '../shared/position'
-import { and, eq, sql } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import { hashPassword } from 'better-auth/crypto'
 
 function generateId(length = 32) {
@@ -192,58 +192,67 @@ type AdminRole = 'super_admin' | 'moderator' | 'support'
 const PRIORITIES: Priority[] = ['low', 'medium', 'high', 'urgent', 'none']
 const SIZES: Size[] = ['xs', 's', 'm', 'l', 'xl', null]
 
-async function createUser(data: {
+let cachedPasswordHash: string | null = null
+
+async function getPasswordHash(): Promise<string> {
+  if (!cachedPasswordHash) {
+    cachedPasswordHash = await hashPassword('password123')
+  }
+  return cachedPasswordHash
+}
+
+async function createUsersBatch(users: {
   email: string
-  password: string
   name: string
   adminRole?: AdminRole
-}): Promise<string> {
-  const existing = await db.query.users.findFirst({
-    where: eq(schema.users.email, data.email),
-  })
+}[]): Promise<string[]> {
+  const hashedPassword = await getPasswordHash()
 
-  if (existing) {
-    if (data.adminRole && existing.adminRole !== data.adminRole) {
-      await db.update(schema.users)
-        .set({ adminRole: data.adminRole })
-        .where(eq(schema.users.id, existing.id))
-    }
-    return existing.id
-  }
-
-  const userId = generateId()
-  const hashedPassword = await hashPassword(data.password)
-
-  await db.insert(schema.users).values({
-    id: userId,
-    name: data.name,
-    email: data.email,
-    emailVerified: true,
-    adminRole: data.adminRole,
-  })
-
-  await db.insert(schema.accounts).values({
+  const userValues = users.map(u => ({
     id: generateId(),
-    accountId: userId,
-    providerId: 'credential',
-    userId: userId,
-    password: hashedPassword,
+    name: u.name,
+    email: u.email,
+    emailVerified: true,
+    adminRole: u.adminRole,
+  }))
+
+  await db.insert(schema.users).values(userValues)
+
+  await db.insert(schema.accounts).values(
+    userValues.map(u => ({
+      id: generateId(),
+      accountId: u.id,
+      providerId: 'credential',
+      userId: u.id,
+      password: hashedPassword,
+    }))
+  )
+
+  const workspaceSlugs = userValues.map(u => `personal-${u.id.slice(0, 8)}`)
+
+  await db.insert(schema.workspaces).values(
+    userValues.map((u, i) => ({
+      name: 'Personal',
+      slug: workspaceSlugs[i],
+      personal: true,
+    }))
+  )
+
+  const workspaces = await db.query.workspaces.findMany({
+    where: inArray(schema.workspaces.slug, workspaceSlugs)
   })
 
-  const slug = `personal-${userId.slice(0, 8)}`
-  const [workspace] = await db.insert(schema.workspaces).values({
-    name: 'Personal',
-    slug,
-    personal: true,
-  }).returning()
+  const slugToWorkspace = new Map(workspaces.map(w => [w.slug, w.id]))
 
-  await db.insert(schema.members).values({
-    workspaceId: workspace.id,
-    userId: userId,
-    role: 'owner',
-  })
+  await db.insert(schema.members).values(
+    userValues.map((u, i) => ({
+      workspaceId: slugToWorkspace.get(workspaceSlugs[i])!,
+      userId: u.id,
+      role: 'owner' as const,
+    }))
+  )
 
-  return userId
+  return userValues.map(u => u.id)
 }
 
 async function cleanDatabase() {
@@ -540,63 +549,32 @@ async function seed() {
   await ensureSearchVectors()
   await cleanDatabase()
 
-  console.log('Creating admin user...')
-  const adminId = await createUser({
-    email: 'admin@kyte.dev',
-    password: 'password123',
-    name: 'Admin User',
-    adminRole: 'super_admin',
-  })
+  console.log('Pre-hashing password...')
+  await getPasswordHash()
 
-  console.log('Creating moderator user...')
-  const modId = await createUser({
-    email: 'mod_1@kyte.dev',
-    password: 'password123',
-    name: 'Moderator One',
-    adminRole: 'moderator',
-  })
-
-  console.log('Creating support user...')
-  const supportId = await createUser({
-    email: 'support_1@kyte.dev',
-    password: 'password123',
-    name: 'Support Agent',
-    adminRole: 'support',
-  })
+  console.log('Creating admin users (admin, mod, support)...')
+  const [adminId, modId, supportId] = await createUsersBatch([
+    { email: 'admin@kyte.dev', name: 'Admin User', adminRole: 'super_admin' },
+    { email: 'mod_1@kyte.dev', name: 'Moderator One', adminRole: 'moderator' },
+    { email: 'support_1@kyte.dev', name: 'Support Agent', adminRole: 'support' },
+  ])
 
   console.log('Creating dev team (dev_1@ to dev_10@)...')
-  const devIds: string[] = []
-  for (let i = 1; i <= 10; i++) {
-    const devId = await createUser({
-      email: `dev_${i}@kyte.dev`,
-      password: 'password123',
-      name: `Developer ${i}`,
-    })
-    devIds.push(devId)
-  }
+  const devIds = await createUsersBatch(
+    Array.from({ length: 10 }, (_, i) => ({
+      email: `dev_${i + 1}@kyte.dev`,
+      name: `Developer ${i + 1}`,
+    }))
+  )
   const leadDevId = devIds[0]
 
-  console.log('Creating regular users (user_1@ to user_300@)...')
-  const userIds: string[] = []
-  const userBatch = 50
-  for (let batch = 0; batch < 6; batch++) {
-    const start = batch * userBatch + 1
-    const end = Math.min((batch + 1) * userBatch, 300)
-    console.log(`  Creating users ${start} to ${end}...`)
-
-    const batchPromises = []
-    for (let i = start; i <= end; i++) {
-      batchPromises.push(
-        createUser({
-          email: `user_${i}@kyte.dev`,
-          password: 'password123',
-          name: `User ${i}`,
-        })
-      )
-    }
-    const batchIds = await Promise.all(batchPromises)
-    userIds.push(...batchIds)
-  }
+  console.log('Creating regular users (user_1@ to user_50@)...')
+  const userIds = await createUsersBatch(
+    Array.from({ length: 50 }, (_, i) => ({
+      email: `user_${i + 1}@kyte.dev`,
+      name: `User ${i + 1}`,
+    }))
+  )
 
   console.log('')
   console.log('Creating dev team workspace...')
@@ -647,23 +625,20 @@ async function seed() {
   console.log('')
   console.log('Creating random boards for regular users...')
   let boardCount = 0
-  const totalRandomBoards = 50
+  const totalRandomBoards = 10
+
+  const ownerMemberships = await db
+    .select({ userId: schema.members.userId, workspaceId: schema.members.workspaceId })
+    .from(schema.members)
+    .innerJoin(schema.workspaces, eq(schema.workspaces.id, schema.members.workspaceId))
+    .where(eq(schema.workspaces.personal, true))
+
+  const userToWorkspace = new Map(ownerMemberships.map(m => [m.userId, m.workspaceId]))
 
   for (let i = 0; i < totalRandomBoards; i++) {
     const ownerId = pick(userIds)
-
-    const [ownerMembership] = await db
-      .select({ workspaceId: schema.members.workspaceId })
-      .from(schema.members)
-      .innerJoin(schema.workspaces, eq(schema.workspaces.id, schema.members.workspaceId))
-      .where(and(
-        eq(schema.members.userId, ownerId),
-        eq(schema.workspaces.personal, true)
-      ))
-      .limit(1)
-
-    if (!ownerMembership) continue
-    const ownerWorkspaceId = ownerMembership.workspaceId
+    const ownerWorkspaceId = userToWorkspace.get(ownerId)
+    if (!ownerWorkspaceId) continue
 
     const boardPosition = generatePositions(null, null, 1)[0]
     const potentialMembers = pickN(userIds.filter(id => id !== ownerId), Math.floor(Math.random() * 5) + 1)
@@ -677,10 +652,8 @@ async function seed() {
     )
 
     boardCount++
-    if (boardCount % 10 === 0) {
-      console.log(`  Created ${boardCount}/${totalRandomBoards} random boards...`)
-    }
   }
+  console.log(`  Created ${boardCount} random boards`)
 
   console.log('')
   console.log('=== SEED COMPLETE ===')
@@ -690,7 +663,7 @@ async function seed() {
   console.log('  - mod_1@kyte.dev (moderator)')
   console.log('  - support_1@kyte.dev (support)')
   console.log('  - dev_1@kyte.dev to dev_10@kyte.dev (dev team)')
-  console.log('  - user_1@kyte.dev to user_300@kyte.dev (regular users)')
+  console.log('  - user_1@kyte.dev to user_50@kyte.dev (regular users)')
   console.log('')
   console.log('Password for all users: password123')
   console.log('')

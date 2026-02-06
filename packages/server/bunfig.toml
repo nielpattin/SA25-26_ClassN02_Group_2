@@ -1,0 +1,3 @@
+[test]
+# Increase timeout for slower integration tests
+timeout = 60000

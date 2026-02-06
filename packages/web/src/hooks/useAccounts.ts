@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { listAccounts } from '../api/auth'
+import { listAccounts, useSession } from '../api/auth'
 
 export function useAccounts() {
+  const { data: session } = useSession()
+
   return useQuery({
     queryKey: ['auth', 'accounts'],
     queryFn: async () => {
@@ -9,5 +11,6 @@ export function useAccounts() {
       if (error) throw error
       return data ?? []
     },
+    enabled: !!session?.user?.id,
   })
 }

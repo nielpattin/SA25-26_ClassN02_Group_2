@@ -9,51 +9,52 @@ export const userController = new Elysia({ prefix: '/users' })
   .use(authPlugin)
   .get('/', async () => {
     return userService.getAll()
-  })
+  }, { requireAuth: true })
 
   .get('/:id', async ({ params }) => {
     return userService.getById(params.id)
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() })
   })
 
   .post('/', async ({ body }) => {
     return userService.create(body)
   }, {
+    requireAuth: true,
     body: CreateUserBody
   })
 
   .patch('/:id', async ({ params, body, session }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
     
     return userService.update(params.id, body)
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() }),
     body: UpdateUserBody
   })
 
   .post('/:id/avatar', async ({ params, body, session }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
 
     return userService.uploadAvatar(params.id, body.file)
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() }),
     body: AvatarUploadBody
   })
 
   .delete('/:id/avatar', async ({ params, session }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
 
     return userService.deleteAvatar(params.id)
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() })
   })
 
   .patch('/:id/preferences', async ({ params, body, session, set }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
 
     if (body.timezone && !isValidTimezone(body.timezone)) {
@@ -68,22 +69,22 @@ export const userController = new Elysia({ prefix: '/users' })
 
     return userService.updatePreferences(params.id, body)
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() }),
     body: UpdateUserPreferencesBody
   })
 
   .patch('/:id/notification-preferences', async ({ params, body, session }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
 
     return userService.updateNotificationPreferences(params.id, body)
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() }),
     body: UpdateNotificationPreferencesBody
   })
 
   .post('/:id/set-password', async ({ params, body, session, request }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
 
     const hash = await userService.getPasswordHash(params.id)
@@ -100,49 +101,49 @@ export const userController = new Elysia({ prefix: '/users' })
 
     return { success: true }
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() }),
     body: t.Object({ password: t.String({ minLength: 8 }) })
   })
 
   .delete('/:id', async ({ params, body, session }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
 
     return userService.deleteAccount(params.id, body.password)
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() }),
     body: DeleteAccountBody
   })
 
   .patch('/:id/restore', async ({ params, session }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
 
     return userService.restore(params.id)
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() })
   })
 
   .get('/:id/export', async ({ params, session }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
 
     return userService.exportData(params.id)
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() })
   })
 
   .get('/:id/sessions', async ({ params, session }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
 
     return userService.getSessions(params.id, session.session.id)
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() })
   })
 
   .delete('/:id/sessions/:sessionId', async ({ params, session, set }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
     
     try {
@@ -153,15 +154,16 @@ export const userController = new Elysia({ prefix: '/users' })
       return { success: false, error: error.message }
     }
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String(), sessionId: t.String() })
   })
 
   .post('/:id/sessions/revoke-all', async ({ params, session }) => {
-    if (!session) throw new UnauthorizedError()
     if (session.user.id !== params.id) throw new ForbiddenError()
 
     const revoked = await userService.revokeAllSessions(params.id, session.session.id)
     return { success: true, count: revoked.length }
   }, {
+    requireAuth: true,
     params: t.Object({ id: t.String() })
   })

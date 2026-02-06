@@ -1,10 +1,20 @@
 import { checklistRepository } from './checklists.repository'
 import { taskRepository } from '../tasks/tasks.repository'
 import { eventBus } from '../../events/bus'
+import { ForbiddenError } from '../../shared/errors'
 import type { CreateChecklistInput, UpdateChecklistInput, CreateChecklistItemInput, UpdateChecklistItemInput } from './checklists.model'
 
 export const checklistService = {
-  getByTaskId: async (taskId: string) => {
+  getByTaskId: async (taskId: string, userId: string) => {
+    const boardId = await taskRepository.getBoardIdFromTask(taskId)
+    if (boardId) {
+      const { boardService } = await import('../boards/boards.service')
+      const hasAccess = await boardService.canAccessBoard(boardId, userId)
+      if (!hasAccess) {
+        throw new ForbiddenError('Access denied')
+      }
+    }
+
     const lists = await checklistRepository.findByTaskId(taskId)
     return Promise.all(
       lists.map(async (list) => ({
@@ -14,9 +24,19 @@ export const checklistService = {
     )
   },
 
-  getById: async (id: string) => {
+  getById: async (id: string, userId: string) => {
     const checklist = await checklistRepository.findById(id)
     if (!checklist) return null
+
+    const boardId = await taskRepository.getBoardIdFromTask(checklist.taskId)
+    if (boardId) {
+      const { boardService } = await import('../boards/boards.service')
+      const hasAccess = await boardService.canAccessBoard(boardId, userId)
+      if (!hasAccess) {
+        throw new ForbiddenError('Access denied')
+      }
+    }
+
     const items = await checklistRepository.findItemsByChecklistId(id)
     return { ...checklist, items }
   },

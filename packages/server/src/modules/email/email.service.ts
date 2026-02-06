@@ -5,8 +5,17 @@ import { logger } from '../../shared/logger'
 const resend = new Resend(emailConfig.apiKey)
 const log = logger.child({ service: 'email' })
 
+const isTestMode = process.env.NODE_ENV === 'test' || 
+  emailConfig.apiKey.startsWith('re_test') ||
+  emailConfig.apiKey.startsWith('fake')
+
 export const emailService = {
   async sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+    if (isTestMode) {
+      log.debug('Email skipped (test mode)', { to, subject })
+      return { success: true, data: { id: 'mock-email-id' } }
+    }
+
     try {
       const { data, error } = await resend.emails.send({
         from: emailConfig.from,
