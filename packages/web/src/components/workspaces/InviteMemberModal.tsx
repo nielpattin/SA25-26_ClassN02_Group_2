@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Mail, Shield } from 'lucide-react'
 import { api } from '../../api/client'
 import { useWorkspace } from '../../context/WorkspaceContext'
+import { WORKSPACE_ROLES } from '../../constants/workspace'
 
 interface InviteMemberModalProps {
   isOpen: boolean
@@ -11,7 +12,7 @@ interface InviteMemberModalProps {
 
 export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<'admin' | 'member' | 'viewer'>('member')
+  const [role, setRole] = useState<typeof WORKSPACE_ROLES[keyof typeof WORKSPACE_ROLES]>(WORKSPACE_ROLES.MEMBER)
   const queryClient = useQueryClient()
   const { currentWorkspace } = useWorkspace()
 
@@ -31,7 +32,7 @@ export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
       queryClient.invalidateQueries({ queryKey: ['members', currentWorkspace?.id] })
       onClose()
       setEmail('')
-      setRole('member')
+      setRole(WORKSPACE_ROLES.MEMBER)
     },
   })
 
@@ -43,7 +44,7 @@ export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-black bg-black px-6 py-4 text-white">
           <h2 className="font-heading text-lg font-bold tracking-wider uppercase">Invite to Workspace</h2>
-          <button onClick={onClose} className="transition-colors hover:text-accent">
+          <button onClick={onClose} className="cursor-pointer transition-colors hover:text-accent">
             <X size={20} />
           </button>
         </div>
@@ -74,11 +75,11 @@ export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
               Assigned Role
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {(['admin', 'member', 'viewer'] as const).map((r) => (
+              {[WORKSPACE_ROLES.ADMIN, WORKSPACE_ROLES.MEMBER, WORKSPACE_ROLES.VIEWER].map((r) => (
                 <button
                   key={r}
                   onClick={() => setRole(r)}
-                  className={`border border-black px-3 py-2 text-[10px] font-bold uppercase transition-all ${
+                  className={`cursor-pointer border border-black px-3 py-2 text-[10px] font-bold uppercase transition-all ${
                     role === r 
                       ? 'bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
                       : 'bg-white text-black hover:bg-gray-100'
@@ -90,23 +91,23 @@ export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
             </div>
             <p className="mt-3 flex items-center gap-2 text-[10px] font-medium text-gray-500 uppercase">
               <Shield size={12} />
-              {role === 'admin' && 'Can manage members and settings.'}
-              {role === 'member' && 'Can create and edit boards/tasks.'}
-              {role === 'viewer' && 'Read-only access to the workspace.'}
+              {role === WORKSPACE_ROLES.ADMIN && 'Can manage members and settings.'}
+              {role === WORKSPACE_ROLES.MEMBER && 'Can create and edit boards/tasks.'}
+              {role === WORKSPACE_ROLES.VIEWER && 'Read-only access to the workspace.'}
             </p>
           </div>
 
           <div className="flex justify-end gap-4">
             <button
               onClick={onClose}
-              className="px-6 py-3 text-xs font-bold tracking-wider text-black uppercase transition-colors hover:bg-gray-100"
+              className="cursor-pointer px-6 py-3 text-xs font-bold tracking-wider text-black uppercase transition-colors hover:bg-gray-100"
             >
               Cancel
             </button>
             <button
               onClick={() => email && invite.mutate()}
               disabled={invite.isPending || !email}
-              className="border border-black bg-black px-6 py-3 text-xs font-bold tracking-wider text-white uppercase transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+              className="cursor-pointer border border-black bg-black px-6 py-3 text-xs font-bold tracking-wider text-white uppercase transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
             >
               {invite.isPending ? 'Inviting...' : 'Send Invite'}
             </button>

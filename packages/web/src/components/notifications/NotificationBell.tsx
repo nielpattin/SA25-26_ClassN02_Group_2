@@ -13,7 +13,7 @@ export function NotificationBell() {
       <button
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="group relative flex h-9 w-9 shrink-0 items-center justify-center border border-black bg-white transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 active:shadow-none"
+        className="group relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center border border-black bg-white transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 active:shadow-none"
       >
         <Bell size={18} className={unreadCount > 0 ? 'animate-ring text-black' : 'text-black/60'} />
         

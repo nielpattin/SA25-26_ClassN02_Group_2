@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useSession } from '../api/auth'
 import { Workspace } from '../types/workspace'
+import { WORKSPACE_DEFAULTS } from '../constants/workspace'
 
 interface WorkspaceContextType {
   workspaces: Workspace[]
@@ -17,7 +18,7 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefin
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
-    () => localStorage.getItem('kyte:current-workspace-id')
+    () => localStorage.getItem(WORKSPACE_DEFAULTS.STORAGE_KEY)
   )
   const prevUserIdRef = useRef<string | undefined>(session?.user?.id)
 
@@ -36,7 +37,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     prevUserIdRef.current = session?.user?.id
     if (!session?.user?.id) {
       setSelectedWorkspaceId(null)
-      localStorage.removeItem('kyte:current-workspace-id')
+      localStorage.removeItem(WORKSPACE_DEFAULTS.STORAGE_KEY)
     }
   }
 
@@ -54,7 +55,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const handleSetWorkspace = (workspace: Workspace) => {
     setSelectedWorkspaceId(workspace.id)
-    localStorage.setItem('kyte:current-workspace-id', workspace.id)
+    localStorage.setItem(WORKSPACE_DEFAULTS.STORAGE_KEY, workspace.id)
   }
 
   return (

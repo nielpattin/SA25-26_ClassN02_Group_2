@@ -13,43 +13,43 @@ export const workspaceController = new Elysia({ prefix: '/workspaces' })
     return workspaceService.getById(params.id, session.user.id)
   }, {
     requireAuth: true,
-    params: t.Object({ id: t.String() })
+    params: t.Object({ id: t.String() }),
   })
 
   .get('/slug/:slug', async ({ params }) => {
     return workspaceService.getBySlug(params.slug)
   }, {
     requireAuth: true,
-    params: t.Object({ slug: t.String() })
+    params: t.Object({ slug: t.String() }),
   })
 
   .post('/', async ({ body, session }) => {
     return workspaceService.create(body, session.user.id)
   }, {
     requireAuth: true,
-    body: CreateWorkspaceBody
+    body: CreateWorkspaceBody,
   })
 
-  .patch('/:id', async ({ params, body }) => {
-    return workspaceService.update(params.id, body)
+  .patch('/:id', async ({ params, body, session }) => {
+    return workspaceService.update(params.id, body, session.user.id)
   }, {
     requireAuth: true,
     params: t.Object({ id: t.String() }),
-    body: UpdateWorkspaceBody
+    body: UpdateWorkspaceBody,
   })
 
-  .delete('/:id', async ({ params }) => {
-    return workspaceService.delete(params.id)
+  .delete('/:id', async ({ params, session }) => {
+    return workspaceService.delete(params.id, session.user.id)
   }, {
     requireAuth: true,
-    params: t.Object({ id: t.String() })
+    params: t.Object({ id: t.String() }),
   })
 
-  .get('/:id/members', async ({ params }) => {
-    return workspaceService.getMembers(params.id)
+  .get('/:id/members', async ({ params, session }) => {
+    return workspaceService.getMembers(params.id, session.user.id)
   }, {
     requireAuth: true,
-    params: t.Object({ id: t.String() })
+    params: t.Object({ id: t.String() }),
   })
 
   .post('/:id/members', async ({ params, body, session }) => {
@@ -57,33 +57,33 @@ export const workspaceController = new Elysia({ prefix: '/workspaces' })
   }, {
     requireAuth: true,
     params: t.Object({ id: t.String() }),
-    body: AddMemberBody
+    body: AddMemberBody,
   })
 
   .delete('/:id/members/:userId', async ({ params, session }) => {
     return workspaceService.removeMember(params.id, params.userId, session.user.id)
   }, {
     requireAuth: true,
-    params: t.Object({ id: t.String(), userId: t.String() })
+    params: t.Object({ id: t.String(), userId: t.String() }),
   })
 
   .get('/:id/boards', async ({ params }) => {
     return workspaceService.getBoards(params.id)
   }, {
     requireAuth: true,
-    params: t.Object({ id: t.String() })
+    params: t.Object({ id: t.String() }),
   })
 
   .get('/:id/archived-boards', async ({ params, session }) => {
     return workspaceService.getArchivedBoards(params.id, session.user.id)
   }, {
     requireAuth: true,
-    params: t.Object({ id: t.String() })
+    params: t.Object({ id: t.String() }),
   })
 
   .get('/user/:userId', ({ params }) => {
     return workspaceService.getUserWorkspaces(params.userId)
   }, {
     requireAuth: true,
-    params: t.Object({ userId: t.String() })
+    params: t.Object({ userId: t.String() }),
   })

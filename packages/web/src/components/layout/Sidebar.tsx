@@ -8,6 +8,7 @@ import { api } from '../../api/client'
 import { CreateWorkspaceModal } from '../workspaces/CreateWorkspaceModal'
 import { NotificationBell } from '../notifications/NotificationBell'
 import { useSearchModal } from '../../context/SearchContext'
+import { ADMIN_ROLES } from '../../constants/workspace'
 
 export function Sidebar() {
   const { workspaces, currentWorkspace, setCurrentWorkspace } = useWorkspace()
@@ -31,10 +32,9 @@ export function Sidebar() {
   })
 
   const myMembership = Array.isArray(members) ? members.find(m => m.userId === session?.user?.id) : null
-  const canManage = myMembership?.role === 'owner' || myMembership?.role === 'admin'
+  const canManage = !!myMembership && ADMIN_ROLES.includes(myMembership.role)
   const canAccessAdmin = !!session?.user?.adminRole
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -66,7 +66,7 @@ export function Sidebar() {
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             title={currentWorkspace?.name || 'Select Workspace'}
-            className="flex min-w-0 flex-1 items-center justify-between gap-2 border border-black bg-white p-2 text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:bg-accent hover:shadow-none"
+            className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 border border-black bg-white p-2 text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:bg-accent hover:shadow-none"
           >
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-black bg-black text-white">
@@ -146,7 +146,7 @@ export function Sidebar() {
 
             <button
               onClick={openSearch}
-              className="flex items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide text-black uppercase transition-all hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+              className="flex cursor-pointer items-center gap-3 border border-transparent px-3 py-2 text-xs font-bold tracking-wide text-black uppercase transition-all hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
             >
               <Search size={16} />
               Search
@@ -226,7 +226,7 @@ export function Sidebar() {
           
           <button
             onClick={handleSignOut}
-            className="flex w-full items-center justify-center gap-2 border border-black bg-white py-2 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 border border-black bg-white py-2 text-xs font-bold uppercase transition-all hover:-translate-x-px hover:-translate-y-px hover:bg-accent hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
           >
             <LogOut size={14} />
             Sign Out

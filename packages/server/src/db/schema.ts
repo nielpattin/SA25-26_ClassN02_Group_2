@@ -1,61 +1,44 @@
 import { pgTable, pgEnum, varchar, text, integer, timestamp, uuid, boolean, primaryKey, jsonb, unique, index } from 'drizzle-orm/pg-core'
 
-// Template marketplace status
 export const templateStatusEnum = pgEnum('template_status', ['none', 'pending', 'approved', 'rejected'])
 
-// Workspace membership role
 export const workspaceRoleEnum = pgEnum('workspace_role', ['owner', 'admin', 'member', 'viewer'])
 
-// Board-level access role
 export const boardRoleEnum = pgEnum('board_role', ['admin', 'member', 'viewer'])
 
-// Board visibility setting
 export const visibilityEnum = pgEnum('visibility', ['private', 'workspace', 'public'])
 
-// Platform admin roles
 export const adminRoleEnum = pgEnum('admin_role', ['super_admin', 'moderator', 'support'])
 
-// Task priority level
 export const priorityEnum = pgEnum('priority', ['urgent', 'high', 'medium', 'low', 'none'])
 
-// Task size/effort level
 export const sizeEnum = pgEnum('size', ['xs', 's', 'm', 'l', 'xl'])
 
-// User interface theme preference
 export const themeEnum = pgEnum('theme', ['light', 'dark', 'system'])
 
-// Email notification frequency
 export const emailDigestEnum = pgEnum('email_digest', ['instant', 'daily', 'weekly', 'none'])
 
-// Attachment type - file upload or external link
 export const attachmentTypeEnum = pgEnum('attachment_type', ['link', 'file'])
 
-// Task reminder timing
 export const reminderEnum = pgEnum('reminder', ['none', 'on_day', '1_day', '2_days', '1_week'])
 
-// In-app notification types
 export const notificationTypeEnum = pgEnum('notification_type', [
 	'mention', 'assignment', 'due_soon', 'due_urgent', 'overdue', 'comment', 'board_invite'
 ])
 
-// Activity log action types
 export const activityActionEnum = pgEnum('activity_action', [
 	'created', 'updated', 'deleted', 'moved', 'moved_out', 'assigned', 'unassigned',
 	'completed', 'uncompleted', 'archived', 'restored', 'label_added',
 	'label_removed', 'due_date_set', 'attachment_added'
 ])
 
-// Activity log target entity types
 export const activityTargetEnum = pgEnum('activity_target', [
 	'task', 'column', 'board', 'comment', 'checklist', 'checklist_item', 'attachment', 'label', 'user'
 ])
 
-// Dependency types between tasks
 export const dependencyTypeEnum = pgEnum('dependency_type', [
 	'finish_to_start', 'start_to_start', 'finish_to_finish'
 ])
-
-// User accounts - Better Auth compatible
 
 export const users = pgTable('user', {
 	id: text('id').primaryKey(),
@@ -63,9 +46,7 @@ export const users = pgTable('user', {
 	email: text('email').notNull().unique(),
 	emailVerified: boolean('email_verified').default(false).notNull(),
 	image: text('image'),
-	// ISO 639-1 language code (en, es, ja)
 	locale: varchar('locale', { length: 10 }).default('en').notNull(),
-	// IANA timezone (America/New_York)
 	timezone: varchar('timezone', { length: 50 }).default('UTC').notNull(),
 	theme: themeEnum().default('system').notNull(),
 	emailDigest: emailDigestEnum().default('daily').notNull(),
@@ -84,7 +65,6 @@ export const users = pgTable('user', {
 	updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
-// Better Auth - Active sessions
 export const sessions = pgTable('session', {
 	id: text('id').primaryKey(),
 	expiresAt: timestamp('expires_at').notNull(),
@@ -96,7 +76,6 @@ export const sessions = pgTable('session', {
 	updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
-// Better Auth - OAuth providers & credentials
 export const accounts = pgTable('account', {
 	id: text('id').primaryKey(),
 	accountId: text('account_id').notNull(),
@@ -113,7 +92,6 @@ export const accounts = pgTable('account', {
 	updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
-// Better Auth - Email verification & password reset tokens
 export const verifications = pgTable('verification', {
 	id: text('id').primaryKey(),
 	identifier: text('identifier').notNull(),
@@ -123,18 +101,15 @@ export const verifications = pgTable('verification', {
 	updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
-// Team workspaces - personal or shared
 export const workspaces = pgTable('workspaces', {
 	id: uuid('id').defaultRandom().primaryKey(),
-	name: varchar('name', { length: 255 }).notNull(),
-	// URL-friendly identifier
+	name: varchar('name', { length: 50 }).notNull(),
+	description: varchar('description', { length: 200 }),
 	slug: varchar('slug', { length: 255 }).notNull().unique(),
-	// True for auto-created personal workspace
 	personal: boolean('personal').default(false).notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Workspace membership with role
 export const members = pgTable('members', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }).notNull(),
@@ -143,7 +118,6 @@ export const members = pgTable('members', {
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Kanban boards
 export const boards = pgTable('boards', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	name: varchar('name', { length: 255 }).notNull(),
@@ -151,17 +125,13 @@ export const boards = pgTable('boards', {
 	workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }),
 	ownerId: text('owner_id').references(() => users.id, { onDelete: 'set null' }),
 	visibility: visibilityEnum().default('private').notNull(),
-	// Fractional index for ordering
 	position: text('position').notNull(),
-	// Optimistic locking version
 	version: integer('version').default(1).notNull(),
-	// Soft delete timestamp
 	archivedAt: timestamp('archived_at'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 	updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
-// Board-level access control (separate from org membership)
 export const boardMembers = pgTable('board_members', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	boardId: uuid('board_id').references(() => boards.id, { onDelete: 'cascade' }).notNull(),
@@ -170,7 +140,6 @@ export const boardMembers = pgTable('board_members', {
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// User's favorite/starred boards
 export const starredBoards = pgTable('starred_boards', {
 	userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
 	boardId: uuid('board_id').references(() => boards.id, { onDelete: 'cascade' }).notNull(),
@@ -179,28 +148,21 @@ export const starredBoards = pgTable('starred_boards', {
 	primaryKey({ columns: [table.userId, table.boardId] }),
 ])
 
-// Board columns (e.g., To Do, In Progress, Done)
 export const columns = pgTable('columns', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	name: varchar('name', { length: 255 }).notNull(),
 	boardId: uuid('board_id').references(() => boards.id, { onDelete: 'cascade' }).notNull(),
-	// Fractional index for ordering
 	position: text('position').notNull(),
-	// Optimistic locking version
 	version: integer('version').default(1).notNull(),
-	// Soft delete timestamp
 	archivedAt: timestamp('archived_at'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Tasks (cards) within columns
 export const tasks = pgTable('tasks', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	title: varchar('title', { length: 255 }).notNull(),
-	// Markdown content
 	description: text('description'),
 	columnId: uuid('column_id').references(() => columns.id, { onDelete: 'cascade' }).notNull(),
-	// Fractional index for ordering within column
 	position: text('position').notNull(),
 	priority: priorityEnum(),
 	size: sizeEnum(),
@@ -210,15 +172,12 @@ export const tasks = pgTable('tasks', {
 	reminderSentAt: timestamp('reminder_sent_at'),
 	overdueSentAt: timestamp('overdue_sent_at'),
 	coverImageUrl: text('cover_image_url'),
-	// Optimistic locking version
 	version: integer('version').default(1).notNull(),
-	// Soft delete timestamp
 	archivedAt: timestamp('archived_at'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 	updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
-// Task assignees - supports multiple assignees per task
 export const taskAssignees = pgTable('task_assignees', {
 	taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
 	userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -228,17 +187,14 @@ export const taskAssignees = pgTable('task_assignees', {
 	primaryKey({ columns: [table.taskId, table.userId] }),
 ])
 
-// Board-level labels for categorizing tasks
 export const labels = pgTable('labels', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	boardId: uuid('board_id').references(() => boards.id, { onDelete: 'cascade' }).notNull(),
 	name: varchar('name', { length: 255 }).notNull(),
-	// Hex color code (#FF5733)
 	color: varchar('color', { length: 7 }).notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Task-label junction table
 export const taskLabels = pgTable('task_labels', {
 	taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
 	labelId: uuid('label_id').references(() => labels.id, { onDelete: 'cascade' }).notNull(),
@@ -246,7 +202,6 @@ export const taskLabels = pgTable('task_labels', {
 	primaryKey({ columns: [table.taskId, table.labelId] }),
 ])
 
-// Task dependencies for Gantt/timeline view
 export const taskDependencies = pgTable('task_dependencies', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	blockingTaskId: uuid('blocking_task_id').references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
@@ -257,56 +212,45 @@ export const taskDependencies = pgTable('task_dependencies', {
 	unique('task_dependencies_pair_idx').on(table.blockingTaskId, table.blockedTaskId),
 ])
 
-// Checklists within tasks
 export const checklists = pgTable('checklists', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
 	title: varchar('title', { length: 255 }).notNull(),
-	// Fractional index for ordering
 	position: text('position').notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Individual items within a checklist
 export const checklistItems = pgTable('checklist_items', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	checklistId: uuid('checklist_id').references(() => checklists.id, { onDelete: 'cascade' }).notNull(),
 	content: varchar('content', { length: 500 }).notNull(),
 	isCompleted: boolean('is_completed').default(false).notNull(),
-	// Fractional index for ordering
 	position: text('position').notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// File uploads and external links attached to tasks
 export const attachments = pgTable('attachments', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
 	type: attachmentTypeEnum().notNull(),
-	// File URL (SeaweedFS) or external link URL
 	url: text('url').notNull(),
 	name: varchar('name', { length: 255 }).notNull(),
 	mimeType: varchar('mime_type', { length: 100 }),
-	// File size in bytes
 	size: integer('size'),
 	uploadedBy: text('uploaded_by').references(() => users.id),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Task comments with Markdown support
 export const comments = pgTable('comments', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
 	userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
-	// Markdown content
 	content: text('content').notNull(),
-	// Soft delete - 7 day retention
 	deletedAt: timestamp('deleted_at'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 	updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
-// Parsed @mentions from comments for notification targeting
 export const commentMentions = pgTable('comment_mentions', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	commentId: uuid('comment_id').references(() => comments.id, { onDelete: 'cascade' }).notNull(),
@@ -314,7 +258,6 @@ export const commentMentions = pgTable('comment_mentions', {
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Audit log for all user actions
 export const activities = pgTable('activities', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	boardId: uuid('board_id').references(() => boards.id, { onDelete: 'cascade' }).notNull(),
@@ -323,14 +266,12 @@ export const activities = pgTable('activities', {
 	action: activityActionEnum().notNull(),
 	targetType: activityTargetEnum().notNull(),
 	targetId: text('target_id').notNull(),
-	// Before/after values for updates
 	changes: jsonb('changes'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
 	index('idx_activities_board_created').on(table.boardId, table.createdAt),
 ])
 
-// Platform admin audit log
 export const adminAuditLog = pgTable('admin_audit_log', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	adminId: text('admin_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -345,7 +286,6 @@ export const adminAuditLog = pgTable('admin_audit_log', {
 	index('admin_audit_log_created_at_idx').on(table.createdAt),
 ])
 
-// In-app notifications
 export const notifications = pgTable('notifications', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -360,21 +300,15 @@ export const notifications = pgTable('notifications', {
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Saved board templates for quick creation
 export const boardTemplates = pgTable('board_templates', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	name: varchar('name', { length: 255 }).notNull(),
 	description: text('description'),
 	createdBy: text('created_by').references(() => users.id),
-	// NULL for personal templates
 	workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }),
-	// Array of { name, position }
 	columnDefinitions: jsonb('column_definitions').notNull(),
-	// Array of { name, color }
 	defaultLabels: jsonb('default_labels'),
-	// Visible to all org members
 	isPublic: boolean('is_public').default(false).notNull(),
-	// Marketplace metadata
 	status: templateStatusEnum('status').default('none').notNull(),
 	categories: text('categories').array(),
 	submittedAt: timestamp('submitted_at'),
@@ -387,7 +321,6 @@ export const boardTemplates = pgTable('board_templates', {
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Saved task templates for quick creation
 export const taskTemplates = pgTable('task_templates', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	boardId: uuid('board_id').references(() => boards.id, { onDelete: 'cascade' }).notNull(),
@@ -417,7 +350,6 @@ export const userBoardPreferences = pgTable('user_board_preferences', {
 	primaryKey({ columns: [table.userId, table.boardId] }),
 ])
 
-// User's recently visited boards for search quick-access
 export const boardVisits = pgTable('board_visits', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -444,7 +376,6 @@ export const idempotencyKeys = pgTable('idempotency_keys', {
 	unique('idempotency_user_key_idx').on(table.userId, table.key)
 ])
 
-// Rate limiting for auth and other sensitive endpoints
 export const rateLimits = pgTable('rate_limits', {
 	key: text('key').primaryKey(),
 	count: integer('count').default(0).notNull(),
@@ -469,4 +400,5 @@ export const table = {
 	boardVisits,
 	idempotencyKeys,
 	rateLimits,
-} as const
+} satisfies Record<string, unknown>
+

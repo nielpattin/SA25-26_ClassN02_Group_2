@@ -5,6 +5,7 @@ import * as schema from '../../db/schema'
 import { emailService, verifyEmailTemplate } from '../email'
 import { checkRateLimit } from '../../shared/middleware/rate-limit'
 import { logger } from '../../shared/logger'
+import { WORKSPACE_DEFAULTS, WORKSPACE_ROLES } from '../workspaces/workspaces.constants'
 
 const webUrl = process.env.WEB_URL || 'http://localhost:5173'
 const apiUrl = process.env.API_URL || 'http://localhost:3000'
@@ -88,15 +89,15 @@ export const auth = betterAuth({
   advanced: {
     crossSubDomainCookies: {
       enabled: false,
-    }
+    },
   },
   databaseHooks: {
     user: {
       create: {
         after: async (user) => {
-          const slug = `personal-${user.id.slice(0, 8)}`
+          const slug = `${WORKSPACE_DEFAULTS.PERSONAL_SLUG_PREFIX}${user.id.slice(0, 8)}`
           const [workspace] = await db.insert(schema.workspaces).values({
-            name: 'Personal',
+            name: WORKSPACE_DEFAULTS.PERSONAL_NAME,
             slug,
             personal: true,
           }).returning()
@@ -104,7 +105,7 @@ export const auth = betterAuth({
           await db.insert(schema.members).values({
             workspaceId: workspace.id,
             userId: user.id,
-            role: 'owner',
+            role: WORKSPACE_ROLES.OWNER,
           })
 
           logger.info('Created personal workspace for user', { userId: user.id })

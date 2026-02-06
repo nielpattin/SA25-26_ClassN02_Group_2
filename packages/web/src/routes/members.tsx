@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { UserPlus, Trash2, Shield, Mail } from 'lucide-react'
 import { InviteMemberModal } from '../components/workspaces/InviteMemberModal'
 import { Avatar } from '../components/ui/Avatar'
+import { ADMIN_ROLES } from '../constants/workspace'
 
 export const Route = createFileRoute('/members')({
   component: MembersRouteComponent,
@@ -51,9 +52,8 @@ function MembersPage() {
 
   if (isWorkspaceLoading) return null
 
-  // Check if current user is owner or admin to allow removals
   const myMembership = Array.isArray(members) ? members.find(m => m.userId === session?.user?.id) : null
-  const canManage = myMembership?.role === 'owner' || myMembership?.role === 'admin'
+  const canManage = !!myMembership && ADMIN_ROLES.includes(myMembership.role)
 
   return (
     <div className="p-12 lg:px-16">
@@ -68,7 +68,7 @@ function MembersPage() {
           </div>
         <button
           onClick={() => setIsInviteModalOpen(true)}
-          className="flex items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-md"
+          className="flex cursor-pointer items-center gap-2 border border-black bg-black px-6 py-3 text-xs font-bold tracking-widest text-white uppercase transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-accent hover:text-black hover:shadow-brutal-md"
         >
           <UserPlus size={16} />
           Invite Member
@@ -128,7 +128,7 @@ function MembersPage() {
                       <button
                         onClick={() => removeMember.mutate(member.userId)}
                         disabled={removeMember.isPending}
-                        className="p-2 text-black transition-colors hover:bg-red-500 hover:text-white"
+                        className="cursor-pointer p-2 text-black transition-colors hover:bg-red-500 hover:text-white"
                         title="Remove Member"
                       >
                         <Trash2 size={16} />
@@ -137,7 +137,7 @@ function MembersPage() {
                     {member.userId === session?.user?.id && member.role !== 'owner' && (
                          <button
                            onClick={() => removeMember.mutate(member.userId)}
-                           className="border border-black bg-white px-3 py-1 text-[9px] font-bold uppercase transition-all hover:bg-red-500 hover:text-white"
+                           className="cursor-pointer border border-black bg-white px-3 py-1 text-[9px] font-bold uppercase transition-all hover:bg-red-500 hover:text-white"
                          >
                            Leave Workspace
                          </button>

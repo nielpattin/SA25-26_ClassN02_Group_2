@@ -2,6 +2,7 @@ import { workspaceRepository } from './workspaces.repository'
 import { boardRepository } from '../boards/boards.repository'
 import type { CreateWorkspaceInput, UpdateWorkspaceInput, AddMemberInput } from './workspaces.model'
 import { ForbiddenError, BadRequestError } from '../../shared/errors'
+import { ADMIN_ROLES, WORKSPACE_DEFAULTS } from './workspaces.constants'
 
 export const workspaceService = {
   async getAll() {
@@ -12,7 +13,6 @@ export const workspaceService = {
     const workspace = await workspaceRepository.getById(id)
     if (!workspace) throw new Error('Workspace not found')
     
-    // Check if user is a member of this workspace
     const membership = await workspaceRepository.getMember(id, userId)
     if (!membership) {
       throw new ForbiddenError('Access denied')
@@ -26,20 +26,40 @@ export const workspaceService = {
   },
 
   async create(data: CreateWorkspaceInput, userId: string) {
-    return workspaceRepository.create(data, userId)
+    const normalizedData = {
+      ...data,
+      name: data.name.trim(),
+      description: data.description?.trim() || undefined,
+    }
+    return workspaceRepository.create(normalizedData, userId)
   },
 
-  async update(id: string, data: UpdateWorkspaceInput) {
-    return workspaceRepository.update(id, data)
+  async update(id: string, data: UpdateWorkspaceInput, actorId: string) {
+    const membership = await workspaceRepository.getMember(id, actorId)
+    if (!membership || !ADMIN_ROLES.includes(membership.role)) {
+      throw new ForbiddenError('Only workspace admins can update this workspace')
+    }
+
+    const normalizedData = {
+      ...data,
+      name: data.name?.trim(),
+      description: data.description === undefined ? undefined : (data.description?.trim() || undefined),
+    }
+    return workspaceRepository.update(id, normalizedData)
   },
 
-  async delete(id: string) {
+  async delete(id: string, actorId: string) {
+    const membership = await workspaceRepository.getMember(id, actorId)
+    if (!membership || !ADMIN_ROLES.includes(membership.role)) {
+      throw new ForbiddenError('Only workspace admins can delete this workspace')
+    }
+
     return workspaceRepository.delete(id)
   },
 
   async addMember(workspaceId: string, data: AddMemberInput, actorId: string) {
     const actorMembership = await workspaceRepository.getMember(workspaceId, actorId)
-    if (!actorMembership || (actorMembership.role !== 'owner' && actorMembership.role !== 'admin')) {
+    if (!actorMembership || !ADMIN_ROLES.includes(actorMembership.role)) {
       throw new ForbiddenError('Only workspace admins can add members')
     }
 
@@ -49,9 +69,6 @@ export const workspaceService = {
 
     let targetUserId = data.userId
     if (data.email) {
-      // In a real app, we'd look up user by email or send an invite
-      // For now, assuming user exists or we just store the email if we had an invites table
-      // Let's assume user exists for simplicity in this MVP
       throw new BadRequestError('Invitation by email not fully implemented')
     }
 
@@ -64,14 +81,13 @@ export const workspaceService = {
 
     return workspaceRepository.addMember(workspaceId, {
       userId: targetUserId,
-      role: data.role || 'member'
+      role: data.role || WORKSPACE_DEFAULTS.MEMBER_ROLE,
     })
   },
 
   async removeMember(workspaceId: string, userId: string, actorId: string) {
     const actorMembership = await workspaceRepository.getMember(workspaceId, actorId)
-    if (!actorMembership || (actorMembership.role !== 'owner' && actorMembership.role !== 'admin')) {
-      // Allow users to remove themselves
+    if (!actorMembership || !ADMIN_ROLES.includes(actorMembership.role)) {
       if (userId !== actorId) {
         throw new ForbiddenError('Only workspace admins can remove members')
       }
@@ -80,7 +96,11 @@ export const workspaceService = {
     return workspaceRepository.removeMember(workspaceId, userId)
   },
 
-  async getMembers(workspaceId: string) {
+  async getMembers(workspaceId: string, actorId: string) {
+    const membership = await workspaceRepository.getMember(workspaceId, actorId)
+    if (!membership) {
+      throw new ForbiddenError('Access denied')
+    }
     return workspaceRepository.getMembers(workspaceId)
   },
 
@@ -95,7 +115,7 @@ export const workspaceService = {
 
   async getArchivedBoards(workspaceId: string, actorId: string) {
     const actorMembership = await workspaceRepository.getMember(workspaceId, actorId)
-    if (!actorMembership || (actorMembership.role !== 'owner' && actorMembership.role !== 'admin')) {
+    if (!actorMembership || !ADMIN_ROLES.includes(actorMembership.role)) {
       throw new ForbiddenError('Only workspace admins can view archived boards')
     }
 
