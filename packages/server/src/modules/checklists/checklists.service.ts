@@ -42,7 +42,10 @@ export const checklistService = {
   },
 
   create: async (data: CreateChecklistInput, userId: string) => {
-    const checklist = await checklistRepository.create(data)
+    const title = data.title.trim()
+    if (!title) throw new Error('Title is required')
+    
+    const checklist = await checklistRepository.create({ ...data, title })
     const boardId = await taskRepository.getBoardIdFromTask(data.taskId)
     if (boardId) {
       eventBus.emitDomain('checklist.created', { checklist, taskId: data.taskId, userId, boardId })
@@ -51,10 +54,16 @@ export const checklistService = {
   },
 
   update: async (id: string, data: UpdateChecklistInput, userId: string) => {
-    const checklist = await checklistRepository.update(id, data)
+    const updateData = { ...data }
+    if (updateData.title !== undefined) {
+      updateData.title = updateData.title.trim()
+      if (!updateData.title) throw new Error('Title cannot be empty')
+    }
+
+    const checklist = await checklistRepository.update(id, updateData)
     const boardId = await taskRepository.getBoardIdFromTask(checklist.taskId)
     if (boardId) {
-      eventBus.emitDomain('checklist.updated', { checklist, taskId: checklist.taskId, userId, boardId, changes: data })
+      eventBus.emitDomain('checklist.updated', { checklist, taskId: checklist.taskId, userId, boardId, changes: updateData })
     }
     return checklist
   },
@@ -71,7 +80,10 @@ export const checklistService = {
   },
 
   createItem: async (data: CreateChecklistItemInput, userId: string) => {
-    const item = await checklistRepository.createItem(data)
+    const content = data.content.trim()
+    if (!content) throw new Error('Content is required')
+
+    const item = await checklistRepository.createItem({ ...data, content })
     const checklist = await checklistRepository.findById(data.checklistId)
     if (checklist) {
       const boardId = await taskRepository.getBoardIdFromTask(checklist.taskId)
@@ -83,12 +95,18 @@ export const checklistService = {
   },
 
   updateItem: async (id: string, data: UpdateChecklistItemInput, userId: string) => {
-    const item = await checklistRepository.updateItem(id, data)
+    const updateData = { ...data }
+    if (updateData.content !== undefined) {
+      updateData.content = updateData.content.trim()
+      if (!updateData.content) throw new Error('Content cannot be empty')
+    }
+
+    const item = await checklistRepository.updateItem(id, updateData)
     const checklist = await checklistRepository.findById(item.checklistId)
     if (checklist) {
       const boardId = await taskRepository.getBoardIdFromTask(checklist.taskId)
       if (boardId) {
-        eventBus.emitDomain('checklist.item.updated', { item, taskId: checklist.taskId, userId, boardId, changes: data })
+        eventBus.emitDomain('checklist.item.updated', { item, taskId: checklist.taskId, userId, boardId, changes: updateData })
       }
     }
     return item

@@ -30,7 +30,7 @@ export function useLabels(boardId: string) {
     queryFn: async () => {
       const { data, error } = await api.v1.labels.board({ boardId }).get()
       if (error) throw error
-      return (data || []) as Label[]
+      return data ?? []
     },
     enabled: !!boardId,
   })
@@ -89,7 +89,7 @@ export function useToggleLabel(taskId: string, boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ labelId, isCurrentlyActive }: { labelId: string; isCurrentlyActive: boolean }) => {
+    mutationFn: async ({ labelId, isCurrentlyActive }: { labelId: string isCurrentlyActive: boolean }) => {
       if (isCurrentlyActive) {
         const { error } = await api.v1.labels.card({ cardId: taskId }).label({ labelId }).delete()
         if (error) throw error
@@ -101,6 +101,7 @@ export function useToggleLabel(taskId: string, boardId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['card', taskId] })
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
+      queryClient.invalidateQueries({ queryKey: ['activities', taskId] })
     },
   })
 }

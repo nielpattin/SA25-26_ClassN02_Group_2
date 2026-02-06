@@ -14,9 +14,8 @@ import {
   useDownloadAttachment,
   useCreateChecklist,
 } from '../../hooks'
+import { activityKeys } from '../../hooks/useTaskActivity'
 import type { UploadProgress, UploadError } from '../../hooks'
-
-export type { Card, Checklist as ChecklistType, Comment, Activity, Board, BoardMember } from '../CardModalTypes'
 import type { Card, Board, BoardMember } from '../CardModalTypes'
 
 export interface TaskModalProps {
@@ -41,30 +40,30 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
   const deleteMutation = useDeleteAttachment(taskId)
   const downloadMutation = useDownloadAttachment()
 
-  const { data: card, isLoading } = useQuery<Card>({
+  const { data: card, isLoading } = useQuery({
     queryKey: ['card', taskId],
     queryFn: async () => {
       const { data, error } = await api.v1.tasks({ id: taskId }).get()
       if (error) throw error
-      return data as unknown as Card
+      return data satisfies Card
     },
   })
 
-  const { data: boards = [] } = useQuery<Board[]>({
+  const { data: boards = [] } = useQuery({
     queryKey: ['boards'],
     queryFn: async () => {
       const { data, error } = await api.v1.boards.get()
       if (error) throw error
-      return data as unknown as Board[]
+      return (data ?? []) satisfies Board[]
     },
   })
 
-  const { data: boardMembers = [] } = useQuery<BoardMember[]>({
+  const { data: boardMembers = [] } = useQuery({
     queryKey: ['board-members', boardId],
     queryFn: async () => {
       const { data, error } = await api.v1.boards({ id: boardId }).members.get()
       if (error) throw error
-      return data as unknown as BoardMember[]
+      return (data ?? []) satisfies BoardMember[]
     },
   })
 
@@ -107,6 +106,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['card', taskId] })
+      queryClient.invalidateQueries({ queryKey: activityKeys.task(taskId) })
     },
   })
 
@@ -123,13 +123,14 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
   })
 
   const moveCard = useMutation({
-    mutationFn: async (params: { columnId: string; position: string }) => {
+    mutationFn: async (params: { columnId: string position: string }) => {
       const { error } = await api.v1.tasks({ id: taskId }).move.patch(params)
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] })
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
+      queryClient.invalidateQueries({ queryKey: activityKeys.task(taskId) })
       setIsMoving(false)
     },
   })

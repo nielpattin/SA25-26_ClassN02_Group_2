@@ -27,7 +27,13 @@ export function TaskLabels({ taskId, boardId, cardLabels }: TaskLabelsProps) {
         toggleLabel.mutate({ labelId, isCurrentlyActive })
       }}
       onAdd={(name, color) => {
-        createLabel.mutate({ name, color, boardId })
+        createLabel.mutate({ name, color, boardId }, {
+          onSuccess: (label) => {
+            if (label?.id) {
+              toggleLabel.mutate({ labelId: label.id, isCurrentlyActive: false })
+            }
+          },
+        })
       }}
       onDelete={labelId => {
         deleteLabel.mutate(labelId)

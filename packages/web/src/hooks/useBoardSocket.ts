@@ -29,6 +29,7 @@ type WsMessage = {
     | 'task:restored'
     | 'dependency:created'
     | 'dependency:deleted'
+    | 'activity:updated'
     | 'presence:updated'
   data?: unknown
 
@@ -118,14 +119,22 @@ export function useBoardSocket(boardId: string) {
           const message: WsMessage = JSON.parse(event.data)
 
           if (message.type === 'presence:updated') {
-            setPresence(message.data as PresenceUser[])
+            if (Array.isArray(message.data)) {
+              setPresence(message.data as PresenceUser[])
+            }
             return
           }
 
-          // Optimization: Skip refetching if the event was triggered by the current user
-          // as we already have optimistic updates and local state updates.
+          if (message.type === 'activity:updated') {
+            const activityData = message.data as { taskId?: string } | undefined
+            if (activityData?.taskId) {
+              queryClient.invalidateQueries({ queryKey: ['activities', activityData.taskId] })
+            }
+            return
+          }
+
           const data = message.data as Record<string, unknown> | undefined
-          const initiatorId = data?.userId as string | undefined
+          const initiatorId = typeof data?.userId === 'string' ? data.userId : undefined
           if (initiatorId && initiatorId === session?.user?.id) {
             return
           }
@@ -155,8 +164,8 @@ export function useBoardSocket(boardId: string) {
               break
             case 'task:updated':
               queryClient.invalidateQueries({ queryKey: ['cards', 'list', boardIdRef.current] })
-              if (data && typeof data === 'object' && 'id' in data) {
-                queryClient.invalidateQueries({ queryKey: ['cards', 'detail', data.id as string] })
+              if (data && typeof data === 'object' && 'id' in data && typeof data.id === 'string') {
+                queryClient.invalidateQueries({ queryKey: ['cards', 'detail', data.id] })
               }
               break
             case 'task:created':
@@ -175,7 +184,7 @@ export function useBoardSocket(boardId: string) {
               break
           }
         } catch {
-          // ignore parse errors
+          // Empty
         }
       }
 

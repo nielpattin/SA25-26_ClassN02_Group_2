@@ -22,7 +22,7 @@ export function useComments(taskId: string, limit = 20) {
 
       const { data, error } = await api.v1.comments.task({ taskId }).get({ query })
       if (error) throw error
-      return data as unknown as CommentPage
+      return data as CommentPage
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
@@ -41,6 +41,7 @@ export function useCreateComment(taskId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: commentKeys.task(taskId) })
+      queryClient.invalidateQueries({ queryKey: ['activities', taskId] })
     },
   })
 }
@@ -49,13 +50,14 @@ export function useUpdateComment(taskId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, content }: { id: string; content: string }) => {
+    mutationFn: async ({ id, content }: { id: string content: string }) => {
       const { data, error } = await api.v1.comments({ id }).patch({ content })
       if (error) throw error
       return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: commentKeys.task(taskId) })
+      queryClient.invalidateQueries({ queryKey: ['activities', taskId] })
     },
   })
 }
@@ -70,6 +72,7 @@ export function useDeleteComment(taskId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: commentKeys.task(taskId) })
+      queryClient.invalidateQueries({ queryKey: ['activities', taskId] })
     },
   })
 }

@@ -46,14 +46,17 @@ export const commentService = {
   },
 
   create: async (data: CreateCommentInput & { userId: string }) => {
-    const comment = await commentRepository.create(data)
+    const content = data.content.trim()
+    if (!content) throw new ForbiddenError('Comment content cannot be empty')
+
+    const comment = await commentRepository.create({ ...data, content })
     const boardId = await taskRepository.getBoardIdFromTask(data.taskId)
 
     if (boardId) {
       eventBus.emitDomain('comment.created', { comment, boardId, userId: data.userId })
     }
 
-    const mentionedUserIds = extractMentions(data.content)
+    const mentionedUserIds = extractMentions(content)
     for (const userId of mentionedUserIds) {
       await commentRepository.addMention(comment.id, userId)
       
@@ -72,10 +75,13 @@ export const commentService = {
   },
 
   update: async (id: string, data: UpdateCommentInput) => {
-    const comment = await commentRepository.update(id, data)
+    const content = data.content.trim()
+    if (!content) throw new ForbiddenError('Comment content cannot be empty')
+
+    const comment = await commentRepository.update(id, { ...data, content })
 
     await commentRepository.clearMentions(id)
-    const mentionedUserIds = extractMentions(data.content)
+    const mentionedUserIds = extractMentions(content)
     for (const userId of mentionedUserIds) {
       await commentRepository.addMention(id, userId)
     }

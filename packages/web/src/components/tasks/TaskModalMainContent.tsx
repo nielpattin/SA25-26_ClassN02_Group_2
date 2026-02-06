@@ -6,7 +6,7 @@ import { CommentSection } from '../comments'
 import { AttachmentSection } from '../attachments/Attachments'
 import { TaskChecklist } from './TaskChecklist'
 import { TaskLabels } from './TaskLabels'
-import { TaskActivity } from './TaskActivity'
+
 import type { Attachment, UploadProgress, UploadError } from '../../hooks'
 import type { Card, BoardMember } from '../CardModalTypes'
 
@@ -121,7 +121,6 @@ export function TaskModalMainContent({
         />
       </div>
 
-      <TaskActivity taskId={taskId} />
     </div>
   )
 }

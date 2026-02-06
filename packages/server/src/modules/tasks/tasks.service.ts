@@ -40,13 +40,18 @@ export const taskService = {
     dueDate?: Date | null
     coverImageUrl?: string
   }, userId: string) => {
+    const title = data.title.trim()
+    if (!title) throw new Error('Title is required')
+    
+    const description = data.description?.trim() || null
+
     let position = data.position
     if (!position) {
       const lastPosition = await taskRepository.getLastPositionInColumn(data.columnId)
       position = generatePosition(lastPosition, null)
     }
 
-    const task = await taskRepository.create({ ...data, position })
+    const task = await taskRepository.create({ ...data, title, description, position })
     const boardId = await taskRepository.getBoardIdFromColumn(data.columnId)
     
     if (boardId) {
@@ -76,6 +81,15 @@ export const taskService = {
       reminderSentAt?: Date | null
       overdueSentAt?: Date | null
     } = { ...baseUpdateData }
+
+    if (updateData.title !== undefined) {
+      updateData.title = updateData.title.trim()
+      if (!updateData.title) throw new Error('Title cannot be empty')
+    }
+
+    if (updateData.description !== undefined) {
+      updateData.description = updateData.description.trim() || null
+    }
 
     if (data.dueDate !== undefined) {
       const oldTime = oldTask?.dueDate?.getTime()

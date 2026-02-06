@@ -1,3 +1,6 @@
+import { eq } from 'drizzle-orm'
+import { db } from '../../db'
+import { users } from '../../db/schema'
 import { eventBus } from '../../events/bus'
 import { activityService } from './activities.service'
 
@@ -106,17 +109,21 @@ export function initActivitySubscriber() {
     })
   })
 
-  eventBus.onDomain('task.assignee.added', ({ taskId, userId, actorId, boardId }) => {
+  eventBus.onDomain('task.assignee.added', async ({ taskId, userId, actorId, boardId }) => {
+    const user = await db.select({ name: users.name }).from(users).where(eq(users.id, userId)).then(r => r[0])
     activityService.log({
       boardId, taskId, userId: actorId, action: 'assigned',
-      targetType: 'user', targetId: userId
+      targetType: 'user', targetId: userId,
+      changes: { userName: user?.name }
     })
   })
 
-  eventBus.onDomain('task.assignee.removed', ({ taskId, userId, actorId, boardId }) => {
+  eventBus.onDomain('task.assignee.removed', async ({ taskId, userId, actorId, boardId }) => {
+    const user = await db.select({ name: users.name }).from(users).where(eq(users.id, userId)).then(r => r[0])
     activityService.log({
       boardId, taskId, userId: actorId, action: 'unassigned',
-      targetType: 'user', targetId: userId
+      targetType: 'user', targetId: userId,
+      changes: { userName: user?.name }
     })
   })
 
@@ -156,7 +163,7 @@ export function initActivitySubscriber() {
     activityService.log({
       boardId, taskId, userId, action: 'updated',
       targetType: 'checklist', targetId: checklist.id,
-      changes
+      changes: { ...changes, title: changes.title ?? checklist.title }
     })
   })
 
@@ -177,14 +184,15 @@ export function initActivitySubscriber() {
   })
 
   eventBus.onDomain('checklist.item.updated', ({ item, taskId, userId, boardId, changes }) => {
-    const action = changes.isCompleted !== undefined 
-      ? (item.isCompleted ? 'completed' : 'uncompleted') 
-      : 'updated'
+    let action: 'completed' | 'uncompleted' | 'updated' = 'updated'
+    if (changes.isCompleted !== undefined) {
+      action = item.isCompleted ? 'completed' : 'uncompleted'
+    }
     
     activityService.log({
-      boardId, taskId, userId, action: action as 'completed' | 'uncompleted' | 'updated',
+      boardId, taskId, userId, action,
       targetType: 'checklist_item', targetId: item.id,
-      changes
+      changes: { ...changes, content: item.content }
     })
   })
 
@@ -193,6 +201,27 @@ export function initActivitySubscriber() {
       boardId, taskId, userId, action: 'deleted',
       targetType: 'checklist_item', targetId: item.id,
       changes: { content: item.content }
+    })
+  })
+
+  eventBus.onDomain('comment.created', ({ comment, boardId, userId }) => {
+    activityService.log({
+      boardId, taskId: comment.taskId, userId, action: 'created',
+      targetType: 'comment', targetId: comment.id
+    })
+  })
+
+  eventBus.onDomain('comment.updated', ({ comment, boardId, userId }) => {
+    activityService.log({
+      boardId, taskId: comment.taskId, userId, action: 'updated',
+      targetType: 'comment', targetId: comment.id
+    })
+  })
+
+  eventBus.onDomain('comment.deleted', ({ commentId, boardId, userId }) => {
+    activityService.log({
+      boardId, userId, action: 'deleted',
+      targetType: 'comment', targetId: commentId
     })
   })
 }

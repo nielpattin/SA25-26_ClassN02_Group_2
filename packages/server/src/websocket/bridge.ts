@@ -147,6 +147,58 @@ export function initWebSocketBridge() {
     wsManager.broadcast(`board:${boardId}`, { type: 'task:updated', data: { id: taskId } })
   })
 
+  const broadcastActivityUpdate = (boardId: string, taskId?: string | null) => {
+    wsManager.broadcast(`board:${boardId}`, { type: 'activity:updated', data: { taskId } })
+  }
+
+  eventBus.onDomain('task.created', ({ task, boardId }) => {
+    broadcastActivityUpdate(boardId, task.id)
+  })
+
+  eventBus.onDomain('task.updated', ({ task, boardId }) => {
+    broadcastActivityUpdate(boardId, task.id)
+  })
+
+  eventBus.onDomain('task.moved', ({ task, newBoardId }) => {
+    broadcastActivityUpdate(newBoardId, task.id)
+  })
+
+  eventBus.onDomain('task.archived', ({ task, boardId }) => {
+    broadcastActivityUpdate(boardId, task.id)
+  })
+
+  eventBus.onDomain('task.restored', ({ task, boardId }) => {
+    broadcastActivityUpdate(boardId, task.id)
+  })
+
+  eventBus.onDomain('task.assignee.added', ({ taskId, boardId }) => {
+    broadcastActivityUpdate(boardId, taskId)
+  })
+
+  eventBus.onDomain('task.assignee.removed', ({ taskId, boardId }) => {
+    broadcastActivityUpdate(boardId, taskId)
+  })
+
+  eventBus.onDomain('label.added', ({ taskId, boardId }) => {
+    broadcastActivityUpdate(boardId, taskId)
+  })
+
+  eventBus.onDomain('label.removed', ({ taskId, boardId }) => {
+    broadcastActivityUpdate(boardId, taskId)
+  })
+
+  eventBus.onDomain('comment.created', ({ comment, boardId }) => {
+    broadcastActivityUpdate(boardId, comment.taskId)
+  })
+
+  eventBus.onDomain('comment.updated', ({ comment, boardId }) => {
+    broadcastActivityUpdate(boardId, comment.taskId)
+  })
+
+  eventBus.onDomain('comment.deleted', ({ boardId }) => {
+    broadcastActivityUpdate(boardId)
+  })
+
   eventBus.onDomain('notification.created', ({ notification, userId }) => {
     wsManager.broadcast(`user:${userId}`, { 
       type: 'notification:created', 

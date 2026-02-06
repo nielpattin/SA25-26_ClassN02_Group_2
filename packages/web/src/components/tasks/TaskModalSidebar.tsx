@@ -7,6 +7,7 @@ import { Popover } from '../ui/Popover'
 import { DatePicker } from '../ui/DatePicker'
 import { ChecklistCreator } from '../checklist'
 import { TaskAssignees } from './TaskAssignees'
+import { TaskActivity } from './TaskActivity'
 import { ReminderSelect } from './ReminderSelect'
 import type { Card } from '../CardModalTypes'
 
@@ -171,7 +172,10 @@ export function TaskModalSidebar({
                   key={p.id}
                   className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.priority === p.id ? 'shadow-inner-brutal bg-active' : 'hover:bg-hover'}`}
                   onClick={() => {
-                    onUpdateCard({ priority: p.id as Card['priority'] })
+                    const priority = p.id
+                    if (priority === 'urgent' || priority === 'high' || priority === 'medium' || priority === 'low' || priority === 'none') {
+                      onUpdateCard({ priority })
+                    }
                     setIsPriorityOpen(false)
                   }}
                 >
@@ -215,7 +219,10 @@ export function TaskModalSidebar({
                   key={s.id}
                   className={`flex cursor-pointer items-center gap-2.5 border border-black bg-white p-2 px-3 text-left font-body text-[13px] font-bold transition-all ${card.size === s.id ? 'shadow-inner-brutal bg-active' : 'hover:bg-hover'}`}
                   onClick={() => {
-                    onUpdateCard({ size: s.id as Card['size'] })
+                    const size = s.id
+                    if (size === 'xs' || size === 's' || size === 'm' || size === 'l' || size === 'xl') {
+                      onUpdateCard({ size })
+                    }
                     setIsSizeOpen(false)
                   }}
                 >
@@ -321,6 +328,8 @@ export function TaskModalSidebar({
           </div>
         </div>
       </div>
+
+      <TaskActivity taskId={taskId} />
     </div>
   )
 }

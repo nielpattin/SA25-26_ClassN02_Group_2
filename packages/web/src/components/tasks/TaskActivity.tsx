@@ -12,25 +12,26 @@ interface TaskActivityProps {
 
 function formatActivityMessage(activity: Activity) {
   const { action, targetType, changes } = activity
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data = changes as Record<string, any>
+  const data = (changes || {}) as Record<string, unknown>
+
+  const getString = (val: unknown) => typeof val === 'string' ? val : 'unknown'
 
   switch (targetType) {
     case 'label':
-      if (action === 'label_added') return `added label "${data?.name || 'unknown'}"`
-      if (action === 'label_removed') return `removed label "${data?.name || 'unknown'}"`
+      if (action === 'label_added') return `added label "${getString(data.name)}"`
+      if (action === 'label_removed') return `removed label "${getString(data.name)}"`
       break
     case 'checklist':
-      if (action === 'created') return `created checklist "${data?.title || 'unknown'}"`
-      if (action === 'updated') return `renamed checklist to "${data?.title || 'unknown'}"`
-      if (action === 'deleted') return `deleted checklist "${data?.title || 'unknown'}"`
+      if (action === 'created') return `created checklist "${getString(data.title)}"`
+      if (action === 'updated') return `renamed checklist to "${getString(data.title)}"`
+      if (action === 'deleted') return `deleted checklist "${getString(data.title)}"`
       break
     case 'checklist_item':
-      if (action === 'created') return `added "${data?.content || 'unknown'}" to checklist`
-      if (action === 'updated') return `renamed checklist item to "${data?.content || 'unknown'}"`
-      if (action === 'deleted') return `removed "${data?.content || 'unknown'}" from checklist`
-      if (action === 'completed') return `completed "${data?.content || 'unknown'}"`
-      if (action === 'uncompleted') return `uncompleted "${data?.content || 'unknown'}"`
+      if (action === 'created') return `added "${getString(data.content)}" to checklist`
+      if (action === 'updated') return `renamed checklist item to "${getString(data.content)}"`
+      if (action === 'deleted') return `removed "${getString(data.content)}" from checklist`
+      if (action === 'completed') return `completed "${getString(data.content)}"`
+      if (action === 'uncompleted') return `uncompleted "${getString(data.content)}"`
       break
     case 'task':
       if (action === 'created') return 'created this task'
@@ -44,19 +45,20 @@ function formatActivityMessage(activity: Activity) {
         if (keys.length === 0) return 'updated this task'
 
         return keys.map(key => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const change = changes[key] as any
-          const after = change?.after
+          const change = changes[key]
+          const after = (change && typeof change === 'object' && 'after' in change) 
+            ? (change as { after?: unknown }).after 
+            : null
 
           switch (key) {
             case 'title':
-              return `changed title to "${after}"`
+              return `changed title to "${getString(after)}"`
             case 'description':
               return 'updated description'
             case 'dueDate':
               if (!after) return 'removed due date'
               try {
-                return `changed due date to ${format(new Date(after), 'PPP')}`
+                return `changed due date to ${format(new Date(after as string), 'PPP')}`
               } catch {
                 return 'changed due date'
               }
@@ -74,8 +76,16 @@ function formatActivityMessage(activity: Activity) {
       }
       break
     case 'user':
-      if (action === 'assigned') return `assigned this task to ${data?.userName || 'someone'}`
-      if (action === 'unassigned') return `removed ${data?.userName || 'someone'} from this task`
+      if (action === 'assigned') return `assigned this task to ${getString(data.userName) || 'someone'}`
+      if (action === 'unassigned') return `removed ${getString(data.userName) || 'someone'} from this task`
+      break
+    case 'attachment':
+      if (action === 'attachment_added') return `added attachment "${getString(data.name)}"`
+      break
+    case 'comment':
+      if (action === 'created') return 'added a comment'
+      if (action === 'updated') return 'edited a comment'
+      if (action === 'deleted') return 'deleted a comment'
       break
   }
 
