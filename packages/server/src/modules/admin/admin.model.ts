@@ -26,10 +26,17 @@ export const AuditLogQuerySchema = t.Object({
 // Dashboard metrics response
 export const DashboardMetricsSchema = t.Object({
   activeUsers24h: t.Integer(),
+  totalUsers: t.Integer(),
+  totalWorkspaces: t.Integer(),
+  totalBoards: t.Integer(),
   pendingModerationCount: t.Integer(),
   recentAdminActions: t.Array(t.Object({
     action: t.String(),
     createdAt: t.String()
+  })),
+  userGrowth: t.Array(t.Object({
+    date: t.String(),
+    count: t.Integer()
   }))
 })
 

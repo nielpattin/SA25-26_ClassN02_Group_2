@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { adminPlugin } from './admin.plugin'
 import { adminService } from './admin.service'
-import { PromoteUserSchema, AuditLogQuerySchema, DashboardMetricsSchema, UserSearchResponseSchema, UserDetailSchema } from './admin.model'
+import { PromoteUserSchema, AuditLogQuerySchema, DashboardMetricsSchema, UserSearchResponseSchema, UserDetailSchema, AdminRole } from './admin.model'
 
 export const adminController = new Elysia({ prefix: '/admin' })
   .use(adminPlugin)
@@ -10,7 +10,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
     return await adminService.getDashboardMetrics()
   }, {
     requireAuth: true,
-    response: DashboardMetricsSchema
+    response: DashboardMetricsSchema,
   })
   .get('/users', async ({ requireAdmin, query }) => {
     requireAdmin()
@@ -22,8 +22,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
     requireAuth: true,
     query: t.Object({
       limit: t.Optional(t.String()),
-      offset: t.Optional(t.String())
-    })
+      offset: t.Optional(t.String()),
+    }),
   })
   .post('/users/:id/promote', async ({ requireRole, params, body, session }) => {
     requireRole(['super_admin'])
@@ -31,9 +31,9 @@ export const adminController = new Elysia({ prefix: '/admin' })
   }, {
     requireAuth: true,
     params: t.Object({
-      id: t.String()
+      id: t.String(),
     }),
-    body: PromoteUserSchema
+    body: PromoteUserSchema,
   })
   .delete('/users/:id/demote', async ({ requireRole, params, session }) => {
     requireRole(['super_admin'])
@@ -41,8 +41,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
   }, {
     requireAuth: true,
     params: t.Object({
-      id: t.String()
-    })
+      id: t.String(),
+    }),
   })
   .get('/audit', async ({ requireAdmin, query, session }) => {
     requireAdmin()
@@ -51,25 +51,25 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
     return await adminService.getAuditLogs(
       session.user.id,
-      session.user.adminRole || 'support',
+      (session.user.adminRole || 'support') as AdminRole,
       {
         ...query,
         limit,
-        offset
-      }
+        offset,
+      },
     )
   }, {
     requireAuth: true,
-    query: AuditLogQuerySchema
+    query: AuditLogQuerySchema,
   })
   .get('/audit/export', async ({ requireRole, session }) => {
     requireRole(['super_admin'])
     return await adminService.exportAuditLogs(
       session.user.id,
-      session.user.adminRole || 'support'
+      (session.user.adminRole || 'support') as AdminRole,
     )
   }, {
-    requireAuth: true
+    requireAuth: true,
   })
   .get('/users/search', async ({ requireRole, query }) => {
     requireRole(['super_admin', 'support'])
@@ -82,9 +82,9 @@ export const adminController = new Elysia({ prefix: '/admin' })
     query: t.Object({
       query: t.String(),
       limit: t.Optional(t.String()),
-      offset: t.Optional(t.String())
+      offset: t.Optional(t.String()),
     }),
-    response: UserSearchResponseSchema
+    response: UserSearchResponseSchema,
   })
   .get('/users/:id', async ({ requireRole, params }) => {
     requireRole(['super_admin', 'moderator', 'support'])
@@ -92,9 +92,9 @@ export const adminController = new Elysia({ prefix: '/admin' })
   }, {
     requireAuth: true,
     params: t.Object({
-      id: t.String()
+      id: t.String(),
     }),
-    response: UserDetailSchema
+    response: UserDetailSchema,
   })
   .post('/users/:id/password-reset', async ({ requireRole, params, session }) => {
     requireRole(['super_admin', 'support'])
@@ -102,8 +102,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
   }, {
     requireAuth: true,
     params: t.Object({
-      id: t.String()
-    })
+      id: t.String(),
+    }),
   })
   .post('/users/:id/revoke-sessions', async ({ requireRole, params, session }) => {
     requireRole(['super_admin', 'support'])
@@ -111,8 +111,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
   }, {
     requireAuth: true,
     params: t.Object({
-      id: t.String()
-    })
+      id: t.String(),
+    }),
   })
   .post('/users/:id/cancel-deletion', async ({ requireRole, params, session }) => {
     requireRole(['super_admin'])
@@ -120,8 +120,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
   }, {
     requireAuth: true,
     params: t.Object({
-      id: t.String()
-    })
+      id: t.String(),
+    }),
   })
   .post('/users/:id/export', async ({ requireRole, params, session }) => {
     requireRole(['super_admin'])
@@ -129,6 +129,6 @@ export const adminController = new Elysia({ prefix: '/admin' })
   }, {
     requireAuth: true,
     params: t.Object({
-      id: t.String()
-    })
+      id: t.String(),
+    }),
   })

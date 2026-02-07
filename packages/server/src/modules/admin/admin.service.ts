@@ -9,6 +9,11 @@ export const adminService = {
   },
 
   async promoteUser(adminId: string, targetUserId: string, role: AdminRole) {
+    const admin = await adminRepository.findById(adminId)
+    if (!admin?.adminRole || admin.adminRole !== 'super_admin') {
+      throw new ForbiddenError('Only super admin can promote users')
+    }
+
     const targetUser = await adminRepository.findById(targetUserId)
     if (!targetUser) throw new NotFoundError('User not found')
 
@@ -19,13 +24,18 @@ export const adminService = {
       action: ADMIN_ACTIONS.USER_PROMOTED,
       targetType: 'user',
       targetId: targetUserId,
-      metadata: { role, previousRole: targetUser.adminRole }
+      metadata: { role, previousRole: targetUser.adminRole },
     })
 
     return updatedUser
   },
 
   async demoteUser(adminId: string, targetUserId: string) {
+    const admin = await adminRepository.findById(adminId)
+    if (!admin?.adminRole || admin.adminRole !== 'super_admin') {
+      throw new ForbiddenError('Only super admin can demote users')
+    }
+
     const targetUser = await adminRepository.findById(targetUserId)
     if (!targetUser) throw new NotFoundError('User not found')
     if (!targetUser.adminRole) throw new BadRequestError('User is not an admin')
@@ -44,7 +54,7 @@ export const adminService = {
       action: ADMIN_ACTIONS.USER_DEMOTED,
       targetType: 'user',
       targetId: targetUserId,
-      metadata: { previousRole: targetUser.adminRole }
+      metadata: { previousRole: targetUser.adminRole },
     })
 
     return updatedUser
@@ -84,19 +94,35 @@ export const adminService = {
   },
 
   async getDashboardMetrics() {
-    const [activeUsers24h, pendingModerationCount, recentAdminActions] = await Promise.all([
+    const [
+      activeUsers24h,
+      totalUsers,
+      totalWorkspaces,
+      totalBoards,
+      pendingModerationCount,
+      recentAdminActions,
+      userGrowth
+    ] = await Promise.all([
       adminRepository.countActiveUsersLast24h(),
+      adminRepository.countTotalUsers(),
+      adminRepository.countTotalWorkspaces(),
+      adminRepository.countTotalBoards(),
       adminRepository.countPendingModeration(),
-      adminRepository.getRecentAdminActions(10)
+      adminRepository.getRecentAdminActions(10),
+      adminRepository.getUserGrowthLast7Days()
     ])
 
     return {
       activeUsers24h,
+      totalUsers,
+      totalWorkspaces,
+      totalBoards,
       pendingModerationCount,
       recentAdminActions: recentAdminActions.map(action => ({
         action: action.action,
-        createdAt: action.createdAt.toISOString()
-      }))
+        createdAt: action.createdAt.toISOString(),
+      })),
+      userGrowth,
     }
   },
 
@@ -104,7 +130,7 @@ export const adminService = {
     const results = await adminRepository.searchUsers({
       query,
       limit: pagination.limit,
-      offset: pagination.offset
+      offset: pagination.offset,
     })
 
     return results.map(user => ({
@@ -113,7 +139,7 @@ export const adminService = {
       email: user.email,
       adminRole: user.adminRole,
       deletedAt: user.deletedAt?.toISOString() ?? null,
-      lastActive: user.lastActive ?? null
+      lastActive: user.lastActive ?? null,
     }))
   },
 
@@ -131,7 +157,7 @@ export const adminService = {
       adminRole: user.adminRole,
       workspacesCount: user.workspacesCount,
       boardsCount: user.boardsCount,
-      lastActive: user.lastActive ? new Date(user.lastActive).toISOString() : null
+      lastActive: user.lastActive ? new Date(user.lastActive).toISOString() : null,
     }
   },
 
@@ -150,7 +176,7 @@ export const adminService = {
       action: ADMIN_ACTIONS.USER_PASSWORD_RESET,
       targetType: 'user',
       targetId: targetUserId,
-      metadata: { email: targetUser.email }
+      metadata: { email: targetUser.email },
     })
 
     return { success: true }
@@ -171,7 +197,7 @@ export const adminService = {
       action: ADMIN_ACTIONS.USER_SESSIONS_REVOKED,
       targetType: 'user',
       targetId: targetUserId,
-      metadata: { email: targetUser.email, sessionCount: revoked.length }
+      metadata: { email: targetUser.email, sessionCount: revoked.length },
     })
 
     return { success: true, count: revoked.length }
@@ -196,7 +222,7 @@ export const adminService = {
       action: ADMIN_ACTIONS.USER_DELETION_CANCELED,
       targetType: 'user',
       targetId: targetUserId,
-      metadata: { email: targetUser.email, previousDeletedAt: targetUser.deletedAt.toISOString() }
+      metadata: { email: targetUser.email, previousDeletedAt: targetUser.deletedAt.toISOString() },
     })
 
     return { success: true, user: updatedUser }
@@ -213,7 +239,7 @@ export const adminService = {
       action: ADMIN_ACTIONS.USER_EXPORTED,
       targetType: 'user',
       targetId: targetUserId,
-      metadata: { email: targetUser.email }
+      metadata: { email: targetUser.email },
     })
 
     return { success: true, export: exportData }

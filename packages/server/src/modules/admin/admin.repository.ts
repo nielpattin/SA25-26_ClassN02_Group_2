@@ -120,11 +120,226 @@ export const adminRepository = {
   async getRecentAdminActions(limit: number = 10) {
     return await db.select({
       action: adminAuditLog.action,
-      createdAt: adminAuditLog.createdAt
+      createdAt: adminAuditLog.createdAt,
     })
       .from(adminAuditLog)
       .orderBy(desc(adminAuditLog.createdAt))
       .limit(limit)
+  },
+
+  async countTotalUsers(): Promise<number> {
+    const [result] = await db.select({ value: count() }).from(users)
+    return result.value
+  },
+
+  async countTotalWorkspaces(): Promise<number> {
+    const [result] = await db.select({ value: count() }).from(workspaces)
+    return result.value
+  },
+
+  async countTotalBoards(): Promise<number> {
+    const [result] = await db.select({ value: count() }).from(boards)
+    return result.value
+  },
+
+  async getUserGrowthLast7Days() {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    return await db.select({
+      date: sql<string>`TO_CHAR(${users.createdAt}, 'YYYY-MM-DD')`,
+      count: count(),
+    })
+      .from(users)
+      .where(gte(users.createdAt, sevenDaysAgo))
+      .groupBy(sql`TO_CHAR(${users.createdAt}, 'YYYY-MM-DD')`)
+      .orderBy(sql`TO_CHAR(${users.createdAt}, 'YYYY-MM-DD')`)
+  },
+
+  async searchUsers({
+    query,
+    limit = 20,
+    offset = 0,
+  }: {
+    query: string
+    limit?: number
+    offset?: number
+  }) {
+    const searchPattern = `%${query}%`
+
+    return await db.select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      adminRole: users.adminRole,
+      deletedAt: users.deletedAt,
+      lastActive: sql<string | null>`(
+        SELECT MAX(${sessions.createdAt})
+        FROM ${sessions}
+        WHERE ${sessions.userId} = ${users.id}
+      )`.as('lastActive'),
+    })
+      .from(users)
+      .where(or(
+        like(users.email, searchPattern),
+        like(users.name, searchPattern),
+        like(users.id, searchPattern),
+      ))
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(users.createdAt))
+  },
+
+  async deleteAllSessions(userId: string) {
+    return await db.delete(sessions).where(eq(sessions.userId, userId)).returning()
+  },
+
+  async getUserDetail(userId: string) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    })
+
+    if (!user) return null
+
+    const [workspacesResult] = await db.select({ value: count() })
+      .from(members)
+      .where(eq(members.userId, userId))
+
+    const [ownedBoardsResult] = await db.select({ value: count() })
+      .from(boards)
+      .where(eq(boards.ownerId, userId))
+
+    const [memberBoardsResult] = await db.select({ value: count() })
+      .from(boardMembers)
+      .where(eq(boardMembers.userId, userId))
+
+    const [lastActiveResult] = await db.select({
+      lastActive: sql<string | null>`MAX(${sessions.createdAt})`,
+    })
+      .from(sessions)
+      .where(eq(sessions.userId, userId))
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      createdAt: user.createdAt,
+      emailVerified: user.emailVerified,
+      deletedAt: user.deletedAt,
+      adminRole: user.adminRole,
+      workspacesCount: workspacesResult.value,
+      boardsCount: ownedBoardsResult.value + memberBoardsResult.value,
+      lastActive: lastActiveResult.lastActive,
+    }
+  },
+
+  async cancelUserDeletion(userId: string) {
+    const [user] = await db.update(users)
+      .set({ deletedAt: null, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning()
+    return user
+  },
+
+  async getUserExportData(userId: string) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    })
+
+    if (!user) return null
+
+    const userWorkspaces = await db.select({
+      workspaceId: members.workspaceId,
+      role: members.role,
+      joinedAt: members.createdAt,
+      workspaceName: workspaces.name,
+      workspaceSlug: workspaces.slug,
+    })
+      .from(members)
+      .innerJoin(workspaces, eq(members.workspaceId, workspaces.id))
+      .where(eq(members.userId, userId))
+
+    const userBoards = await db.query.boards.findMany({
+      where: eq(boards.ownerId, userId),
+    })
+
+    const memberBoardsList = await db.select({
+      boardId: boardMembers.boardId,
+      role: boardMembers.role,
+      joinedAt: boardMembers.createdAt,
+      boardName: boards.name,
+    })
+      .from(boardMembers)
+      .innerJoin(boards, eq(boardMembers.boardId, boards.id))
+      .where(eq(boardMembers.userId, userId))
+
+    const [assignedTasksResult] = await db.select({ value: count() })
+      .from(taskAssignees)
+      .where(eq(taskAssignees.userId, userId))
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        locale: user.locale,
+        timezone: user.timezone,
+        theme: user.theme,
+        adminRole: user.adminRole,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        deletedAt: user.deletedAt,
+      },
+      workspaces: userWorkspaces.map(mw => ({
+        id: mw.workspaceId,
+        name: mw.workspaceName,
+        slug: mw.workspaceSlug,
+        role: mw.role,
+        joinedAt: mw.joinedAt,
+      })),
+      ownedBoards: userBoards.map(b => ({
+        id: b.id,
+        name: b.name,
+        description: b.description,
+        visibility: b.visibility,
+        createdAt: b.createdAt,
+        updatedAt: b.updatedAt,
+        archivedAt: b.archivedAt,
+      })),
+      memberBoards: memberBoardsList.map(mb => ({
+        id: mb.boardId,
+        name: mb.boardName,
+        role: mb.role,
+        joinedAt: mb.joinedAt,
+      })),
+      taskCount: assignedTasksResult.value,
+    }
+  },
+
+  async countTotalUsers(): Promise<number> {
+    const [result] = await db.select({ value: count() }).from(users)
+    return result.value
+  },
+
+  async countTotalWorkspaces(): Promise<number> {
+    const [result] = await db.select({ value: count() }).from(workspaces)
+    return result.value
+  },
+
+  async countTotalBoards(): Promise<number> {
+    const [result] = await db.select({ value: count() }).from(boards)
+    return result.value
+  },
+
+  async getUserGrowthLast7Days() {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    return await db.select({
+      date: sql<string>`TO_CHAR(${users.createdAt}, 'YYYY-MM-DD')`,
+      count: count()
+    })
+      .from(users)
+      .where(gte(users.createdAt, sevenDaysAgo))
+      .groupBy(sql`TO_CHAR(${users.createdAt}, 'YYYY-MM-DD')`)
+      .orderBy(sql`TO_CHAR(${users.createdAt}, 'YYYY-MM-DD')`)
   },
 
   // User search for support/super_admin
