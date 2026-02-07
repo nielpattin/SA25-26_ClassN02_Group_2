@@ -44,4 +44,5 @@ Documents/**/*.png
 Documents/**/*.drawio
 .loop*
 tmp/
-
+*.pptx
+*.pptx#
