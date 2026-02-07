@@ -51,7 +51,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
     return await adminService.getAuditLogs(
       session.user.id,
-      session.user.adminRole as any,
+      session.user.adminRole || 'support',
       {
         ...query,
         limit,
@@ -66,7 +66,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
     requireRole(['super_admin'])
     return await adminService.exportAuditLogs(
       session.user.id,
-      session.user.adminRole as any
+      session.user.adminRole || 'support'
     )
   }, {
     requireAuth: true
@@ -87,7 +87,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
     response: UserSearchResponseSchema
   })
   .get('/users/:id', async ({ requireRole, params }) => {
-    requireRole(['super_admin', 'support'])
+    requireRole(['super_admin', 'moderator', 'support'])
     return await adminService.getUserDetail(params.id)
   }, {
     requireAuth: true,

@@ -89,7 +89,7 @@ export function useToggleLabel(taskId: string, boardId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ labelId, isCurrentlyActive }: { labelId: string isCurrentlyActive: boolean }) => {
+    mutationFn: async ({ labelId, isCurrentlyActive }: { labelId: string; isCurrentlyActive: boolean }) => {
       if (isCurrentlyActive) {
         const { error } = await api.v1.labels.card({ cardId: taskId }).label({ labelId }).delete()
         if (error) throw error

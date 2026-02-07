@@ -33,7 +33,8 @@ export function initNotificationSubscriber() {
       boardId
     })
 
-    if (targetUser?.email && (targetUser.notificationPreferences as any).assignment?.email) {
+    const targetPrefs = targetUser?.notificationPreferences as Record<string, { email: boolean; inApp: boolean }> | null
+    if (targetUser?.email && targetPrefs?.assignment?.email) {
       emailService.sendEmail({
         to: targetUser.email,
         subject: `Assigned to task: ${task?.title}`,
@@ -63,7 +64,8 @@ export function initNotificationSubscriber() {
       boardId
     })
 
-    if (targetUser?.email && (targetUser.notificationPreferences as any).board_invite?.email) {
+    const targetPrefs = targetUser?.notificationPreferences as Record<string, { email: boolean; inApp: boolean }> | null
+    if (targetUser?.email && targetPrefs?.board_invite?.email) {
       emailService.sendEmail({
         to: targetUser.email,
         subject: `Invited to board: ${board?.name}`,
@@ -94,7 +96,8 @@ export function initNotificationSubscriber() {
       boardId
     })
 
-    if (targetUser?.email && (targetUser.notificationPreferences as any).mention?.email) {
+    const targetPrefs = targetUser?.notificationPreferences as Record<string, { email: boolean; inApp: boolean }> | null
+    if (targetUser?.email && targetPrefs?.mention?.email) {
       emailService.sendEmail({
         to: targetUser.email,
         subject: `Mentioned in ${task?.title}`,
@@ -130,7 +133,8 @@ export function initNotificationSubscriber() {
       })
 
       const targetUser = await userRepository.getById(assignee.userId)
-      if (targetUser?.email && (targetUser.notificationPreferences as any).comment?.email) {
+      const targetPrefs = targetUser?.notificationPreferences as Record<string, { email: boolean; inApp: boolean }> | null
+      if (targetUser?.email && targetPrefs?.comment?.email) {
         emailService.sendEmail({
           to: targetUser.email,
           subject: `New comment on ${task.title}`,
@@ -143,5 +147,44 @@ export function initNotificationSubscriber() {
         }).catch(err => console.error('Failed to send comment email:', err))
       }
     }))
+  })
+
+  eventBus.onDomain('template.approved', async ({ template, adminId }) => {
+    if (!template.createdBy) return
+    
+    await notificationService.create({
+      userId: template.createdBy,
+      type: 'template_status',
+      title: `Template Approved: ${template.name}`,
+      body: 'Your template has been approved and is now visible in the marketplace.',
+      resourceType: 'template',
+      resourceId: template.id
+    })
+  })
+
+  eventBus.onDomain('template.rejected', async ({ template, adminId, reason, comment }) => {
+    if (!template.createdBy) return
+    
+    await notificationService.create({
+      userId: template.createdBy,
+      type: 'template_status',
+      title: `Template Rejected: ${template.name}`,
+      body: reason ? `Reason: ${reason}` : 'Your template submission was not approved.',
+      resourceType: 'template',
+      resourceId: template.id
+    })
+  })
+
+  eventBus.onDomain('template.removed', async ({ template, adminId }) => {
+    if (!template.createdBy) return
+    
+    await notificationService.create({
+      userId: template.createdBy,
+      type: 'template_status',
+      title: `Template Removed: ${template.name}`,
+      body: 'Your template has been removed from the marketplace.',
+      resourceType: 'template',
+      resourceId: template.id
+    })
   })
 }

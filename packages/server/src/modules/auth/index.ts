@@ -40,7 +40,7 @@ export const authPlugin = new Elysia({ name: 'auth' })
         if (!session) {
           throw new UnauthorizedError()
         }
-        return { session: session as AuthenticatedSession }
+        return { session }
       },
     },
   })

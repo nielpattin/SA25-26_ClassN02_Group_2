@@ -57,14 +57,15 @@ export const adminService = {
       adminId?: string
       action?: string
       targetType?: string
+      targetId?: string
       dateFrom?: string
       dateTo?: string
       limit?: number
       offset?: number
     }
   ) {
-    // RBAC: Non-super_admin can only see their own actions
-    const effectiveAdminId = adminRole === 'super_admin' ? filters.adminId : adminId
+    const canSeeAll = adminRole === 'super_admin' || adminRole === 'moderator'
+    const effectiveAdminId = canSeeAll ? filters.adminId : adminId
 
     return await adminRepository.findAuditLogs({
       ...filters,
@@ -75,8 +76,6 @@ export const adminService = {
   },
 
   async exportAuditLogs(adminId: string, adminRole: AdminRole) {
-    // RBAC: Only super_admin can export (or maybe others can export their own?)
-    // PRD says: "GET /v1/admin/audit/export returns full JSON export (super_admin only)"
     if (adminRole !== 'super_admin') {
       throw new BadRequestError('Only super admin can export audit logs')
     }
@@ -140,12 +139,10 @@ export const adminService = {
     const targetUser = await adminRepository.findById(targetUserId)
     if (!targetUser) throw new NotFoundError('User not found')
 
-    // Cannot reset password for admin users (security restriction)
     if (targetUser.adminRole) {
       throw new ForbiddenError('Cannot reset password for admin users')
     }
 
-    // Delete all sessions to force re-authentication
     await adminRepository.deleteAllSessions(targetUserId)
 
     await auditLogService.log({
@@ -163,7 +160,6 @@ export const adminService = {
     const targetUser = await adminRepository.findById(targetUserId)
     if (!targetUser) throw new NotFoundError('User not found')
 
-    // Cannot revoke sessions for admin users (security restriction)
     if (targetUser.adminRole) {
       throw new ForbiddenError('Cannot revoke sessions for admin users')
     }
@@ -185,12 +181,10 @@ export const adminService = {
     const targetUser = await adminRepository.findById(targetUserId)
     if (!targetUser) throw new NotFoundError('User not found')
 
-    // Cannot cancel deletion for admin users (security restriction)
     if (targetUser.adminRole) {
       throw new ForbiddenError('Cannot cancel deletion for admin users')
     }
 
-    // Check if user is actually marked for deletion
     if (!targetUser.deletedAt) {
       throw new BadRequestError('User is not marked for deletion')
     }

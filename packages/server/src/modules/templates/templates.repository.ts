@@ -13,14 +13,14 @@ export const templateRepository = {
       or(
         isNull(boardTemplates.takedownAt),
         gt(boardTemplates.takedownAt, new Date())
-      )!
+      )
     ]
 
     if (q) {
       conditions.push(or(
         ilike(boardTemplates.name, `%${q}%`),
         ilike(boardTemplates.description, `%${q}%`)
-      )!)
+      ))
     }
 
     if (category) {
@@ -81,7 +81,7 @@ export const templateRepository = {
         or(
           isNull(boardTemplates.takedownAt),
           gt(boardTemplates.takedownAt, new Date())
-        )!
+        )
       ))
 
     return template
@@ -107,6 +107,9 @@ export const templateRepository = {
       categories: boardTemplates.categories,
       status: boardTemplates.status,
       submittedAt: boardTemplates.submittedAt,
+      columnDefinitions: boardTemplates.columnDefinitions,
+      defaultLabels: boardTemplates.defaultLabels,
+      createdAt: boardTemplates.createdAt,
       author: {
         id: users.id,
         name: users.name,
@@ -141,7 +144,7 @@ export const templateRepository = {
         or(
           isNull(boardTemplates.takedownAt),
           gt(boardTemplates.takedownAt, new Date())
-        )!
+        )
       ))
       .orderBy(asc(boardTemplates.takedownAt))
   },
@@ -159,7 +162,34 @@ export const templateRepository = {
   },
 
   findBoardTemplateById: async (id: string) => {
-    const [template] = await db.select().from(boardTemplates).where(eq(boardTemplates.id, id))
+    const [template] = await db.select({
+      id: boardTemplates.id,
+      name: boardTemplates.name,
+      description: boardTemplates.description,
+      categories: boardTemplates.categories,
+      status: boardTemplates.status,
+      submittedAt: boardTemplates.submittedAt,
+      columnDefinitions: boardTemplates.columnDefinitions,
+      defaultLabels: boardTemplates.defaultLabels,
+      createdBy: boardTemplates.createdBy,
+      workspaceId: boardTemplates.workspaceId,
+      isPublic: boardTemplates.isPublic,
+      approvedAt: boardTemplates.approvedAt,
+      approvedBy: boardTemplates.approvedBy,
+      takedownRequestedAt: boardTemplates.takedownRequestedAt,
+      takedownAt: boardTemplates.takedownAt,
+      rejectionReason: boardTemplates.rejectionReason,
+      rejectionComment: boardTemplates.rejectionComment,
+      createdAt: boardTemplates.createdAt,
+      author: {
+        id: users.id,
+        name: users.name,
+        image: users.image,
+      },
+    })
+      .from(boardTemplates)
+      .leftJoin(users, eq(boardTemplates.createdBy, users.id))
+      .where(eq(boardTemplates.id, id))
     return template
   },
 

@@ -7,6 +7,7 @@ export const ADMIN_ACTIONS = {
   TEMPLATE_APPROVED: 'template.approved',
   TEMPLATE_REJECTED: 'template.rejected',
   TEMPLATE_REMOVED: 'template.removed',
+  TEMPLATE_SUBMITTED: 'template.submitted',
   WORKSPACE_DELETED: 'workspace.deleted',
   USER_PASSWORD_RESET: 'user.password_reset',
   USER_SESSIONS_REVOKED: 'user.sessions_revoked',

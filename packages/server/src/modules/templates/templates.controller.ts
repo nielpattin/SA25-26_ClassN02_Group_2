@@ -7,7 +7,8 @@ import {
   CreateBoardTemplateBody, UpdateBoardTemplateBody,
   CreateTaskTemplateBody, UpdateTaskTemplateBody,
   TemplateParams, BoardTemplatesParams, MarketplaceQuerySchema,
-  CloneMarketplaceTemplateBody, SubmitTemplateBody
+  CloneMarketplaceTemplateBody, SubmitTemplateBody,
+  TemplateSchema, MarketplaceResponseSchema
 } from './templates.model'
 
 export const templateController = new Elysia({ prefix: '/templates' })
@@ -18,6 +19,7 @@ export const templateController = new Elysia({ prefix: '/templates' })
     return templateService.getMarketplaceTemplates(query)
   }, {
     query: MarketplaceQuerySchema,
+    response: MarketplaceResponseSchema,
   })
 
   .get('/marketplace/submissions', async ({ session, query, requireRole }) => {
@@ -29,6 +31,14 @@ export const templateController = new Elysia({ prefix: '/templates' })
       status: t.Optional(t.String()),
       category: t.Optional(t.String()),
     }),
+    response: MarketplaceResponseSchema,
+  })
+
+  .get('/marketplace/:id', async ({ params }) => {
+    return templateService.getMarketplaceTemplateById(params.id)
+  }, {
+    params: TemplateParams,
+    response: TemplateSchema,
   })
 
   .get('/marketplace/takedowns', async ({ session, requireRole }) => {
@@ -36,12 +46,6 @@ export const templateController = new Elysia({ prefix: '/templates' })
     return templateService.getTakedownRequests(session.user.id)
   }, {
     requireAuth: true
-  })
-
-  .get('/marketplace/:id', async ({ params }) => {
-    return templateService.getMarketplaceTemplateById(params.id)
-  }, {
-    params: TemplateParams,
   })
 
   .post('/marketplace/submit', async ({ body, session }) => {

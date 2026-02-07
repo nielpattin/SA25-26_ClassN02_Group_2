@@ -1,4 +1,4 @@
-export type NotificationType = 'mention' | 'assignment' | 'due_soon' | 'due_urgent' | 'overdue' | 'comment' | 'board_invite'
+export type NotificationType = 'mention' | 'assignment' | 'due_soon' | 'due_urgent' | 'overdue' | 'comment' | 'board_invite' | 'template_status'
 
 export interface Notification {
   id: string

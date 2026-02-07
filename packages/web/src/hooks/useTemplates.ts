@@ -1,13 +1,31 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useSession } from '../api/auth'
+import { adminKeys } from './useAdmin'
 
 export type Template = {
   id: string
   name: string
   description: string | null
   categories: string[] | null
-  columnDefinitions: { name: string; position: string }[]
+  columnDefinitions: { 
+    name: string 
+    position: string
+    tasks?: {
+      title: string
+      description?: string
+      priority?: string
+      size?: string
+      labelNames?: string[]
+      checklists?: {
+        title: string
+        items: {
+          content: string
+          isCompleted: boolean
+        }[]
+      }[]
+    }[]
+  }[]
   defaultLabels: { name: string; color: string }[] | null
   status: 'none' | 'pending' | 'approved' | 'rejected'
   createdAt: string
@@ -54,7 +72,7 @@ export function useMarketplaceTemplates(query: MarketplaceQuery) {
         }
       })
       if (error) throw error
-      return data as unknown as Template[]
+      return data
     },
   })
 }
@@ -65,7 +83,7 @@ export function useMarketplaceTemplate(id: string) {
     queryFn: async () => {
       const { data, error } = await api.v1.templates.marketplace({ id }).get()
       if (error) throw error
-      return data as unknown as Template
+      return data
     },
     enabled: !!id,
   })
@@ -112,7 +130,7 @@ export function usePendingSubmissions() {
     queryFn: async () => {
       const { data, error } = await api.v1.templates.marketplace.submissions.get()
       if (error) throw error
-      return data as unknown as Template[]
+      return data
     },
     enabled: !!session?.user?.id,
   })
@@ -129,6 +147,7 @@ export function useApproveTemplate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: templateKeys.all })
+      queryClient.invalidateQueries({ queryKey: adminKeys.all })
     }
   })
 }
@@ -147,6 +166,7 @@ export function useRejectTemplate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: templateKeys.all })
+      queryClient.invalidateQueries({ queryKey: adminKeys.all })
     }
   })
 }
@@ -174,7 +194,7 @@ export function useTakedownRequests() {
     queryFn: async () => {
       const { data, error } = await api.v1.templates.marketplace.takedowns.get()
       if (error) throw error
-      return data as unknown as TakedownRequest[]
+      return data
     },
     enabled: !!session?.user?.id,
   })
@@ -191,6 +211,7 @@ export function useRemoveTemplate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: templateKeys.all })
+      queryClient.invalidateQueries({ queryKey: adminKeys.all })
     }
   })
 }
@@ -204,7 +225,7 @@ export function useBoardTemplate(id: string) {
     queryFn: async () => {
       const { data, error } = await api.v1.templates.boards({ id }).get()
       if (error) throw error
-      return data as unknown as Template
+      return data
     },
     enabled: !!session?.user?.id && !!id,
   })

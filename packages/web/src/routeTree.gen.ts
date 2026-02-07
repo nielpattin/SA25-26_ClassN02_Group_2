@@ -26,6 +26,7 @@ import { Route as AdminUserLookupRouteImport } from './routes/admin/user-lookup'
 import { Route as AdminModerationRouteImport } from './routes/admin/moderation'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as AccountRecoveryRouteImport } from './routes/account.recovery'
+import { Route as TemplatesMarketplaceIndexRouteImport } from './routes/templates.marketplace.index'
 import { Route as TemplatesMarketplaceAdminRouteImport } from './routes/templates.marketplace.admin'
 import { Route as TemplatesMarketplaceIdRouteImport } from './routes/templates.marketplace.$id'
 import { Route as AdminUsersIdRouteImport } from './routes/admin/users.$id'
@@ -115,6 +116,12 @@ const AccountRecoveryRoute = AccountRecoveryRouteImport.update({
   path: '/account/recovery',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TemplatesMarketplaceIndexRoute =
+  TemplatesMarketplaceIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => TemplatesMarketplaceRoute,
+  } as any)
 const TemplatesMarketplaceAdminRoute =
   TemplatesMarketplaceAdminRouteImport.update({
     id: '/admin',
@@ -153,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
   '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
+  '/templates/marketplace/': typeof TemplatesMarketplaceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -169,11 +177,11 @@ export interface FileRoutesByTo {
   '/admin/user-lookup': typeof AdminUserLookupRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/board/$boardId': typeof BoardBoardIdRoute
-  '/templates/marketplace': typeof TemplatesMarketplaceRouteWithChildren
   '/admin': typeof AdminIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
   '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
+  '/templates/marketplace': typeof TemplatesMarketplaceIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/templates/marketplace/$id': typeof TemplatesMarketplaceIdRoute
   '/templates/marketplace/admin': typeof TemplatesMarketplaceAdminRoute
+  '/templates/marketplace/': typeof TemplatesMarketplaceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/templates/marketplace/$id'
     | '/templates/marketplace/admin'
+    | '/templates/marketplace/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -237,11 +247,11 @@ export interface FileRouteTypes {
     | '/admin/user-lookup'
     | '/admin/users'
     | '/board/$boardId'
-    | '/templates/marketplace'
     | '/admin'
     | '/admin/users/$id'
     | '/templates/marketplace/$id'
     | '/templates/marketplace/admin'
+    | '/templates/marketplace'
   id:
     | '__root__'
     | '/'
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/templates/marketplace/$id'
     | '/templates/marketplace/admin'
+    | '/templates/marketplace/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -402,6 +413,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountRecoveryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/templates/marketplace/': {
+      id: '/templates/marketplace/'
+      path: '/'
+      fullPath: '/templates/marketplace/'
+      preLoaderRoute: typeof TemplatesMarketplaceIndexRouteImport
+      parentRoute: typeof TemplatesMarketplaceRoute
+    }
     '/templates/marketplace/admin': {
       id: '/templates/marketplace/admin'
       path: '/admin'
@@ -459,11 +477,13 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface TemplatesMarketplaceRouteChildren {
   TemplatesMarketplaceIdRoute: typeof TemplatesMarketplaceIdRoute
   TemplatesMarketplaceAdminRoute: typeof TemplatesMarketplaceAdminRoute
+  TemplatesMarketplaceIndexRoute: typeof TemplatesMarketplaceIndexRoute
 }
 
 const TemplatesMarketplaceRouteChildren: TemplatesMarketplaceRouteChildren = {
   TemplatesMarketplaceIdRoute: TemplatesMarketplaceIdRoute,
   TemplatesMarketplaceAdminRoute: TemplatesMarketplaceAdminRoute,
+  TemplatesMarketplaceIndexRoute: TemplatesMarketplaceIndexRoute,
 }
 
 const TemplatesMarketplaceRouteWithChildren =

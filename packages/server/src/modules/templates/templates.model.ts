@@ -1,8 +1,24 @@
 import { t } from 'elysia'
 
+export const TemplateTaskSchema = t.Object({
+  title: t.String(),
+  description: t.Optional(t.String()),
+  priority: t.Optional(t.String()),
+  size: t.Optional(t.String()),
+  labelNames: t.Optional(t.Array(t.String())),
+  checklists: t.Optional(t.Array(t.Object({
+    title: t.String(),
+    items: t.Array(t.Object({
+      content: t.String(),
+      isCompleted: t.Boolean(),
+    })),
+  }))),
+})
+
 export const ColumnDefinitionSchema = t.Object({
   name: t.String(),
   position: t.String(),
+  tasks: t.Optional(t.Array(TemplateTaskSchema)),
 })
 
 export const LabelDefinitionSchema = t.Object({
@@ -106,6 +122,32 @@ export const SubmitTemplateBody = t.Object({
 export const BoardTemplatesParams = t.Object({
   boardId: t.String({ format: 'uuid' }),
 })
+
+export const TemplateAuthorSchema = t.Object({
+  id: t.String(),
+  name: t.String(),
+  image: t.Nullable(t.String()),
+})
+
+export const TemplateSchema = t.Object({
+  id: t.String(),
+  name: t.String(),
+  description: t.Nullable(t.String()),
+  categories: t.Nullable(t.Array(t.String())),
+  columnDefinitions: t.Array(ColumnDefinitionSchema),
+  defaultLabels: t.Nullable(t.Array(LabelDefinitionSchema)),
+  status: TemplateStatusSchema,
+  createdAt: t.String(),
+  approvedAt: t.Optional(t.Nullable(t.String())),
+  submittedAt: t.Optional(t.Nullable(t.String())),
+  rejectionReason: t.Optional(t.Nullable(t.String())),
+  rejectionComment: t.Optional(t.Nullable(t.String())),
+  takedownRequestedAt: t.Optional(t.Nullable(t.String())),
+  takedownAt: t.Optional(t.Nullable(t.String())),
+  author: t.Nullable(TemplateAuthorSchema),
+})
+
+export const MarketplaceResponseSchema = t.Array(TemplateSchema)
 
 export type CreateBoardTemplateInput = typeof CreateBoardTemplateBody.static
 export type UpdateBoardTemplateInput = typeof UpdateBoardTemplateBody.static

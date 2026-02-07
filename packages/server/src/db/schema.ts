@@ -23,7 +23,7 @@ export const attachmentTypeEnum = pgEnum('attachment_type', ['link', 'file'])
 export const reminderEnum = pgEnum('reminder', ['none', 'on_day', '1_day', '2_days', '1_week'])
 
 export const notificationTypeEnum = pgEnum('notification_type', [
-	'mention', 'assignment', 'due_soon', 'due_urgent', 'overdue', 'comment', 'board_invite'
+	'mention', 'assignment', 'due_soon', 'due_urgent', 'overdue', 'comment', 'board_invite', 'template_status'
 ])
 
 export const activityActionEnum = pgEnum('activity_action', [

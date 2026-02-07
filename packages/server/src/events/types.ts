@@ -1,6 +1,7 @@
 import type { InferSelectModel } from 'drizzle-orm'
 import { 
-  tasks, columns, boards, labels, attachments, comments, boardMembers, checklists, checklistItems, taskDependencies
+  tasks, columns, boards, labels, attachments, comments, boardMembers, checklists, checklistItems, taskDependencies,
+  notifications, boardTemplates
 } from '../db/schema'
 
 export type Task = InferSelectModel<typeof tasks>
@@ -13,10 +14,12 @@ export type BoardMember = InferSelectModel<typeof boardMembers>
 export type Checklist = InferSelectModel<typeof checklists>
 export type ChecklistItem = InferSelectModel<typeof checklistItems>
 export type TaskDependency = InferSelectModel<typeof taskDependencies>
+export type Notification = InferSelectModel<typeof notifications>
+export type BoardTemplate = InferSelectModel<typeof boardTemplates>
 
 export interface KyteEvents {
   'task.created': { task: Task; userId: string; boardId: string }
-  'task.updated': { task: Task; userId: string; boardId: string; changes: any }
+  'task.updated': { task: Task; userId: string; boardId: string; changes: unknown }
   'task.moved': { 
     task: Task; 
     userId: string; 
@@ -33,7 +36,7 @@ export interface KyteEvents {
   'task.dependency.created': { dependency: TaskDependency; userId: string; boardId: string }
   'task.dependency.deleted': { dependency: TaskDependency; userId: string; boardId: string }
   
-  'task.assignee.added': { taskId: string; userId: string; actorId: string; boardId: string; assignee: any }
+  'task.assignee.added': { taskId: string; userId: string; actorId: string; boardId: string; assignee: unknown }
   'task.assignee.removed': { taskId: string; userId: string; actorId: string; boardId: string }
   'label.added': { taskId: string; labelId: string; userId: string; boardId: string; labelName?: string }
   'label.removed': { taskId: string; labelId: string; userId: string; boardId: string; labelName?: string }
@@ -41,14 +44,14 @@ export interface KyteEvents {
   'attachment.deleted': { attachmentId: string; taskId: string; userId: string; boardId: string }
   
   'column.created': { column: Column; boardId: string; userId: string }
-  'column.updated': { column: Column; boardId: string; userId: string; changes?: any }
+  'column.updated': { column: Column; boardId: string; userId: string; changes?: unknown }
   'column.moved': { column: Column; boardId: string; userId: string }
   'column.archived': { column: Column; boardId: string; userId: string }
   'column.restored': { column: Column; boardId: string; userId: string }
   'column.deleted': { columnId: string; boardId: string; userId: string }
   
   'board.created': { board: Board; userId: string }
-  'board.updated': { board: Board; userId: string; changes?: any }
+  'board.updated': { board: Board; userId: string; changes?: unknown }
   'board.archived': { board: Board; userId: string }
   'board.restored': { board: Board; userId: string }
   'board.deleted': { boardId: string; userId: string }
@@ -71,14 +74,18 @@ export interface KyteEvents {
   }
 
   'notification.created': {
-    notification: any; // Using any for now to avoid circular dependency if needed, or I can import the type
-    userId: string;
+    notification: Notification
+    userId: string
   }
 
   'checklist.created': { checklist: Checklist; taskId: string; userId: string; boardId: string }
-  'checklist.updated': { checklist: Checklist; taskId: string; userId: string; boardId: string; changes: any }
+  'checklist.updated': { checklist: Checklist; taskId: string; userId: string; boardId: string; changes: unknown }
   'checklist.deleted': { checklist: Checklist; taskId: string; userId: string; boardId: string }
   'checklist.item.created': { item: ChecklistItem; taskId: string; userId: string; boardId: string }
-  'checklist.item.updated': { item: ChecklistItem; taskId: string; userId: string; boardId: string; changes: any }
+  'checklist.item.updated': { item: ChecklistItem; taskId: string; userId: string; boardId: string; changes: unknown }
   'checklist.item.deleted': { item: ChecklistItem; taskId: string; userId: string; boardId: string }
+
+  'template.approved': { template: BoardTemplate; adminId: string }
+  'template.rejected': { template: BoardTemplate; adminId: string; reason?: string; comment?: string }
+  'template.removed': { template: BoardTemplate; adminId: string }
 }

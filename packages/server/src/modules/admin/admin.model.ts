@@ -16,6 +16,7 @@ export const AuditLogQuerySchema = t.Object({
   adminId: t.Optional(t.String()),
   action: t.Optional(t.String()),
   targetType: t.Optional(t.String()),
+  targetId: t.Optional(t.String()),
   dateFrom: t.Optional(t.String()),
   dateTo: t.Optional(t.String()),
   limit: t.Optional(t.String()),

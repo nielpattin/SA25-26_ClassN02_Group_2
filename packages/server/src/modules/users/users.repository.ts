@@ -66,14 +66,15 @@ export const userRepository = {
     const user = await this.getById(id)
     if (!user) return null
 
-    const currentPrefs = user.notificationPreferences as any
+    const currentPrefs = user.notificationPreferences as Record<string, unknown>
     // Merge current prefs with defaults to ensure all keys exist
-    const newPrefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...currentPrefs }
+    const newPrefs: Record<string, unknown> = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...currentPrefs }
 
     for (const key in data) {
       if (data[key as keyof typeof data]) {
+        const existingKeyPrefs = (newPrefs[key] as Record<string, unknown>) || {}
         newPrefs[key] = {
-          ...newPrefs[key],
+          ...existingKeyPrefs,
           ...data[key as keyof typeof data]
         }
       }

@@ -38,6 +38,7 @@ export const adminRepository = {
     adminId,
     action,
     targetType,
+    targetId,
     dateFrom,
     dateTo,
     limit = 50,
@@ -46,6 +47,7 @@ export const adminRepository = {
     adminId?: string
     action?: string
     targetType?: string
+    targetId?: string
     dateFrom?: Date
     dateTo?: Date
     limit?: number
@@ -55,6 +57,7 @@ export const adminRepository = {
     if (adminId) filters.push(eq(adminAuditLog.adminId, adminId))
     if (action) filters.push(eq(adminAuditLog.action, action))
     if (targetType) filters.push(eq(adminAuditLog.targetType, targetType))
+    if (targetId) filters.push(eq(adminAuditLog.targetId, targetId))
     if (dateFrom) filters.push(gte(adminAuditLog.createdAt, dateFrom))
     if (dateTo) filters.push(lte(adminAuditLog.createdAt, dateTo))
 

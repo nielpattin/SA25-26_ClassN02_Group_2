@@ -2,7 +2,8 @@ import { t } from 'elysia'
 
 export const NotificationTypeSchema = t.Union([
   t.Literal('mention'), t.Literal('assignment'), t.Literal('due_soon'),
-  t.Literal('due_urgent'), t.Literal('overdue'), t.Literal('comment'), t.Literal('board_invite')
+  t.Literal('due_urgent'), t.Literal('overdue'), t.Literal('comment'), t.Literal('board_invite'),
+  t.Literal('template_status')
 ])
 
 export const CreateNotificationInput = t.Object({

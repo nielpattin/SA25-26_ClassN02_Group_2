@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Check, X, ShieldAlert, Calendar, User, Layout, Tag, Trash2, Eye } from 'lucide-react'
-import { AdminLayout } from '../../components/layout/AdminLayout'
 import { useSession } from '../../api/auth'
 import {
   usePendingSubmissions,
@@ -46,8 +45,8 @@ function ModerationComponent() {
   const [rejectionReason, setRejectionReason] = useState('')
   const [rejectionComment, setRejectionComment] = useState('')
 
-  const { data: submissions, isLoading: isLoadingSubmissions } = usePendingSubmissions()
-  const { data: takedowns, isLoading: isLoadingTakedowns } = useTakedownRequests()
+  const { data: submissions, isLoading: isLoadingSubmissions, isError: isSubmissionsError, error: submissionsError } = usePendingSubmissions()
+  const { data: takedowns, isLoading: isLoadingTakedowns, isError: isTakedownsError, error: takedownsError } = useTakedownRequests()
   const approveMutation = useApproveTemplate()
   const rejectMutation = useRejectTemplate()
   const removeMutation = useRemoveTemplate()
@@ -82,9 +81,7 @@ function ModerationComponent() {
   }
 
   const handleRemove = (id: string) => {
-    if (confirm('Are you sure you want to immediately remove this template?')) {
-      removeMutation.mutate(id)
-    }
+    removeMutation.mutate(id)
   }
 
   const formatDate = (dateString: string | null | undefined) => {
@@ -97,15 +94,14 @@ function ModerationComponent() {
   }
 
   return (
-    <AdminLayout>
-      <div className="p-8">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+    <>
+      <div className="p-12 lg:px-16">
+        <header className="mb-12 flex items-end justify-between">
           <div>
-            <h1 className="font-heading text-3xl font-black tracking-tighter text-black uppercase">
+            <h1 className="mb-2 font-heading text-4xl font-black tracking-tighter uppercase">
               Content Moderation
             </h1>
-            <p className="mt-2 text-sm font-bold text-gray-500 uppercase">
+            <p className="text-sm font-bold tracking-wide text-gray-500 uppercase">
               Review submissions and manage takedown requests
             </p>
           </div>
@@ -115,48 +111,48 @@ function ModerationComponent() {
               {adminRole?.replace('_', ' ') || 'Admin'}
             </span>
           </div>
-        </div>
+        </header>
 
-        {/* Tabs */}
-        <div className="mb-6 flex border-b border-black">
-          <button
-            onClick={() => setActiveTab('submissions')}
-            className={`px-6 py-3 text-xs font-black uppercase transition-all ${
-              activeTab === 'submissions'
-                ? 'border-b-2 border-black bg-black text-white'
-                : 'text-gray-500 hover:text-black'
-            }`}
-          >
-            Pending Submissions ({submissions?.length || 0})
-          </button>
-          <button
-            onClick={() => setActiveTab('takedowns')}
-            className={`px-6 py-3 text-xs font-black uppercase transition-all ${
-              activeTab === 'takedowns'
-                ? 'border-b-2 border-black bg-black text-white'
-                : 'text-gray-500 hover:text-black'
-            }`}
-          >
-            Takedown Requests ({takedowns?.length || 0})
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div className="mb-6 flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-bold text-gray-500 uppercase">Category:</label>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="border border-black bg-white px-3 py-1.5 text-xs font-bold uppercase focus:ring-2 focus:ring-black focus:outline-none"
+        <div className="mb-8 flex w-full items-center justify-between border-b border-black">
+          <div className="flex">
+            <button
+              onClick={() => setActiveTab('submissions')}
+              className={`px-6 py-3 text-xs font-black uppercase transition-all ${
+                activeTab === 'submissions'
+                  ? 'border-b-2 border-black bg-black text-white'
+                  : 'text-gray-500 hover:text-black'
+              }`}
             >
-              {TEMPLATE_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat === 'All' ? '' : cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+              Pending Submissions ({submissions?.length || 0})
+            </button>
+            <button
+              onClick={() => setActiveTab('takedowns')}
+              className={`px-6 py-3 text-xs font-black uppercase transition-all ${
+                activeTab === 'takedowns'
+                  ? 'border-b-2 border-black bg-black text-white'
+                  : 'text-gray-500 hover:text-black'
+              }`}
+            >
+              Takedown Requests ({takedowns?.length || 0})
+            </button>
           </div>
+
+          {activeTab === 'submissions' && (
+            <div className="flex items-center gap-2 pb-2">
+              <label className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Category</label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="border border-black bg-white px-3 py-1.5 text-xs font-bold uppercase focus:ring-2 focus:ring-black focus:outline-none"
+              >
+                {TEMPLATE_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat === 'All' ? '' : cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Submissions Tab */}
@@ -166,12 +162,22 @@ function ModerationComponent() {
               <div className="py-12 text-center">
                 <p className="text-sm font-bold text-gray-500 uppercase">Loading submissions...</p>
               </div>
+            ) : isSubmissionsError ? (
+              <div className="border-2 border-error bg-error/5 py-12 text-center">
+                <p className="text-sm font-black text-error uppercase">
+                  Failed to load submissions
+                </p>
+                <p className="mt-2 text-xs text-gray-500">
+                  {String(submissionsError)}
+                </p>
+              </div>
             ) : !filteredSubmissions || filteredSubmissions.length === 0 ? (
-              <div className="border border-dashed border-black bg-black/5 py-24 text-center">
-                <p className="text-xl font-black text-black uppercase opacity-50">
+              <div className="border border-black bg-white py-16 text-center shadow-brutal-lg">
+                <ShieldAlert size={32} className="mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-black text-black uppercase opacity-50">
                   No pending submissions
                 </p>
-                <p className="mt-2 text-sm font-bold text-gray-500 uppercase">
+                <p className="mt-1 text-xs font-bold text-gray-400 uppercase">
                   All submissions have been reviewed
                 </p>
               </div>
@@ -330,12 +336,22 @@ function ModerationComponent() {
               <div className="py-12 text-center">
                 <p className="text-sm font-bold text-gray-500 uppercase">Loading takedown requests...</p>
               </div>
+            ) : isTakedownsError ? (
+              <div className="border-2 border-error bg-error/5 py-12 text-center">
+                <p className="text-sm font-black text-error uppercase">
+                  Failed to load takedown requests
+                </p>
+                <p className="mt-2 text-xs text-gray-500">
+                  {String(takedownsError)}
+                </p>
+              </div>
             ) : !takedowns || takedowns.length === 0 ? (
-              <div className="border border-dashed border-black bg-black/5 py-24 text-center">
-                <p className="text-xl font-black text-black uppercase opacity-50">
+              <div className="border border-black bg-white py-16 text-center shadow-brutal-lg">
+                <Trash2 size={32} className="mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-black text-black uppercase opacity-50">
                   No takedown requests
                 </p>
-                <p className="mt-2 text-sm font-bold text-gray-500 uppercase">
+                <p className="mt-1 text-xs font-bold text-gray-400 uppercase">
                   No templates pending removal
                 </p>
               </div>
@@ -426,6 +442,6 @@ function ModerationComponent() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   )
 }

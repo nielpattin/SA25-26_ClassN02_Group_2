@@ -1,4 +1,4 @@
-import { AtSign, UserPlus, Clock, MessageSquare, LayoutDashboard, AlertTriangle, AlertCircle } from 'lucide-react'
+import { AtSign, UserPlus, Clock, MessageSquare, LayoutDashboard, AlertTriangle, AlertCircle, ShieldCheck } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useNavigate } from '@tanstack/react-router'
 import type { Notification, NotificationType } from './types'
@@ -17,6 +17,7 @@ const typeConfig: Record<NotificationType, { icon: React.ComponentType<{ size?: 
   overdue: { icon: AlertCircle, color: 'text-red-500' },
   comment: { icon: MessageSquare, color: 'text-purple-500' },
   board_invite: { icon: LayoutDashboard, color: 'text-black' },
+  template_status: { icon: ShieldCheck, color: 'text-accent' },
 }
 
 export function NotificationItem({ notification, onRead, onClose }: NotificationItemProps) {

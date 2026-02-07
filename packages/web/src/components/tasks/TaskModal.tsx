@@ -123,7 +123,7 @@ export function TaskModal({ taskId: taskIdProp, cardId, boardId, onClose }: Task
   })
 
   const moveCard = useMutation({
-    mutationFn: async (params: { columnId: string position: string }) => {
+    mutationFn: async (params: { columnId: string; position: string }) => {
       const { error } = await api.v1.tasks({ id: taskId }).move.patch(params)
       if (error) throw error
     },

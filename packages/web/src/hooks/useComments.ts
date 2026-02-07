@@ -50,7 +50,7 @@ export function useUpdateComment(taskId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, content }: { id: string content: string }) => {
+    mutationFn: async ({ id, content }: { id: string; content: string }) => {
       const { data, error } = await api.v1.comments({ id }).patch({ content })
       if (error) throw error
       return data

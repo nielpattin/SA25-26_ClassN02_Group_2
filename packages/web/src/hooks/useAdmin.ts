@@ -6,6 +6,7 @@ import type { AdminRole } from '@kyte/server/src/modules/admin/admin.model'
 export type AuditFilters = {
   action?: string
   adminId?: string
+  targetType?: string
   targetId?: string
   startDate?: string
   endDate?: string

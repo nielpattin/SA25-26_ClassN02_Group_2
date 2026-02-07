@@ -53,7 +53,7 @@ export function useUpdateChecklist(taskId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, title }: { id: string title: string }) => {
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
       const { error } = await api.v1.checklists({ id }).patch({ title })
       if (error) throw error
     },
@@ -87,7 +87,7 @@ export function useAddChecklistItem(taskId: string, boardId?: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ checklistId, content }: { checklistId: string content: string }) => {
+    mutationFn: async ({ checklistId, content }: { checklistId: string; content: string }) => {
       const { error } = await api.v1.checklists.items.post({
         checklistId,
         content,
@@ -109,7 +109,7 @@ export function useUpdateChecklistItem(taskId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, content }: { id: string content: string }) => {
+    mutationFn: async ({ id, content }: { id: string; content: string }) => {
       const { error } = await api.v1.checklists.items({ id }).patch({ content })
       if (error) throw error
     },
