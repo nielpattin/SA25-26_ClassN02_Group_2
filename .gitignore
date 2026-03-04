@@ -42,8 +42,9 @@ Documents/**/*.md
 Documents/**/*.bkp
 Documents/**/*.png
 Documents/**/*.drawio
-.loop*
 tmp/
 *.pptx
 *.pptx#
-Report-Final/markdown-docx/
+Report-Final/**/*.md
+Report-Final/**/*.png
+scripts/*
