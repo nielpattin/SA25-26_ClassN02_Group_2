@@ -168,7 +168,7 @@ function ModerationComponent() {
                   Failed to load submissions
                 </p>
                 <p className="mt-2 text-xs text-gray-500">
-                  {String(submissionsError)}
+                  {submissionsError instanceof Error ? submissionsError.message : JSON.stringify(submissionsError)}
                 </p>
               </div>
             ) : !filteredSubmissions || filteredSubmissions.length === 0 ? (
@@ -342,7 +342,7 @@ function ModerationComponent() {
                   Failed to load takedown requests
                 </p>
                 <p className="mt-2 text-xs text-gray-500">
-                  {String(takedownsError)}
+                  {takedownsError instanceof Error ? takedownsError.message : JSON.stringify(takedownsError)}
                 </p>
               </div>
             ) : !takedowns || takedowns.length === 0 ? (

@@ -22,14 +22,30 @@ const canModerate = async (userId: string): Promise<boolean> => {
   return ['moderator', 'super_admin'].includes(user.adminRole)
 }
 
+const formatTemplate = (t: any) => ({
+  ...t,
+  createdAt: t.createdAt.toISOString(),
+  approvedAt: t.approvedAt?.toISOString() ?? null,
+  submittedAt: t.submittedAt?.toISOString() ?? null,
+  takedownRequestedAt: t.takedownRequestedAt?.toISOString() ?? null,
+  takedownAt: t.takedownAt?.toISOString() ?? null,
+  author: t.author?.id ? {
+    id: t.author.id,
+    name: t.author.name,
+    image: t.author.image,
+  } : null,
+})
+
 export const templateService = {
-  getMarketplaceTemplates: (query: typeof MarketplaceQuerySchema.static) =>
-    templateRepository.findMarketplaceTemplates(query),
+  getMarketplaceTemplates: async (query: typeof MarketplaceQuerySchema.static) => {
+    const templates = await templateRepository.findMarketplaceTemplates(query)
+    return templates.map(formatTemplate)
+  },
 
   getMarketplaceTemplateById: async (id: string) => {
     const template = await templateRepository.findMarketplaceTemplateById(id)
     if (!template) throw new NotFoundError('Template not found')
-    return template
+    return formatTemplate(template)
   },
 
   submitTemplate: async (userId: string, data: typeof SubmitTemplateBody.static) => {
@@ -51,7 +67,7 @@ export const templateService = {
         action: ADMIN_ACTIONS.TEMPLATE_SUBMITTED,
         targetType: 'template',
         targetId: templateId,
-        metadata: { templateName: updated.name }
+        metadata: { templateName: updated.name },
       })
 
       return updated
@@ -95,10 +111,10 @@ export const templateService = {
                     .filter(ci => ci.checklistId === c.id)
                     .map(ci => ({
                       content: ci.content.trim(),
-                      isCompleted: ci.isCompleted
-                    }))
-                }))
-            }))
+                      isCompleted: ci.isCompleted,
+                    })),
+                })),
+            })),
         })),
         defaultLabels: exportData.labels.map(l => ({ name: l.name.trim(), color: l.color })),
         status: 'pending',
@@ -111,7 +127,7 @@ export const templateService = {
         action: ADMIN_ACTIONS.TEMPLATE_SUBMITTED,
         targetType: 'template',
         targetId: template.id,
-        metadata: { templateName: template.name }
+        metadata: { templateName: template.name },
       })
 
       return template
@@ -134,7 +150,7 @@ export const templateService = {
       action: ADMIN_ACTIONS.TEMPLATE_APPROVED,
       targetType: 'template',
       targetId: templateId,
-      metadata: { templateName: template.name }
+      metadata: { templateName: template.name },
     })
 
     eventBus.emitDomain('template.approved', { template, adminId })
@@ -156,14 +172,14 @@ export const templateService = {
       action: ADMIN_ACTIONS.TEMPLATE_REJECTED,
       targetType: 'template',
       targetId: templateId,
-      metadata: { templateName: template.name, reason: data?.reason, comment: data?.comment }
+      metadata: { templateName: template.name, reason: data?.reason, comment: data?.comment },
     })
 
     eventBus.emitDomain('template.rejected', { 
       template, 
       adminId, 
       reason: data?.reason, 
-      comment: data?.comment 
+      comment: data?.comment, 
     })
 
     return template
@@ -171,12 +187,14 @@ export const templateService = {
 
   getPendingSubmissions: async (userId: string, filters?: { status?: string; category?: string }) => {
     if (!await hasModeratorAccess(userId)) throw new ForbiddenError('Admin access required')
-    return templateRepository.findPendingSubmissions(filters)
+    const templates = await templateRepository.findPendingSubmissions(filters)
+    return templates.map(formatTemplate)
   },
 
   getTakedownRequests: async (userId: string) => {
     if (!await hasModeratorAccess(userId)) throw new ForbiddenError('Admin access required')
-    return templateRepository.findTakedownRequests()
+    const templates = await templateRepository.findTakedownRequests()
+    return templates.map(formatTemplate)
   },
 
   requestTakedown: async (userId: string, templateId: string) => {
