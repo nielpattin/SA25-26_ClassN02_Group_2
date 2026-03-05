@@ -47,4 +47,5 @@ tmp/
 *.pptx#
 Report-Final/**/*.md
 Report-Final/**/*.png
+Report-Final/**/*.pdf
 scripts/*
